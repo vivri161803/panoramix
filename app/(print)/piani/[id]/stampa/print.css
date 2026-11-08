@@ -1,0 +1,44 @@
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+.px-sheet {
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #fff;
+  color: #0e1620;
+  font-family: var(--px-font);
+  font-variant-numeric: tabular-nums;
+  padding: 14mm 13mm 11mm;
+  display: flex;
+  flex-direction: column;
+  gap: 5.5mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  box-shadow: 0 0 0 1px rgba(14, 22, 32, 0.12), 0 20px 50px rgba(14, 22, 32, 0.12);
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    margin: 0;
+  }
+  .px-sheet {
+    box-shadow: none;
+    margin: 0;
+  }
+  .px-no-print {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 840px) {
+  /* sul telefono il foglio si rimpicciolisce per intero */
+  .px-sheet-wrap {
+    zoom: calc(100vw / 840px);
+  }
+}
