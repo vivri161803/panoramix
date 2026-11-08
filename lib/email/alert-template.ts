@@ -69,11 +69,17 @@ export function doctorText(d: AlertEmailData): string | null {
   return `Buongiorno dottore,\nper ${d.patientName} avrei bisogno della ricetta per:\n${lines.join("\n")}\nGrazie,\n${d.managerFullName}`;
 }
 
+/** Logo dell'app (public/email-logo.png), sullo stesso dominio dei link dell'email. */
+function logoUrl(d: AlertEmailData): string {
+  return `${new URL(d.planUrl).origin}/email-logo.png`;
+}
+
 function intro(d: AlertEmailData): string {
   const hello = `Ciao ${d.managerFirstName || ""}`.trim() + ",";
-  const prep = d.nextPrep ? ` La prossima preparazione del portapillole è ${formatLong(d.nextPrep)}.` : "";
+  const prep = d.nextPrep ? ` la prossima preparazione del portapillole è ${formatLong(d.nextPrep)}.` : "";
   const n = d.meds.length;
-  return `${hello}${prep} ${n === 1 ? "Questa medicina è sotto soglia" : "Queste medicine sono sotto soglia"}: è il momento di ordinarle.`;
+  const below = n === 1 ? "Questa medicina è sotto soglia: è il momento di ordinarla." : "Queste medicine sono sotto soglia: è il momento di ordinarle.";
+  return prep ? `${hello}${prep} ${below}` : `${hello} ${below[0].toLowerCase()}${below.slice(1)}`;
 }
 
 export function renderAlertEmail(d: AlertEmailData): { subject: string; html: string; text: string } {
@@ -128,7 +134,7 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #DAE0E6;border-radius:18px;">
   <tr><td style="padding:22px 28px;border-bottom:1px solid #DAE0E6;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-      <td valign="middle" style="padding-right:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#132030;text-align:center;line-height:32px;font:700 16px/32px ${FONT};color:#FFC020;">P</div></td>
+      <td valign="middle" style="padding-right:10px;"><img src="${esc(logoUrl(d))}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border:0;border-radius:8px;background:#132030;"></td>
       <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Panoramix</td>
     </tr></table>
   </td></tr>
