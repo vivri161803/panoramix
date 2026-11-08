@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
+import { THEME_COLOR, THEME_COOKIE, parseTheme } from "@/lib/theme";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "swap" });
@@ -11,18 +13,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#141A22" },
-  ],
-};
+async function currentTheme() {
+  return parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export async function generateViewport(): Promise<Viewport> {
+  const theme = await currentTheme();
+  return {
+    width: "device-width",
+    initialScale: 1,
+    themeColor:
+      theme === "system"
+        ? [
+            { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+            { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+          ]
+        : THEME_COLOR[theme],
+  };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = await currentTheme();
   return (
-    <html lang="it" className={`${geist.variable} ${geistMono.variable}`}>
+    <html lang="it" className={`${geist.variable} ${geistMono.variable}`} data-theme={theme === "system" ? undefined : theme}>
       <body className="min-h-dvh flex flex-col">{children}</body>
     </html>
   );

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { requireProfile } from "@/lib/data";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { ThemePicker } from "@/components/ThemePicker";
 import { signOut } from "@/lib/actions/auth";
 import { ProfileForm } from "@/components/ProfileForm";
 import { DeleteAccount } from "./DeleteAccount";
@@ -23,6 +26,12 @@ export default async function AccountPage() {
           Accedi con <strong className="text-px-ink">{profile.email}</strong>. È anche l’indirizzo che riceve sempre gli avvisi e le risposte alle email.
         </p>
         <ProfileForm firstName={profile.first_name} lastName={profile.last_name} submitLabel="Salva nome" next="/account" />
+      </section>
+
+      <section className="px-card flex flex-col gap-3 p-5" aria-labelledby="acc-aspetto">
+        <h2 id="acc-aspetto" className="m-0 text-[18px] font-[650]">Aspetto</h2>
+        <p className="m-0 text-px-ink-2">“Automatico” segue il telefono o il computer. La scelta vale per questo dispositivo.</p>
+        <ThemePicker initial={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
       </section>
 
       <section className="px-card flex flex-col gap-3 p-5" aria-labelledby="acc-esci">
