@@ -164,6 +164,7 @@
 }
 
 /* ——— Base ——— */
+@layer base {
 * {
   box-sizing: border-box;
 }
@@ -208,6 +209,7 @@ a:hover {
     animation: none !important;
     transition: none !important;
   }
+}
 }
 
 /* Animazioni del dispenser */
