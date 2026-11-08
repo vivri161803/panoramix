@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--px-bg:#F3F5F7;--px-surface:#FFFFFF;--px-surface-2:#EDF0F3;--px-surface-3:#E1E6EB;--px-line:#DAE0E6;--px-line-strong:#AEB8C2;--px-ink:#0E1620;--px-ink-2:#44505C;--px-ink-3:#5B6774;--px-primary:#132030;--px-on-primary:#FFFFFF;--px-link:#1C5CC8;--px-focus:#2E78F5;--px-ok-fg:#1A6B43;--px-ok-bg:#E4F2EA;--px-ok-line:#94CBAE;--px-order-fg:#8A4A00;--px-order-bg:#FFF0D9;--px-order-line:#E3A54A;--px-ordered-fg:#1E4DA6;--px-ordered-bg:#E5EDFB;--px-ordered-line:#94B3E8;--px-out-fg:#AE2418;--px-out-bg:#FCEAE7;--px-out-line:#E48C80;--px-tube-bg:#F1F4F7;--px-glass-hi:rgba(255,255,255,.75);--px-shadow:0 1px 2px rgba(14,22,32,.05),0 6px 20px rgba(14,22,32,.05);--px-font:"Geist",system-ui,sans-serif;--px-mono:"Geist Mono",ui-monospace,monospace}
+[data-theme="dark"]{color-scheme:dark;--px-bg:#0C1117;--px-surface:#141A22;--px-surface-2:#1B222C;--px-surface-3:#252E39;--px-line:#29333E;--px-line-strong:#46525F;--px-ink:#E9EEF3;--px-ink-2:#B3BDC7;--px-ink-3:#96A2AE;--px-primary:#E9EEF3;--px-on-primary:#0C1117;--px-link:#86B4FF;--px-ok-fg:#7DD3A4;--px-ok-bg:#11281C;--px-ok-line:#2D6A49;--px-order-fg:#F4C06A;--px-order-bg:#2D2110;--px-order-line:#7D5B22;--px-ordered-fg:#A2C1FF;--px-ordered-bg:#132139;--px-ordered-line:#36538D;--px-out-fg:#FF9C90;--px-out-bg:#331410;--px-out-line:#8C3B31;--px-tube-bg:#0F151C;--px-glass-hi:rgba(255,255,255,.12);--px-shadow:0 1px 2px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--px-focus);outline-offset:2px}
+@keyframes pxDrop{0%{transform:translateY(var(--from));opacity:0}8%{opacity:1}78%{transform:translateY(0)}88%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+@keyframes pxOut{0%{transform:translateY(0);opacity:1}100%{transform:translateY(90px);opacity:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div role="group" aria-label="{{ aria }}" style="height:100%;display:flex;flex-direction:column;gap:14px;padding:14px 12px 12px;border-radius:18px;background:{{ cardBg }};border:1px solid {{ cardBc }};box-shadow:{{ cardRing }};font-family:var(--px-font);color:var(--px-ink);font-variant-numeric:tabular-nums;min-width:0">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;min-height:28px">
+    <dc-import name="StatusChip" status="{{ status }}" hint-size="96px,28px"></dc-import>
+  </div>
+  <div style="display:flex;justify-content:center;padding:2px 0">{{ tube }}</div>
+  <div style="display:flex;flex-direction:column;gap:3px">
+    <div style="font:650 18px/1.2 var(--px-font);letter-spacing:-.01em;overflow-wrap:anywhere">{{ name }}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:500 15px/1.3 var(--px-font);color:var(--px-ink-2)"><span>{{ dose }}</span><sc-if value="{{ rx }}" hint-placeholder-val="{{ false }}"><span style="font:600 12px/1 var(--px-font);color:var(--px-ink-2);border:1px solid var(--px-line-strong);border-radius:6px;padding:4px 6px">Serve ricetta</span></sc-if></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:3px;font:400 16px/1.35 var(--px-font);color:var(--px-ink-2)">
+    <div><span style="font-weight:650;color:var(--px-ink)">{{ qtyNum }}</span> {{ qtyWord }}</div>
+    <div><span style="font-weight:650;color:var(--px-ink)">{{ daysNum }}</span> {{ daysWord }}</div>
+    <div>{{ endLabel }}</div>
+  </div>
+  <sc-if value="{{ hasReason }}" hint-placeholder-val="{{ false }}"><div style="font:600 15px/1.35 var(--px-font);color:{{ reasonColor }};text-wrap:pretty">{{ reason }}</div></sc-if>
+  <sc-if value="{{ showActions }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+      <button type="button" onClick="{{ arriveOne }}" aria-label="{{ arriveAria }}" style="min-height:44px;padding:8px 10px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 15px/1.2 var(--px-font);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>{{ arriveLabel }}</button>
+      <button type="button" onClick="{{ toggleMenu }}" aria-expanded="{{ menuOpen }}" style="min-height:44px;padding:8px 10px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1.2 var(--px-font);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">Altre azioni<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;padding:4px;border:1px solid var(--px-line);border-radius:12px;background:var(--px-surface)">
+          <button type="button" onClick="{{ openArrive }}" style="min-height:44px;padding:6px 10px;border:none;border-radius:8px;background:transparent;text-align:left;font:500 15px/1.25 var(--px-font);color:var(--px-ink);cursor:pointer" style-hover="background:var(--px-surface-2)">Arrivata: altra quantità</button>
+          <button type="button" onClick="{{ onOrdered }}" style="min-height:44px;padding:6px 10px;border:none;border-radius:8px;background:transparent;text-align:left;font:500 15px/1.25 var(--px-font);color:var(--px-ink);cursor:pointer" style-hover="background:var(--px-surface-2)">{{ orderedLabel }}</button>
+          <button type="button" onClick="{{ openRecount }}" style="min-height:44px;padding:6px 10px;border:none;border-radius:8px;background:transparent;text-align:left;font:500 15px/1.25 var(--px-font);color:var(--px-ink);cursor:pointer" style-hover="background:var(--px-surface-2)">Ricontrolla conteggio</button>
+          <button type="button" onClick="{{ onHistory }}" style="min-height:44px;padding:6px 10px;border:none;border-radius:8px;background:transparent;text-align:left;font:500 15px/1.25 var(--px-font);color:var(--px-ink);cursor:pointer" style-hover="background:var(--px-surface-2)">Storico</button>
+          <button type="button" onClick="{{ onEdit }}" style="min-height:44px;padding:6px 10px;border:none;border-radius:8px;background:transparent;text-align:left;font:500 15px/1.25 var(--px-font);color:var(--px-ink);cursor:pointer" style-hover="background:var(--px-surface-2)">Modifica</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isPanel }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--px-line);border-radius:12px;background:var(--px-surface-2)">
+          <div style="font:600 15px/1.3 var(--px-font)">{{ panelTitle }}</div>
+          <div style="display:flex;gap:4px">
+            <button type="button" onClick="{{ dec }}" aria-label="Una in meno" style="flex:none;width:44px;height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 20px/1 var(--px-font);cursor:pointer">−</button>
+            <input type="number" inputmode="numeric" min="0" aria-label="{{ panelTitle }}" value="{{ n }}" onChange="{{ onN }}" style="flex:1;min-width:0;height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);text-align:center;font:650 18px/1 var(--px-font);font-variant-numeric:tabular-nums;color:var(--px-ink)">
+            <button type="button" onClick="{{ inc }}" aria-label="Una in più" style="flex:none;width:44px;height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 20px/1 var(--px-font);cursor:pointer">+</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button type="button" onClick="{{ submit }}" style="flex:1 1 90px;min-height:44px;border-radius:10px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 15px/1 var(--px-font);cursor:pointer">{{ submitLabel }}</button>
+            <button type="button" onClick="{{ close }}" style="flex:1 1 90px;min-height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 15px/1 var(--px-font);cursor:pointer">Annulla</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:220,&quot;height&quot;:640},&quot;med&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;s&quot;,&quot;l&quot;],&quot;default&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;'s'|'l'&quot;},&quot;scaleMax&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;tsType&quot;:&quot;number&quot;},&quot;preview&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;panel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;menu&quot;,&quot;arrive&quot;,&quot;recount&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onArrive&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(n:number)=&gt;void&quot;},&quot;onOrdered&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;},&quot;onRecount&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(n:number)=&gt;void&quot;},&quot;onEdit&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;},&quot;onHistory&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;}}">
+class Component extends DCLogic {
+  static META = {
+    ok: { bg: 'var(--px-surface)', bc: 'var(--px-line)', ring: 'none', fg: 'var(--px-ink-2)', w: 'OK' },
+    order: { bg: 'var(--px-surface)', bc: 'var(--px-order-line)', ring: '0 0 0 1px var(--px-order-line)', fg: 'var(--px-order-fg)', w: 'da ordinare' },
+    ordered: { bg: 'var(--px-surface)', bc: 'var(--px-ordered-line)', ring: '0 0 0 1px var(--px-ordered-line)', fg: 'var(--px-ordered-fg)', w: 'ordinata' },
+    out: { bg: 'var(--px-out-bg)', bc: 'var(--px-out-fg)', ring: '0 0 0 1px var(--px-out-fg)', fg: 'var(--px-out-fg)', w: 'esaurita' }
+  };
+  static DEF = { id: 'rami', name: 'Ramipril', dose: '5 mg', color: '#FFC020', shape: 'oblunga', qty: 16, perPack: 28, rx: true, days: 16, endLabel: 'mar 24 nov', status: 'order', reason: 'Dopo la preparazione restano 9 giorni', ordered: false };
+  state = { panel: undefined, n: 0 };
+  pills = null; nid = 0; reduce = false;
+
+  med() { return this.props.med || Component.DEF; }
+  dims() { return this.props.size === 'l' ? { W: 70, H: 250 } : { W: 48, H: 180 }; }
+  geo(shape, W) {
+    const g = { tonda: [.46, .46], ovale: [.58, .37], oblunga: [.7, .29], capsula: [.72, .31] }[shape] || [.46, .46];
+    const pw = W * g[0], ph = W * g[1]; return { pw, ph, step: ph * .8 };
+  }
+  target() {
+    const m = this.med(), { W, H } = this.dims(), max = this.props.scaleMax || 60, { step } = this.geo(m.shape, W);
+    if (!(m.qty > 0)) return 0;
+    const lvl = Math.min(m.days || 0, max) / max * (H - 6);
+    return Math.max(1, Math.min(Math.floor((H - 6) / step), Math.round(lvl / step)));
+  }
+  sync(t, anim) {
+    const live = this.pills.filter(p => p.anim !== 'out'); const n = live.length;
+    let longest = 0;
+    if (t > n) { for (let k = 0; k < t - n; k++) { this.pills.push({ id: this.nid++, slot: n + k, anim: anim ? 'in' : null, delay: k * 45 }); longest = k * 45; } }
+    else if (t < n) {
+      const d = n - t;
+      live.forEach(p => { if (p.slot < d) { p.anim = 'out'; p.delay = p.slot * 60; longest = Math.max(longest, p.delay); } else p.slot -= d; });
+      if (!anim) this.pills = this.pills.filter(p => p.anim !== 'out');
+    }
+    if (anim) {
+      clearTimeout(this.tm);
+      this.tm = setTimeout(() => { this.pills = this.pills.filter(p => p.anim !== 'out').map(p => ({ ...p, anim: null })); this.forceUpdate(); }, longest + 900);
+    }
+  }
+  componentDidMount() { try { this.reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} }
+  componentDidUpdate() {
+    const t = this.target(); const live = this.pills.filter(p => p.anim !== 'out').length;
+    if (t !== live) { this.sync(t, !this.reduce); this.forceUpdate(); }
+  }
+  componentWillUnmount() { clearTimeout(this.tm); }
+  look(c, shape, w, h) {
+    const L = ['radial-gradient(ellipse 60% 50% at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,0) 62%)',
+      'linear-gradient(180deg, rgba(255,255,255,.1) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,.26) 100%)'];
+    if (shape === 'tonda') L.push('linear-gradient(90deg, rgba(0,0,0,0) 48.5%, rgba(0,0,0,.16) 48.5%, rgba(0,0,0,.16) 51.5%, rgba(0,0,0,0) 51.5%)');
+    if (shape === 'capsula') { L.push('linear-gradient(90deg, rgba(0,0,0,0) 49%, rgba(0,0,0,.18) 49%, rgba(0,0,0,.18) 51%, rgba(0,0,0,0) 51%)'); L.push(`linear-gradient(90deg, ${c} 50%, #F5F4EF 50%)`); }
+    else L.push(c);
+    const round = shape === 'tonda' || shape === 'ovale';
+    return { width: w, height: h, borderRadius: round ? '50%' : h / 2, background: L.join(','),
+      boxShadow: `inset 0 -${(h * .08).toFixed(1)}px ${(h * .16).toFixed(1)}px rgba(0,0,0,.16), 0 1px 1.5px rgba(14,22,32,.3)` };
+  }
+  tube(m, st) {
+    const h = React.createElement, { W, H } = this.dims(), max = this.props.scaleMax || 60;
+    const side = 36, TW = W + 4, B = 12, CAP = 10, days = m.days || 0, over = days >= max;
+    const fg = Component.META[st].fg, lvl = Math.min(days, max) / max * (H - 6);
+    const { pw, ph, step } = this.geo(m.shape, W);
+    const JX = [-.7, .55, -.15, .8, -.45, .25, -.85, .4, 0, -.3], JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
+    const pills = this.pills.map(p => {
+      const j = p.id % 10, x = (W - pw) / 2 + JX[j] * (W - pw) / 2 * .9, r = m.shape === 'tonda' ? JR[j] * .3 : JR[j];
+      return h('div', { key: p.id, style: { position: 'absolute', left: x, bottom: 3 + p.slot * step, width: pw, height: ph,
+        transition: this.reduce ? 'none' : 'bottom 520ms cubic-bezier(.45,0,.55,1) 180ms',
+        animation: p.anim === 'in' ? `pxDrop 620ms cubic-bezier(.5,0,.9,.6) ${p.delay}ms both` : p.anim === 'out' ? `pxOut 520ms cubic-bezier(.5,0,1,1) ${p.delay}ms both` : 'none',
+        '--from': `${-(H - p.slot * step + 30)}px` } },
+        h('div', { style: { ...this.look(m.color, m.shape, pw, ph), transform: `rotate(${r}deg)` } }));
+    });
+    const kids = [
+      h('div', { key: 'base', style: { position: 'absolute', left: side - 10, width: TW + 20, bottom: 0, height: B, borderRadius: '3px 3px 7px 7px', background: 'var(--px-surface-3)', border: '1.5px solid var(--px-line-strong)' } }),
+      h('div', { key: 'tube', style: { position: 'absolute', left: side, bottom: B - 1, width: TW, height: H, border: '2px solid var(--px-line-strong)', borderTop: 'none', borderRadius: `0 0 ${W * .3}px ${W * .3}px`, background: 'var(--px-tube-bg)', overflow: 'hidden' } },
+        ...pills,
+        ...[7, 14].map(t => { const passed = days < t && st !== 'ok'; return h('div', { key: 'l' + t, style: { position: 'absolute', left: 0, right: 0, bottom: t / max * (H - 6), borderTop: passed ? `2px solid ${fg}` : '1px dashed var(--px-line-strong)', zIndex: 3 } }); }),
+        h('div', { key: 'glass', style: { position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, var(--px-glass-hi) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, var(--px-glass-hi) 88%, rgba(255,255,255,0) 100%)', pointerEvents: 'none', zIndex: 2 } }),
+        over ? h('div', { key: 'over', style: { position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)', padding: '3px 6px', borderRadius: 6, background: 'var(--px-ink)', color: 'var(--px-surface)', font: '600 12px/1.2 var(--px-mono)', zIndex: 4 } }, max + '+') : null),
+      h('div', { key: 'cap', style: { position: 'absolute', left: side - 5, width: TW + 10, bottom: B + H - 3, height: CAP, borderRadius: '5px 5px 2px 2px', background: 'var(--px-surface-3)', border: '1.5px solid var(--px-line-strong)' } }),
+      ...[7, 14].map(t => { const passed = days < t && st !== 'ok'; const col = passed ? fg : 'var(--px-ink-3)'; const y = B - 1 + t / max * (H - 6);
+        return h('div', { key: 't' + t, style: { position: 'absolute', left: side + TW - 1, bottom: y - 7, display: 'flex', alignItems: 'center', gap: 3, font: `${passed ? 650 : 500} 11px/14px var(--px-mono)`, color: col, whiteSpace: 'nowrap' } },
+          h('span', { style: { width: 6, borderTop: `${passed ? 2 : 1.5}px solid ${col}` } }), t + 'g'); }),
+      h('div', { key: 'max', style: { position: 'absolute', left: side + TW + 8, bottom: B + H - 14, font: '500 11px/14px var(--px-mono)', color: 'var(--px-ink-3)' } }, max + 'g'),
+      (!over && days > 0) ? h('div', { key: 'lvl', style: { position: 'absolute', right: side + TW + 1, bottom: B - 1 + lvl - 7, display: 'flex', alignItems: 'center', gap: 3, font: '650 11px/14px var(--px-mono)', color: st === 'ok' ? 'var(--px-ink-2)' : fg, whiteSpace: 'nowrap' } },
+        days + 'g', h('span', { style: { width: 6, borderTop: `2px solid ${st === 'ok' ? 'var(--px-ink-2)' : fg}` } })) : null
+    ];
+    return h('div', { 'aria-hidden': 'true', style: { position: 'relative', width: side * 2 + TW, height: H + B + CAP, flex: 'none' } }, ...kids);
+  }
+  setPanel(panel) {
+    const m = this.med();
+    this.setState({ panel, n: panel === 'arrive' ? (m.perPack || 1) : panel === 'recount' ? m.qty : this.state.n });
+  }
+  renderVals() {
+    const m = this.med(), st = m.status || 'ok', meta = Component.META[st];
+    if (!this.pills) { this.pills = []; this.sync(this.target(), false); }
+    const panel = this.state.panel !== undefined ? this.state.panel : (this.props.panel || null);
+    const n = this.state.panel !== undefined ? this.state.n : (panel === 'arrive' ? m.perPack : m.qty);
+    const p = this.props, l = p.size === 'l';
+    return {
+      aria: `${m.name} ${m.dose}, ${m.qty} ${m.qty === 1 ? 'compressa' : 'compresse'}, ${m.days} giorni di copertura, ${meta.w}`,
+      status: st, rx: !!m.rx, name: m.name, dose: m.dose,
+      qtyNum: m.qty, qtyWord: m.qty === 1 ? 'compressa rimasta' : 'compresse rimaste',
+      daysNum: m.days, daysWord: m.days === 1 ? 'giorno di copertura' : 'giorni di copertura',
+      endLabel: m.qty > 0 ? `Finisce ${m.endLabel}` : 'Finita',
+      hasReason: !!m.reason, reason: m.reason, reasonColor: meta.fg,
+      cardBg: meta.bg, cardBc: meta.bc, cardRing: meta.ring,
+      tube: this.tube(m, st),
+      showActions: !p.preview,
+      arriveLabel: '+1 confezione',
+      arriveAria: `Arrivata confezione di ${m.name}: aggiungi ${m.perPack} compresse`,
+      menuOpen: panel === 'menu' ? 'true' : 'false',
+      toggleMenu: () => this.setPanel(panel ? null : 'menu'),
+      isMenu: panel === 'menu', isPanel: panel === 'arrive' || panel === 'recount',
+      panelTitle: panel === 'recount' ? 'Quante ne conti adesso?' : 'Compresse arrivate',
+      submitLabel: panel === 'recount' ? 'Salva' : 'Aggiungi',
+      orderedLabel: m.ordered ? 'Annulla ordine' : 'Segna ordinata',
+      onOrdered: () => { this.setPanel(null); p.onOrdered && p.onOrdered(); },
+      openArrive: () => this.setPanel('arrive'), openRecount: () => this.setPanel('recount'),
+      onHistory: () => { this.setPanel(null); p.onHistory && p.onHistory(); },
+      onEdit: () => { this.setPanel(null); p.onEdit && p.onEdit(); },
+      close: () => this.setPanel(null),
+      arriveOne: () => p.onArrive && p.onArrive(m.perPack),
+      n, onN: e => this.setState({ panel, n: Math.max(0, parseInt(e.target.value || '0', 10) || 0) }),
+      inc: () => this.setState({ panel, n: n + 1 }), dec: () => this.setState({ panel, n: Math.max(0, n - 1) }),
+      submit: () => { if (panel === 'recount') p.onRecount && p.onRecount(n); else p.onArrive && p.onArrive(n); this.setState({ panel: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

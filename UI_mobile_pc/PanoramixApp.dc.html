@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--px-bg:#F3F5F7;--px-surface:#FFFFFF;--px-surface-2:#EDF0F3;--px-surface-3:#E1E6EB;--px-line:#DAE0E6;--px-line-strong:#AEB8C2;--px-ink:#0E1620;--px-ink-2:#44505C;--px-ink-3:#5B6774;--px-primary:#132030;--px-on-primary:#FFFFFF;--px-link:#1C5CC8;--px-focus:#2E78F5;--px-ok-fg:#1A6B43;--px-ok-bg:#E4F2EA;--px-ok-line:#94CBAE;--px-order-fg:#8A4A00;--px-order-bg:#FFF0D9;--px-order-line:#E3A54A;--px-ordered-fg:#1E4DA6;--px-ordered-bg:#E5EDFB;--px-ordered-line:#94B3E8;--px-out-fg:#AE2418;--px-out-bg:#FCEAE7;--px-out-line:#E48C80;--px-tube-bg:#F1F4F7;--px-glass-hi:rgba(255,255,255,.75);--px-shadow:0 1px 2px rgba(14,22,32,.05),0 6px 20px rgba(14,22,32,.05);--px-font:"Geist",system-ui,sans-serif;--px-mono:"Geist Mono",ui-monospace,monospace}
+[data-theme="dark"]{color-scheme:dark;--px-bg:#0C1117;--px-surface:#141A22;--px-surface-2:#1B222C;--px-surface-3:#252E39;--px-line:#29333E;--px-line-strong:#46525F;--px-ink:#E9EEF3;--px-ink-2:#B3BDC7;--px-ink-3:#96A2AE;--px-primary:#E9EEF3;--px-on-primary:#0C1117;--px-link:#86B4FF;--px-ok-fg:#7DD3A4;--px-ok-bg:#11281C;--px-ok-line:#2D6A49;--px-order-fg:#F4C06A;--px-order-bg:#2D2110;--px-order-line:#7D5B22;--px-ordered-fg:#A2C1FF;--px-ordered-bg:#132139;--px-ordered-line:#36538D;--px-out-fg:#FF9C90;--px-out-bg:#331410;--px-out-line:#8C3B31;--px-tube-bg:#0F151C;--px-glass-hi:rgba(255,255,255,.12);--px-shadow:0 1px 2px rgba(0,0,0,.4)}
+body{margin:0;background:var(--px-bg);font-family:var(--px-font);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--px-focus);outline-offset:2px}
+a{color:var(--px-link)}
+a:hover{color:var(--px-ink)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="position:relative;container-type:inline-size;width:100%;min-height:100%;display:flex;flex-direction:column;background:var(--px-bg);color:var(--px-ink);font-family:var(--px-font);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.45">
+
+<sc-if value="{{ showHeader }}" hint-placeholder-val="{{ true }}">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px;padding:0 clamp(16px,3cqi,40px);border-bottom:1px solid var(--px-line);background:var(--px-surface)">
+    <button type="button" onClick="{{ goPiani }}" aria-label="Panoramix, vai a I miei piani" style="display:flex;align-items:center;gap:10px;height:44px;border:none;background:none;padding:0;cursor:pointer;color:var(--px-ink)">
+      <dc-import name="AppIcon" size="32" hint-size="32px,32px"></dc-import>
+      <span style="font:650 19px/1 var(--px-font);letter-spacing:-.02em">Panoramix</span>
+    </button>
+    <button type="button" aria-label="Account di Marco Rossi" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--px-line);background:var(--px-surface-2);font:600 14px/1 var(--px-font);color:var(--px-ink-2);cursor:pointer">MR</button>
+  </header>
+</sc-if>
+
+<sc-if value="{{ isAccesso }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:inherit;display:grid;place-items:center;padding:40px 16px">
+    <div style="width:min(100%,420px);display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <dc-import name="AppIcon" size="48" hint-size="48px,48px"></dc-import>
+        <span style="font:650 26px/1 var(--px-font);letter-spacing:-.02em">Panoramix</span>
+      </div>
+      <div style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:20px;box-shadow:var(--px-shadow)">
+        <sc-if value="{{ acc.email }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h1 style="margin:0;font:650 26px/1.2 var(--px-font);letter-spacing:-.02em">Accedi</h1>
+            <p style="margin:0;color:var(--px-ink-2)">Ti mandiamo un link via email: niente password da ricordare.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label for="px-email" style="font:600 15px/1.3 var(--px-font)">Email</label>
+            <input id="px-email" type="email" autocomplete="email" placeholder="nome@esempio.it" value="{{ acc.value }}" onChange="{{ acc.onEmail }}" aria-invalid="{{ acc.invalid }}" aria-describedby="px-email-err" style="height:48px;padding:0 14px;border-radius:12px;border:1.5px solid {{ acc.border }};background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%">
+            <sc-if value="{{ acc.hasErr }}" hint-placeholder-val="{{ false }}">
+              <div id="px-email-err" role="alert" style="display:flex;gap:8px;align-items:flex-start;color:var(--px-out-fg);font:500 15px/1.4 var(--px-font)"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="flex:none;margin-top:1px"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M8 4.2v4.6" stroke="var(--px-surface)" stroke-width="1.9" stroke-linecap="round"></path><circle cx="8" cy="11.5" r="1.1" fill="var(--px-surface)"></circle></svg>Controlla l’indirizzo: sembra mancare la @.</div>
+            </sc-if>
+          </div>
+          <button type="button" onClick="{{ acc.send }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Invia il link</button>
+        </sc-if>
+        <sc-if value="{{ acc.scaduto }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex;gap:12px;padding:14px;border-radius:12px;background:var(--px-out-bg);border:1px solid var(--px-out-line);color:var(--px-ink)">
+            <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" style="flex:none;margin-top:2px;color:var(--px-out-fg)"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" stroke="var(--px-out-bg)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+            <div style="display:flex;flex-direction:column;gap:4px"><strong style="font:650 16px/1.3 var(--px-font);color:var(--px-out-fg)">Il link è scaduto</strong><span style="color:var(--px-ink-2)">I link di accesso valgono 15 minuti e si usano una volta sola. Chiedine uno nuovo.</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label for="px-email2" style="font:600 15px/1.3 var(--px-font)">Email</label>
+            <input id="px-email2" type="email" value="marco.rossi@icloud.com" readonly style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%">
+          </div>
+          <button type="button" onClick="{{ acc.send }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Invia un nuovo link</button>
+        </sc-if>
+        <sc-if value="{{ acc.inviato }}" hint-placeholder-val="{{ false }}">
+          <div style="width:56px;height:56px;border-radius:16px;background:var(--px-ok-bg);border:1px solid var(--px-ok-line);display:grid;place-items:center;color:var(--px-ok-fg)"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="6" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"></rect><path d="M4 8l10 7 10-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></div>
+          <div role="status" style="display:flex;flex-direction:column;gap:8px">
+            <h1 style="margin:0;font:650 26px/1.2 var(--px-font);letter-spacing:-.02em">Ti abbiamo inviato un link</h1>
+            <p style="margin:0;color:var(--px-ink-2)">Apri la posta di <strong style="color:var(--px-ink)">marco.rossi@icloud.com</strong> e tocca il link entro 15 minuti. Se non lo trovi, guarda nella cartella spam.</p>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button type="button" onClick="{{ acc.again }}" style="flex:1 1 160px;height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 16px/1 var(--px-font);cursor:pointer">Usa un’altra email</button>
+            <button type="button" onClick="{{ acc.toNome }}" style="flex:1 1 160px;height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 16px/1 var(--px-font);cursor:pointer">Invia di nuovo</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ acc.nome }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h1 style="margin:0;font:650 26px/1.2 var(--px-font);letter-spacing:-.02em">Benvenuto in Panoramix</h1>
+            <p style="margin:0;color:var(--px-ink-2)">È il tuo primo accesso. Come ti chiami? Useremo il nome nelle email di avviso.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label for="px-nome" style="font:600 15px/1.3 var(--px-font)">Nome</label>
+            <input id="px-nome" autocomplete="given-name" value="Marco" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label for="px-cognome" style="font:600 15px/1.3 var(--px-font)">Cognome</label>
+            <input id="px-cognome" autocomplete="family-name" value="Rossi" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%">
+          </div>
+          <button type="button" onClick="{{ goPiani }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Continua</button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showMain }}" hint-placeholder-val="{{ true }}">
+<main style="flex:1;width:100%;max-width:1240px;margin:0 auto;padding:clamp(16px,3cqi,40px) clamp(16px,3cqi,40px) 96px;display:flex;flex-direction:column;gap:24px">
+
+  <sc-if value="{{ isPiani }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h1 style="margin:0;font:650 clamp(28px,2.6cqi,38px)/1.1 var(--px-font);letter-spacing:-.02em">I miei piani</h1>
+        <p style="margin:0;color:var(--px-ink-2)">Un piano per ogni persona di cui segui le medicine.</p>
+      </div>
+      <button type="button" onClick="{{ newPlan }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Nuovo piano</button>
+    </div>
+    <sc-if value="{{ pianiLoading }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display:flex;flex-direction:column;gap:12px">
+        <span style="color:var(--px-ink-2)">Caricamento dei piani…</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px" aria-hidden="true">
+          <div style="height:220px;border-radius:18px;background:var(--px-surface);border:1px solid var(--px-line);padding:20px;display:flex;flex-direction:column;gap:14px"><div style="width:55%;height:22px;border-radius:6px;background:var(--px-surface-2)"></div><div style="width:35%;height:14px;border-radius:6px;background:var(--px-surface-2)"></div><div style="height:50px;border-radius:12px;background:var(--px-surface-2)"></div><div style="width:70%;height:14px;border-radius:6px;background:var(--px-surface-2)"></div></div>
+          <div style="height:220px;border-radius:18px;background:var(--px-surface);border:1px solid var(--px-line);padding:20px;display:flex;flex-direction:column;gap:14px"><div style="width:45%;height:22px;border-radius:6px;background:var(--px-surface-2)"></div><div style="width:30%;height:14px;border-radius:6px;background:var(--px-surface-2)"></div><div style="height:50px;border-radius:12px;background:var(--px-surface-2)"></div><div style="width:60%;height:14px;border-radius:6px;background:var(--px-surface-2)"></div></div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ pianiEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:48px 20px;border-radius:18px;border:1.5px dashed var(--px-line-strong);background:var(--px-surface)">
+        <div style="display:flex;align-items:flex-end;gap:10px;height:48px" aria-hidden="true">
+          <dc-import name="Pill" color="#FF5E4D" shape="capsula" size="44" rotate="-24" hint-size="44px,20px"></dc-import>
+          <dc-import name="Pill" color="#FFC020" shape="tonda" size="30" hint-size="24px,24px"></dc-import>
+          <dc-import name="Pill" color="#12C2B0" shape="ovale" size="30" rotate="18" hint-size="30px,20px"></dc-import>
+        </div>
+        <h2 style="margin:0;font:650 22px/1.25 var(--px-font)">Nessun piano, per ora</h2>
+        <p style="margin:0;max-width:440px;color:var(--px-ink-2);text-wrap:pretty">Un piano raccoglie le medicine di una persona: le dosi della giornata, le scorte in casa e gli avvisi per riordinare. Inizia da chi assisti, per esempio la nonna.</p>
+        <button type="button" onClick="{{ newPlan }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Crea il primo piano</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ pianiList }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px">
+        <sc-for list="{{ plans }}" as="pl" hint-placeholder-count="2">
+          <button type="button" onClick="{{ pl.onOpen }}" aria-label="{{ pl.aria }}" style="text-align:left;display:flex;flex-direction:column;gap:16px;padding:20px;border-radius:18px;background:var(--px-surface);border:1px solid var(--px-line);box-shadow:var(--px-shadow);cursor:pointer;color:var(--px-ink)" style-hover="border-color:var(--px-line-strong)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;width:100%">
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                <span style="font:650 22px/1.2 var(--px-font);letter-spacing:-.01em">{{ pl.name }}</span>
+                <span style="color:var(--px-ink-2)">{{ pl.count }} · {{ pl.mode }}</span>
+              </div>
+              <dc-import name="StatusChip" status="{{ pl.worst }}" hint-size="96px,28px"></dc-import>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;padding:12px 14px;background:var(--px-surface-2);border-radius:12px;width:100%;min-height:52px">
+              <sc-for list="{{ pl.pills }}" as="pp" hint-placeholder-count="3"><dc-import name="Pill" color="{{ pp.color }}" shape="{{ pp.shape }}" size="28" hint-size="28px,20px"></dc-import></sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%">
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 14px/1.3 var(--px-font);color:var(--px-ink-3)">{{ pl.nextLabel }}</span><span style="font:600 16px/1.35 var(--px-font)">{{ pl.next }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 14px/1.3 var(--px-font);color:var(--px-ink-3)">Scorte</span><span style="font:600 16px/1.35 var(--px-font)">{{ pl.summary }}</span></div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ inPlan }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <button type="button" onClick="{{ goPiani }}" style="align-self:flex-start;height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 0;border:none;background:none;color:var(--px-ink-2);font:500 15px/1 var(--px-font);cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>I miei piani</button>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h1 style="margin:0;font:650 clamp(28px,2.6cqi,38px)/1.1 var(--px-font);letter-spacing:-.02em">Nonna Anna</h1>
+          <p style="margin:0;color:var(--px-ink-2)">Portapillole settimanale · preparazione la domenica</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" onClick="{{ editPlan }}" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1 var(--px-font);white-space:nowrap;cursor:pointer">Impostazioni piano</button>
+          <button type="button" onClick="{{ newMed }}" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1 var(--px-font);display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Aggiungi medicinale</button>
+        </div>
+      </div>
+      <div role="tablist" aria-label="Viste del piano" style="display:flex;gap:4px;padding:4px;background:var(--px-surface-2);border-radius:14px;width:min(100%,360px)">
+        <button type="button" role="tab" aria-selected="{{ tabA.sel }}" onClick="{{ tabA.go }}" style="flex:1;height:44px;border-radius:10px;border:none;background:{{ tabA.bg }};box-shadow:{{ tabA.sh }};color:{{ tabA.fg }};font:600 15px/1 var(--px-font);cursor:pointer">Dispenser</button>
+        <button type="button" role="tab" aria-selected="{{ tabB.sel }}" onClick="{{ tabB.go }}" style="flex:1;height:44px;border-radius:10px;border:none;background:{{ tabB.bg }};box-shadow:{{ tabB.sh }};color:{{ tabB.fg }};font:600 15px/1 var(--px-font);cursor:pointer">Calendario</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDispenser }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ dispEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:48px 20px;border-radius:18px;border:1.5px dashed var(--px-line-strong);background:var(--px-surface)">
+        <h2 style="margin:0;font:650 22px/1.25 var(--px-font)">Ancora nessun medicinale</h2>
+        <p style="margin:0;max-width:460px;color:var(--px-ink-2);text-wrap:pretty">Aggiungi le medicine di Nonna Anna una alla volta: dose, orari e quante compresse ci sono in casa. Panoramix calcola per quanti giorni bastano.</p>
+        <button type="button" onClick="{{ newMed }}" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Aggiungi il primo medicinale</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ dispFull }}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Riepilogo del piano" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1px;background:var(--px-line);border:1px solid var(--px-line);border-radius:18px;overflow:hidden">
+        <div style="background:var(--px-surface);padding:18px 20px;display:flex;flex-direction:column;gap:6px">
+          <span style="font:500 14px/1.3 var(--px-font);color:var(--px-ink-3)">Prossima preparazione</span>
+          <span style="font:650 20px/1.25 var(--px-font)">{{ strip.next }}</span>
+          <sc-if value="{{ strip.allOk }}" hint-placeholder-val="{{ false }}"><span style="display:flex;gap:8px;align-items:center;font:600 15px/1.35 var(--px-font);color:var(--px-ok-fg)"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="flex:none"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M4.6 8.3l2.2 2.2 4.6-4.8" stroke="var(--px-surface)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>C’è tutto per la settimana</span></sc-if>
+          <sc-if value="{{ strip.notOk }}" hint-placeholder-val="{{ true }}"><span style="display:flex;gap:8px;align-items:flex-start;font:600 15px/1.35 var(--px-font);color:var(--px-out-fg)"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="flex:none;margin-top:1px"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" stroke="var(--px-surface)" stroke-width="1.9" stroke-linecap="round"></path></svg>{{ strip.missing }}</span></sc-if>
+        </div>
+        <div style="background:var(--px-surface);padding:18px 20px;display:flex;flex-direction:column;gap:6px">
+          <span style="font:500 14px/1.3 var(--px-font);color:var(--px-ink-3)">Da ordinare</span>
+          <div style="display:flex;align-items:baseline;gap:10px"><span style="font:650 32px/1 var(--px-font);letter-spacing:-.02em">{{ strip.toOrder }}</span><span style="font:600 16px/1.3 var(--px-font)">{{ strip.toOrderWord }}</span></div>
+          <span style="color:var(--px-ink-2);font-size:15px">{{ strip.toOrderNames }}</span>
+        </div>
+        <div style="background:var(--px-surface);padding:18px 20px;display:flex;flex-direction:column;gap:10px;justify-content:center">
+          <sc-if value="{{ strip.notPrepared }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ prepare }}" style="min-height:48px;padding:8px 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1.2 var(--px-font);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.3l3 3 6-6.3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Portapillole preparato</button>
+            <span style="color:var(--px-ink-2);font-size:15px;text-wrap:pretty">Toglie dalle scorte le dosi della settimana 9–15 novembre.</span>
+          </sc-if>
+          <sc-if value="{{ strip.prepared }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;gap:8px;align-items:center;font:600 16px/1.35 var(--px-font);color:var(--px-ok-fg)"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="flex:none"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M4.6 8.3l2.2 2.2 4.6-4.8" stroke="var(--px-surface)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Preparato oggi alle 10:42</span>
+            <button type="button" onClick="{{ unprepare }}" style="min-height:44px;padding:8px 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1.2 var(--px-font);cursor:pointer">Annulla preparazione</button>
+          </sc-if>
+        </div>
+      </section>
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px">
+        <h2 style="margin:0;font:650 20px/1.25 var(--px-font)">Scorte in casa</h2>
+        <p style="margin:0;color:var(--px-ink-2);font-size:15px">Livello = giorni di copertura, stessa scala per tutti: 0–60 giorni. Tacche a 7 e 14.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;align-items:stretch">
+        <sc-for list="{{ disp }}" as="d" hint-placeholder-count="4">
+          <dc-import name="Dispenser" med="{{ d.view }}" size="{{ dsize }}" scale-max="60" panel="{{ d.panel }}" on-arrive="{{ d.onArrive }}" on-ordered="{{ d.onOrdered }}" on-recount="{{ d.onRecount }}" on-edit="{{ d.onEdit }}" on-history="{{ d.onHistory }}" hint-size="100%,560px"></dc-import>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isCal }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <button type="button" onClick="{{ cal.prev }}" aria-label="Settimana precedente" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);display:grid;place-items:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <h2 aria-live="polite" style="margin:0 8px;font:650 18px/1.2 var(--px-font);min-width:0">{{ cal.label }}</h2>
+        <button type="button" onClick="{{ cal.next }}" aria-label="Settimana successiva" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);display:grid;place-items:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5L13 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <sc-if value="{{ cal.notCurrent }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ cal.reset }}" style="height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 15px/1 var(--px-font);cursor:pointer">Prossima settimana</button></sc-if>
+        <a href="PanoramixStampa.dc.html" target="_blank" style="height:44px;padding:0 16px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 15px/1 var(--px-font);display:inline-flex;align-items:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="4.5" y="2" width="9" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"></rect><rect x="2" y="6.5" width="14" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"></rect><rect x="5" y="11" width="8" height="5" rx="1" fill="var(--px-primary)" stroke="currentColor" stroke-width="1.6"></rect></svg>Stampa</a>
+      </div>
+    </div>
+    <div style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:clamp(8px,1.4cqi,20px);display:flex;flex-direction:column;gap:6px">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(3px,.6cqi,10px)">
+        <sc-for list="{{ cal.days }}" as="dd" hint-placeholder-count="7">
+          <div style="text-align:center;padding:8px 0;border-radius:10px;background:{{ dd.bg }};color:{{ dd.fg }}"><div style="font:500 13px/1.2 var(--px-font)">{{ dd.dow }}</div><div style="font:650 18px/1.2 var(--px-font)">{{ dd.num }}</div></div>
+        </sc-for>
+      </div>
+      <sc-for list="{{ cal.slots }}" as="sl" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:6px;padding-top:10px">
+          <div style="display:flex;align-items:baseline;gap:8px;padding:0 2px"><span style="font:650 15px/1 var(--px-font)">{{ sl.label }}</span><span style="font:500 13px/1 var(--px-mono);color:var(--px-ink-3)">{{ sl.time }}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(3px,.6cqi,10px)">
+            <sc-for list="{{ sl.cells }}" as="c" hint-placeholder-count="7">
+              <div aria-label="{{ c.aria }}" style="min-height:64px;background:var(--px-surface-2);border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:stretch;gap:8px">
+                <sc-for list="{{ c.items }}" as="it" hint-placeholder-count="1">
+                  <sc-if value="{{ desk }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding:0 6px"><dc-import name="Pill" color="{{ it.color }}" shape="{{ it.shape }}" size="24" hint-size="24px,18px"></dc-import><span style="flex:1;min-width:0;font:500 15px/1.2 var(--px-font);overflow:hidden;text-overflow:ellipsis">{{ it.name }}</span><span style="font:650 15px/1 var(--px-mono)">{{ it.q }}</span></div></sc-if>
+                  <sc-if value="{{ phone }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><dc-import name="Pill" color="{{ it.color }}" shape="{{ it.shape }}" size="22" hint-size="22px,16px"></dc-import><span style="font:650 13px/1 var(--px-mono)">{{ it.q }}</span></div></sc-if>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 24px">
+      <sc-for list="{{ legend }}" as="lg" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:10px"><dc-import name="Pill" color="{{ lg.color }}" shape="{{ lg.shape }}" size="26" hint-size="26px,20px"></dc-import><span style="font:600 15px/1.3 var(--px-font)">{{ lg.name }} <span style="font-weight:400;color:var(--px-ink-2)">{{ lg.dose }}</span></span></div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isStorico }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <button type="button" onClick="{{ goDisp }}" style="align-self:flex-start;height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 0;border:none;background:none;color:var(--px-ink-2);font:500 15px/1 var(--px-font);cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Nonna Anna</button>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px">
+        <div style="width:56px;height:56px;border-radius:14px;background:var(--px-surface-2);display:grid;place-items:center"><dc-import name="Pill" color="{{ hist.color }}" shape="{{ hist.shape }}" size="36" hint-size="36px,20px"></dc-import></div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:200px">
+          <h1 style="margin:0;font:650 clamp(26px,2.4cqi,34px)/1.1 var(--px-font);letter-spacing:-.02em">Storico · {{ hist.name }} <span style="font-weight:500;color:var(--px-ink-2)">{{ hist.dose }}</span></h1>
+          <p style="margin:0;color:var(--px-ink-2)">{{ hist.summary }}</p>
+        </div>
+        <dc-import name="StatusChip" status="{{ hist.status }}" hint-size="96px,28px"></dc-import>
+      </div>
+    </div>
+    <div role="radiogroup" aria-label="Filtra movimenti" style="display:flex;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ hist.filters }}" as="hf" hint-placeholder-count="4">
+        <button type="button" role="radio" aria-checked="{{ hf.sel }}" onClick="{{ hf.go }}" style="height:44px;padding:0 16px;border-radius:999px;border:1px solid {{ hf.bc }};background:{{ hf.bg }};color:{{ hf.fg }};font:600 15px/1 var(--px-font);cursor:pointer">{{ hf.label }}</button>
+      </sc-for>
+    </div>
+    <ol style="list-style:none;margin:0;padding:0;background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;overflow:hidden">
+      <sc-for list="{{ hist.rows }}" as="r" hint-placeholder-count="6">
+        <li style="display:flex;align-items:center;gap:14px;padding:14px clamp(14px,2cqi,24px);border-top:1px solid var(--px-line)">
+          <span aria-hidden="true" style="flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--px-surface-2);font:650 18px/1 var(--px-mono);color:var(--px-ink-2)">{{ r.icon }}</span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font:600 16px/1.3 var(--px-font)">{{ r.title }}</span>
+            <span style="font:400 15px/1.35 var(--px-font);color:var(--px-ink-2)">{{ r.date }}{{ r.note }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span style="font:650 18px/1.2 var(--px-mono)">{{ r.delta }}</span>
+            <span style="font:400 14px/1.3 var(--px-font);color:var(--px-ink-3)">Restano {{ r.after }}</span>
+          </div>
+        </li>
+      </sc-for>
+    </ol>
+  </sc-if>
+
+  <sc-if value="{{ isPlanForm }}" hint-placeholder-val="{{ false }}">
+    <div style="width:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+      <button type="button" onClick="{{ planBack }}" style="align-self:flex-start;height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 0;border:none;background:none;color:var(--px-ink-2);font:500 15px/1 var(--px-font);cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>{{ pf.backLabel }}</button>
+      <h1 style="margin:0;font:650 clamp(28px,2.6cqi,36px)/1.1 var(--px-font);letter-spacing:-.02em">{{ pf.title }}</h1>
+      <div style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+        <label for="px-pname" style="font:600 15px/1.3 var(--px-font)">Nome della persona</label>
+        <input id="px-pname" value="{{ pf.name }}" onChange="{{ pf.onName }}" placeholder="Es. Nonna Anna" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%">
+      </div>
+      <fieldset style="margin:0;background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+        <legend style="float:left;padding:0;font:650 18px/1.3 var(--px-font)">Modalità delle scorte</legend>
+        <sc-for list="{{ pf.modes }}" as="md" hint-placeholder-count="2">
+          <button type="button" role="radio" aria-checked="{{ md.sel }}" onClick="{{ md.go }}" style="display:flex;gap:14px;align-items:flex-start;text-align:left;padding:16px;border-radius:14px;border:1.5px solid {{ md.bc }};background:{{ md.bg }};cursor:pointer;color:var(--px-ink)">
+            <span aria-hidden="true" style="flex:none;width:22px;height:22px;border-radius:50%;border:2px solid {{ md.dot }};box-shadow:inset 0 0 0 4px var(--px-surface);background:{{ md.fill }};margin-top:1px"></span>
+            <span style="display:flex;flex-direction:column;gap:4px"><span style="font:600 16px/1.3 var(--px-font)">{{ md.label }}</span><span style="font:400 15px/1.4 var(--px-font);color:var(--px-ink-2)">{{ md.sub }}</span></span>
+          </button>
+        </sc-for>
+      </fieldset>
+      <sc-if value="{{ pf.weekly }}" hint-placeholder-val="{{ true }}">
+        <fieldset style="margin:0;background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+          <legend style="float:left;padding:0;font:650 18px/1.3 var(--px-font)">Giorno di preparazione</legend>
+          <p style="margin:0;color:var(--px-ink-2);font-size:15px">Il giorno in cui riempi il portapillole. Da quel giorno le dosi della settimana escono dalle scorte.</p>
+          <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">
+            <sc-for list="{{ pf.days }}" as="pd" hint-placeholder-count="7">
+              <button type="button" role="radio" aria-checked="{{ pd.sel }}" aria-label="{{ pd.full }}" onClick="{{ pd.go }}" style="height:48px;border-radius:12px;border:1.5px solid {{ pd.bc }};background:{{ pd.bg }};color:{{ pd.fg }};font:650 15px/1 var(--px-font);cursor:pointer">{{ pd.short }}</button>
+            </sc-for>
+          </div>
+        </fieldset>
+      </sc-if>
+      <fieldset style="margin:0;background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:4px">
+        <legend style="float:left;padding:0 0 8px;font:650 18px/1.3 var(--px-font)">Avvisi via email</legend>
+        <sc-for list="{{ pf.alerts }}" as="al" hint-placeholder-count="3">
+          <button type="button" role="switch" aria-checked="{{ al.on }}" onClick="{{ al.go }}" style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:6px 0;border:none;border-top:1px solid var(--px-line);background:none;text-align:left;cursor:pointer;color:var(--px-ink)">
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font:600 16px/1.3 var(--px-font)">{{ al.label }}</span><span style="font:400 15px/1.35 var(--px-font);color:var(--px-ink-2)">{{ al.sub }}</span></span>
+            <span aria-hidden="true" style="flex:none;width:44px;height:26px;border-radius:999px;background:{{ al.track }};position:relative;transition:background .15s"><span style="position:absolute;top:3px;left:{{ al.knob }};width:20px;height:20px;border-radius:50%;background:var(--px-surface);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s"></span></span>
+          </button>
+        </sc-for>
+      </fieldset>
+      <fieldset style="margin:0;background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+        <legend style="float:left;padding:0;font:650 18px/1.3 var(--px-font)">Chi riceve gli avvisi</legend>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;background:var(--px-surface-2);font:500 15px/1.2 var(--px-font)">Tu · marco.rossi@icloud.com</span>
+          <sc-for list="{{ pf.recs }}" as="rc" hint-placeholder-count="2">
+            <span style="display:inline-flex;align-items:center;gap:2px;min-height:40px;padding:0 2px 0 14px;border-radius:999px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:500 15px/1.2 var(--px-font)">{{ rc.email }}<button type="button" onClick="{{ rc.remove }}" aria-label="{{ rc.aria }}" style="width:40px;height:40px;border-radius:50%;border:none;background:none;display:grid;place-items:center;cursor:pointer;color:var(--px-ink-2)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label for="px-rec" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Aggiungi un destinatario</label>
+          <input id="px-rec" type="email" value="{{ pf.newEmail }}" onChange="{{ pf.onNew }}" disabled="{{ pf.full }}" placeholder="Aggiungi un’email" aria-describedby="px-rec-help" style="flex:1 1 220px;min-width:0;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink)">
+          <button type="button" onClick="{{ pf.add }}" disabled="{{ pf.full }}" style="height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 16px/1 var(--px-font);cursor:pointer">Aggiungi</button>
+        </div>
+        <span id="px-rec-help" aria-live="polite" style="font:500 15px/1.4 var(--px-font);color:{{ pf.helpColor }}">{{ pf.help }}</span>
+      </fieldset>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" onClick="{{ pf.save }}" style="flex:1 1 200px;height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Salva piano</button>
+        <button type="button" onClick="{{ planBack }}" style="flex:1 1 140px;height:48px;padding:0 20px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 16px/1 var(--px-font);cursor:pointer">Annulla</button>
+      </div>
+      <sc-if value="{{ pf.canDelete }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ pf.askDel }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ pf.confirm }}" style="align-self:flex-start;height:44px;padding:0 4px;border:none;background:none;color:var(--px-out-fg);font:600 15px/1 var(--px-font);text-decoration:underline;text-underline-offset:3px;cursor:pointer">Elimina piano</button>
+        </sc-if>
+        <sc-if value="{{ pf.confirming }}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-label="Conferma eliminazione" style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:14px;border:1.5px solid var(--px-out-fg);background:var(--px-out-bg)">
+            <strong style="font:650 16px/1.35 var(--px-font)">Eliminare il piano di Nonna Anna?</strong>
+            <span style="color:var(--px-ink-2)">Spariscono le 4 medicine, il calendario e lo storico dei movimenti. Non si può annullare.</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" onClick="{{ pf.doDelete }}" style="height:44px;padding:0 16px;border-radius:12px;border:none;background:var(--px-out-fg);color:var(--px-surface);font:600 15px/1 var(--px-font);cursor:pointer">Elimina definitivamente</button>
+              <button type="button" onClick="{{ pf.cancelDel }}" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1 var(--px-font);cursor:pointer">Tienilo</button>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isMedForm }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button type="button" onClick="{{ goDisp }}" style="align-self:flex-start;height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 0;border:none;background:none;color:var(--px-ink-2);font:500 15px/1 var(--px-font);cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Nonna Anna</button>
+      <h1 style="margin:0;font:650 clamp(28px,2.6cqi,36px)/1.1 var(--px-font);letter-spacing:-.02em">{{ mf.title }}</h1>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <div style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px">
+        <section style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:650 18px/1.3 var(--px-font)">Medicinale</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px">
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-mn" style="font:600 15px/1.3 var(--px-font)">Nome</label><input id="px-mn" value="{{ mf.name }}" onChange="{{ mf.on.name }}" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-md" style="font:600 15px/1.3 var(--px-font)">Dosaggio</label><input id="px-md" value="{{ mf.dose }}" onChange="{{ mf.on.dose }}" placeholder="Es. 5 mg" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px"><label for="px-mdesc" style="font:600 15px/1.3 var(--px-font)">Descrizione <span style="font-weight:400;color:var(--px-ink-3)">facoltativa</span></label><input id="px-mdesc" value="{{ mf.desc }}" onChange="{{ mf.on.desc }}" placeholder="A cosa serve, come riconoscerla" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+        </section>
+        <section style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:650 18px/1.3 var(--px-font)">Confezione e scorte</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px">
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-pp" style="font:600 15px/1.3 var(--px-font)">Compresse per confezione</label><input id="px-pp" type="number" inputmode="numeric" min="1" value="{{ mf.perPack }}" onChange="{{ mf.on.perPack }}" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-qty" style="font:600 15px/1.3 var(--px-font)">Scorta in casa</label><input id="px-qty" type="number" inputmode="numeric" min="0" value="{{ mf.qty }}" onChange="{{ mf.on.qty }}" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+          </div>
+          <button type="button" role="switch" aria-checked="{{ mf.rxOn }}" onClick="{{ mf.toggleRx }}" style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:4px 0;border:none;border-top:1px solid var(--px-line);background:none;text-align:left;cursor:pointer;color:var(--px-ink)">
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font:600 16px/1.3 var(--px-font)">Serve la ricetta</span><span style="font:400 15px/1.35 var(--px-font);color:var(--px-ink-2)">Negli avvisi trovi il testo pronto per il medico.</span></span>
+            <span aria-hidden="true" style="flex:none;width:44px;height:26px;border-radius:999px;background:{{ mf.rxTrack }};position:relative"><span style="position:absolute;top:3px;left:{{ mf.rxKnob }};width:20px;height:20px;border-radius:50%;background:var(--px-surface);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s"></span></span>
+          </button>
+        </section>
+        <section style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:650 18px/1.3 var(--px-font)">Aspetto della compressa</h2>
+          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+            <div aria-label="{{ mf.previewAria }}" role="img" style="width:112px;height:112px;flex:none;border-radius:18px;background:var(--px-surface-2);display:grid;place-items:center"><dc-import name="Pill" color="{{ mf.color }}" shape="{{ mf.shape }}" size="76" rotate="-14" hint-size="76px,40px"></dc-import></div>
+            <div style="flex:1 1 200px;display:flex;flex-direction:column;gap:10px">
+              <span style="font:600 15px/1.3 var(--px-font)">Colore · <span style="font-weight:400;color:var(--px-ink-2)">{{ mf.colorName }}</span></span>
+              <div role="radiogroup" aria-label="Colore" style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ mf.colors }}" as="co" hint-placeholder-count="6">
+                  <button type="button" role="radio" aria-checked="{{ co.sel }}" aria-label="{{ co.name }}" onClick="{{ co.go }}" style="width:44px;height:44px;border-radius:50%;border:none;padding:0;cursor:pointer;background:{{ co.bg }};box-shadow:{{ co.ring }}"></button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font:600 15px/1.3 var(--px-font)">Forma</span>
+            <div role="radiogroup" aria-label="Forma" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));gap:8px">
+              <sc-for list="{{ mf.shapes }}" as="sh" hint-placeholder-count="4">
+                <button type="button" role="radio" aria-checked="{{ sh.sel }}" onClick="{{ sh.go }}" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 8px;border-radius:14px;border:1.5px solid {{ sh.bc }};background:{{ sh.bg }};cursor:pointer;color:var(--px-ink)"><span style="height:28px;display:grid;place-items:center"><dc-import name="Pill" color="{{ mf.color }}" shape="{{ sh.id }}" size="40" hint-size="40px,20px"></dc-import></span><span style="font:600 15px/1 var(--px-font)">{{ sh.label }}</span></button>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+        <section style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:650 18px/1.3 var(--px-font)">Quante compresse e quando</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px">
+            <sc-for list="{{ mf.slots }}" as="ds" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--px-surface-2)">
+                <span style="font:600 15px/1.3 var(--px-font)">{{ ds.label }}</span>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+                  <button type="button" onClick="{{ ds.dec }}" aria-label="{{ ds.decAria }}" style="width:44px;height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 20px/1 var(--px-font);cursor:pointer">−</button>
+                  <output aria-live="polite" style="font:650 22px/1 var(--px-font)">{{ ds.val }}</output>
+                  <button type="button" onClick="{{ ds.inc }}" aria-label="{{ ds.incAria }}" style="width:44px;height:44px;border-radius:10px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 20px/1 var(--px-font);cursor:pointer">+</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font:600 15px/1.3 var(--px-font)">Frequenza</span>
+          <div role="radiogroup" aria-label="Frequenza" style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ mf.freqs }}" as="fq" hint-placeholder-count="5">
+              <button type="button" role="radio" aria-checked="{{ fq.sel }}" onClick="{{ fq.go }}" style="display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid {{ fq.bc }};background:{{ fq.bg }};text-align:left;cursor:pointer;color:var(--px-ink)">
+                <span aria-hidden="true" style="flex:none;width:20px;height:20px;border-radius:50%;border:2px solid {{ fq.dot }};box-shadow:inset 0 0 0 3px var(--px-surface);background:{{ fq.fill }}"></span>
+                <span style="font:500 16px/1.3 var(--px-font)">{{ fq.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ mf.isGiorni }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">
+              <sc-for list="{{ mf.wd }}" as="w" hint-placeholder-count="7">
+                <button type="button" aria-pressed="{{ w.on }}" aria-label="{{ w.full }}" onClick="{{ w.go }}" style="height:48px;border-radius:12px;border:1.5px solid {{ w.bc }};background:{{ w.bg }};color:{{ w.fg }};font:650 15px/1 var(--px-font);cursor:pointer">{{ w.short }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ mf.isN }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label for="px-n" style="font:500 16px/1.3 var(--px-font)">Ogni</label><input id="px-n" type="number" min="2" value="{{ mf.n }}" onChange="{{ mf.on.n }}" style="width:88px;height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 16px/1 var(--px-font);color:var(--px-ink);text-align:center"><span>giorni</span></div>
+          </sc-if>
+          <sc-if value="{{ mf.isCiclo }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><input aria-label="Giorni sì" type="number" min="1" value="{{ mf.x }}" onChange="{{ mf.on.x }}" style="width:80px;height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 16px/1 var(--px-font);color:var(--px-ink);text-align:center"><span>giorni sì, poi</span><input aria-label="Giorni no" type="number" min="1" value="{{ mf.y }}" onChange="{{ mf.on.y }}" style="width:80px;height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:600 16px/1 var(--px-font);color:var(--px-ink);text-align:center"><span>giorni no</span></div>
+          </sc-if>
+          <div role="status" aria-live="polite" style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:14px;background:var(--px-surface-2);border:1px solid var(--px-line)">
+            <span style="font:500 13px/1.2 var(--px-mono);color:var(--px-ink-3);letter-spacing:.04em;text-transform:uppercase">Riepilogo</span>
+            <span style="font:650 18px/1.35 var(--px-font)">{{ mf.sum1 }}</span>
+            <span style="color:var(--px-ink-2)">{{ mf.sum2 }}</span>
+          </div>
+        </section>
+        <section style="background:var(--px-surface);border:1px solid var(--px-line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:650 18px/1.3 var(--px-font)">Periodo</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:16px">
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-start" style="font:600 15px/1.3 var(--px-font)">Inizio</label><input id="px-start" inputmode="numeric" value="{{ mf.start }}" onChange="{{ mf.on.start }}" placeholder="gg/mm/aaaa" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><label for="px-end" style="font:600 15px/1.3 var(--px-font)">Fine <span style="font-weight:400;color:var(--px-ink-3)">facoltativa</span></label><input id="px-end" inputmode="numeric" value="{{ mf.end }}" onChange="{{ mf.on.end }}" placeholder="gg/mm/aaaa" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);font:400 16px/1 var(--px-font);color:var(--px-ink);width:100%"></div>
+          </div>
+        </section>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" onClick="{{ mf.save }}" style="flex:1 1 200px;height:48px;padding:0 20px;border-radius:12px;border:none;background:var(--px-primary);color:var(--px-on-primary);font:600 16px/1 var(--px-font);cursor:pointer">Salva medicinale</button>
+          <button type="button" onClick="{{ goDisp }}" style="flex:1 1 140px;height:48px;padding:0 20px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 16px/1 var(--px-font);cursor:pointer">Annulla</button>
+        </div>
+        <sc-if value="{{ mf.askDel }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ mf.confirm }}" style="align-self:flex-start;height:44px;padding:0 4px;border:none;background:none;color:var(--px-out-fg);font:600 15px/1 var(--px-font);text-decoration:underline;text-underline-offset:3px;cursor:pointer">Elimina medicinale</button>
+        </sc-if>
+        <sc-if value="{{ mf.confirming }}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-label="Conferma eliminazione" style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:14px;border:1.5px solid var(--px-out-fg);background:var(--px-out-bg)">
+            <strong style="font:650 16px/1.35 var(--px-font)">Togliere {{ mf.name }} dal piano?</strong>
+            <span style="color:var(--px-ink-2)">Si perdono anche le scorte registrate e lo storico dei movimenti.</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" onClick="{{ mf.doDelete }}" style="height:44px;padding:0 16px;border-radius:12px;border:none;background:var(--px-out-fg);color:var(--px-surface);font:600 15px/1 var(--px-font);cursor:pointer">Elimina</button>
+              <button type="button" onClick="{{ mf.cancelDel }}" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--px-line-strong);background:var(--px-surface);color:var(--px-ink);font:600 15px/1 var(--px-font);cursor:pointer">Annulla</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ desk }}" hint-placeholder-val="{{ false }}">
+        <aside aria-label="Anteprima" style="flex:0 1 300px;min-width:260px;position:sticky;top:24px;display:flex;flex-direction:column;gap:10px">
+          <span style="font:500 13px/1.2 var(--px-mono);color:var(--px-ink-3);letter-spacing:.04em;text-transform:uppercase">Anteprima dal vivo</span>
+          <dc-import name="Dispenser" med="{{ mf.preview }}" size="l" scale-max="60" preview="{{ true }}" hint-size="100%,520px"></dc-import>
+        </aside>
+      </sc-if>
+    </div>
+  </sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:sticky;bottom:0;height:0;z-index:30">
+    <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;padding:0 16px;pointer-events:none">
+      <div role="status" aria-live="polite" style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 6px 6px 16px;border-radius:14px;background:var(--px-ink);color:var(--px-surface);box-shadow:0 10px 30px rgba(14,22,32,.25);pointer-events:auto;max-width:min(100%,560px);font:500 16px/1.35 var(--px-font)">
+        <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="flex:none"><path d="M3.5 8.3l3 3 6-6.3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <span style="flex:1;min-width:0">{{ toast.text }}</span>
+        <sc-if value="{{ toast.canUndo }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ undo }}" style="height:44px;padding:0 12px;border:none;border-radius:10px;background:transparent;color:var(--px-surface);font:650 16px/1 var(--px-font);text-decoration:underline;text-underline-offset:3px;cursor:pointer">Annulla</button></sc-if>
+        <button type="button" onClick="{{ closeToast }}" aria-label="Chiudi messaggio" style="width:44px;height:44px;border:none;border-radius:10px;background:transparent;color:var(--px-surface);display:grid;place-items:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;accesso&quot;,&quot;piani&quot;,&quot;piano&quot;,&quot;medicina&quot;,&quot;dispenser&quot;,&quot;storico&quot;,&quot;calendario&quot;],&quot;default&quot;:&quot;dispenser&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Vista&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;email&quot;,&quot;inviato&quot;,&quot;nome&quot;,&quot;scaduto&quot;,&quot;errore&quot;,&quot;vuoto&quot;,&quot;caricamento&quot;,&quot;nuovo&quot;,&quot;elimina&quot;,&quot;azioni&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Vista&quot;},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;'phone'|'desktop'&quot;,&quot;section&quot;:&quot;Vista&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Vista&quot;}}">
+class Component extends DCLogic {
+  static MEDS = [
+    { id: 'card', name: 'Cardioaspirina', dose: '100 mg', desc: 'Gastroresistente, dopo pranzo', color: '#FF5E4D', shape: 'tonda', qty: 5, perPack: 30, rx: false, d: { m: 0, p: 1, s: 0 }, freq: 'ogni', wd: [0,1,2,3,4,5,6], ordered: false, inBox: 0 },
+    { id: 'rami', name: 'Ramipril', dose: '5 mg', desc: 'Pressione', color: '#FFC020', shape: 'oblunga', qty: 16, perPack: 28, rx: true, d: { m: 1, p: 0, s: 0 }, freq: 'ogni', wd: [0,1,2,3,4,5,6], ordered: false, inBox: 0 },
+    { id: 'ator', name: 'Atorvastatina', dose: '20 mg', desc: 'Colesterolo', color: '#2E78F5', shape: 'ovale', qty: 42, perPack: 30, rx: false, d: { m: 0, p: 0, s: 1 }, freq: 'ogni', wd: [0,1,2,3,4,5,6], ordered: false, inBox: 0 },
+    { id: 'vitd', name: 'Vitamina D', dose: '25.000 UI', desc: 'Capsula molle, la domenica', color: '#8D5BF5', shape: 'capsula', qty: 3, perPack: 4, rx: false, d: { m: 0, p: 1, s: 0 }, freq: 'giorni', wd: [6], ordered: false, inBox: 0 }
+  ];
+  static HIST = {
+    card: [[-7,'prep',-7,5],[-14,'prep',-7,12],[-21,'prep',-7,19],[-25,'inizio',26,26]],
+    rami: [[-3,'conteggio',-1,16],[-7,'prep',-7,17],[-14,'prep',-7,24],[-17,'arrivo',28,31],[-21,'prep',-7,3],[-28,'prep',-7,10],[-35,'inizio',17,17]],
+    ator: [[-7,'prep',-7,42],[-10,'arrivo',30,49],[-14,'prep',-7,19],[-21,'prep',-7,26],[-25,'inizio',33,33]],
+    vitd: [[-7,'prep',-1,3],[-14,'prep',-1,4],[-18,'arrivo',4,5],[-21,'prep',-1,1],[-25,'inizio',2,2]]
+  };
+  static COLORS = [['Corallo','#FF5E4D'],['Giallo sole','#FFC020'],['Turchese','#12C2B0'],['Viola','#8D5BF5'],['Verde lime','#93D232'],['Blu','#2E78F5']];
+  static SHAPES = [['tonda','Tonda'],['ovale','Ovale'],['oblunga','Oblunga'],['capsula','Capsula']];
+  static DOW = ['dom','lun','mar','mer','gio','ven','sab'];
+  static DOWL = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+  static MS = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  static ML = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  static WD = [['L','lunedì'],['M','martedì'],['M','mercoledì'],['G','giovedì'],['V','venerdì'],['S','sabato'],['D','domenica']];
+
+  state = { meds: Component.MEDS.map(m => ({ ...m, d: { ...m.d } })), prepared: false, toast: undefined, screen: null, v: null, medId: 'rami', week: 0, hf: 'tutti', form: null, plan: null, log: [], email: 'marco.rossi@icloud', w: 1440, medDel: null, planDel: null };
+
+  componentDidMount() {
+    if (!this.props.device) { this.onR = () => this.setState({ w: window.innerWidth }); this.onR(); window.addEventListener('resize', this.onR); }
+  }
+  componentWillUnmount() { if (this.onR) window.removeEventListener('resize', this.onR); clearTimeout(this.tt); }
+
+  day(i) { const d = new Date(2026, 10, 8); d.setDate(d.getDate() + i); return d; }
+  wdi(d) { return (d.getDay() + 6) % 7; }
+  tot(m) { return m.d.m + m.d.p + m.d.s; }
+  doseOn(m, d) { return m.freq === 'giorni' ? (m.wd.includes(this.wdi(d)) ? this.tot(m) : 0) : this.tot(m); }
+  slotOn(m, d, k) { return this.doseOn(m, d) > 0 ? m.d[k] : 0; }
+  weekNeed(m) { let s = 0; for (let i = 1; i <= 7; i++) s += this.doseOn(m, this.day(i)); return s; }
+  fS(d) { return `${Component.DOW[d.getDay()]} ${d.getDate()} ${Component.MS[d.getMonth()]}`; }
+  fL(d) { return `${Component.DOWL[d.getDay()]} ${d.getDate()} ${Component.ML[d.getMonth()]}`; }
+  q(x) { return String(Math.round(x * 10) / 10).replace('.', ','); }
+
+  view(m) {
+    const P = this.state.prepared, wk = this.weekNeed(m), daily = wk / 7 || 1e-9;
+    let rem = m.qty + (P ? (m.inBox || 0) : 0), last = null;
+    for (let i = 1; i < 800; i++) { const d = this.day(i), x = this.doseOn(m, d); if (x > 0) { if (rem + 1e-9 >= x) { rem -= x; last = d; } else break; } }
+    const days = last ? Math.round((last - this.day(0)) / 864e5) : 0;
+    let status = 'ok', reason = '';
+    if (m.qty < wk) {
+      status = 'out';
+      reason = P ? `Ne servono ${wk} per domenica 15 nov` : `Ne mancano ${wk - m.qty} per la settimana`;
+      if (m.ordered) reason += ' · già ordinata';
+    } else {
+      const afterD = (m.qty - wk) / daily, lastPack = m.qty <= m.perPack;
+      if (afterD < 14 || lastPack) {
+        status = m.ordered ? 'ordered' : 'order';
+        reason = m.ordered ? 'Ordinata oggi, in arrivo' : (afterD >= 14 ? 'Ultima confezione' : `Dopo la preparazione restano ${Math.floor(afterD)} giorni`);
+      }
+    }
+    return { ...m, days, endLabel: last ? this.fS(last) : '—', status, reason, week: wk };
+  }
+
+  snap() { return { meds: this.state.meds.map(m => ({ ...m, d: { ...m.d } })), prepared: this.state.prepared, log: this.state.log }; }
+  say(text, undo) {
+    clearTimeout(this.tt);
+    this.setState({ toast: { text, undo: undo || null } });
+    this.tt = setTimeout(() => this.setState({ toast: null }), 7000);
+  }
+  upd(id, fn) { return this.state.meds.map(m => m.id === id ? fn({ ...m }) : m); }
+  logAdd(id, type, delta, after) { return [{ id, t: type, delta, after, at: 0 }, ...this.state.log]; }
+  arrive(id, n) {
+    if (!n) return; const u = this.snap(); const m = this.state.meds.find(x => x.id === id);
+    this.setState({ meds: this.upd(id, x => ({ ...x, qty: x.qty + n, ordered: false })), log: this.logAdd(id, 'arrivo', n, m.qty + n) });
+    this.say(`Aggiunte ${n} compresse di ${m.name}`, u);
+  }
+  toggleOrdered(id) {
+    const u = this.snap(); const m = this.state.meds.find(x => x.id === id);
+    this.setState({ meds: this.upd(id, x => ({ ...x, ordered: !x.ordered })) });
+    this.say(m.ordered ? `${m.name}: ordine annullato` : `${m.name} segnata come ordinata`, u);
+  }
+  recount(id, n) {
+    const u = this.snap(); const m = this.state.meds.find(x => x.id === id);
+    this.setState({ meds: this.upd(id, x => ({ ...x, qty: n })), log: this.logAdd(id, 'conteggio', n - m.qty, n) });
+    this.say(`Conteggio di ${m.name} aggiornato: ${n} compresse`, u);
+  }
+  prepare() {
+    const u = this.snap(); let tot = 0; let log = this.state.log;
+    const meds = this.state.meds.map(m => { const t = Math.min(m.qty, this.weekNeed(m)); tot += t; if (t) log = [{ id: m.id, t: 'prep', delta: -t, after: m.qty - t, at: 0 }, ...log]; return { ...m, qty: m.qty - t, inBox: t }; });
+    this.setState({ meds, prepared: true, log });
+    this.say(`Portapillole preparato: tolte ${tot} compresse dalle scorte`, u);
+  }
+  undo() { const t = this.curToast(); if (t && t.undo) { this.setState({ meds: t.undo.meds, prepared: t.undo.prepared, log: t.undo.log }); this.say('Azione annullata'); } }
+  curToast() { return this.state.toast !== undefined ? this.state.toast : null; }
+  go(screen, extra) { window.scrollTo && window.scrollTo(0, 0); this.setState({ screen, v: '', ...(extra || {}) }); }
+
+  formFrom(m) {
+    return { id: m.id, name: m.name, dose: m.dose, desc: m.desc, perPack: m.perPack, qty: m.qty, rx: m.rx, color: m.color, shape: m.shape, d: { ...m.d },
+      freq: m.freq, wd: [...m.wd], n: 2, x: 21, y: 7, start: '09/11/2026', end: '' };
+  }
+  blankForm() { return { id: null, name: '', dose: '', desc: '', perPack: 30, qty: 0, rx: false, color: '#12C2B0', shape: 'tonda', d: { m: 1, p: 0, s: 0 }, freq: 'ogni', wd: [0,1,2,3,4,5,6], n: 2, x: 21, y: 7, start: '09/11/2026', end: '' }; }
+  form() { return this.state.form || this.formFrom(this.state.meds.find(m => m.id === 'rami')); }
+  setF(patch) { this.setState({ form: { ...this.form(), ...patch } }); }
+  plan(v) { return this.state.plan || (v === 'nuovo' ? { name: '', mode: 'sett', prep: 6, a14: true, a7: true, last: true, rec: [], newEmail: '', err: '', isNew: true } : { name: 'Nonna Anna', mode: 'sett', prep: 6, a14: true, a7: true, last: true, rec: ['giulia.rossi@gmail.com', 'ambulatorio.ferri@medici.it'], newEmail: '', err: '' }); }
+
+  medSummary(f) {
+    const tot = f.d.m + f.d.p + f.d.s;
+    if (f.freq === 'bisogno') return ['Al bisogno → non entra nel calcolo delle scorte', `${f.qty} in casa`, 0];
+    if (!tot) return ['Imposta almeno una dose', '', 0];
+    const parts = [['m', 'al mattino'], ['p', 'a pranzo'], ['s', 'alla sera']].filter(([k]) => f.d[k] > 0).map(([k, l]) => `${this.q(f.d[k])} ${l}`);
+    const doses = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' e ' + parts[parts.length - 1] : parts[0];
+    let ft, pw, approx = false;
+    if (f.freq === 'ogni') { ft = 'tutti i giorni'; pw = tot * 7; }
+    else if (f.freq === 'giorni') { const names = [...f.wd].sort().map(i => Component.DOW[(i + 1) % 7]); ft = names.length ? (names.length === 1 ? `ogni ${Component.DOWL[(f.wd[0] + 1) % 7]}` : names.join(', ')) : 'nessun giorno scelto'; pw = tot * f.wd.length; }
+    else if (f.freq === 'n') { const n = Math.max(1, +f.n || 1); ft = `ogni ${n} giorni`; pw = tot * 7 / n; approx = 7 % n !== 0; }
+    else { const x = Math.max(1, +f.x || 1), y = Math.max(0, +f.y || 0); ft = `${x} giorni sì e ${y} no`; pw = tot * 7 * x / (x + y); approx = true; }
+    const s1 = `${doses}, ${ft} → ${approx ? 'in media ' : ''}${this.q(pw)} a settimana`;
+    const days = pw > 0 ? Math.floor(f.qty / (pw / 7)) : 0;
+    const s2 = `${f.qty} in casa → ${approx ? 'circa ' : ''}${days} ${days === 1 ? 'giorno' : 'giorni'} di copertura`;
+    return [s1.charAt(0).toUpperCase() + s1.slice(1), s2, days];
+  }
+
+  renderVals() {
+    const p = this.props, s = this.state;
+    const screen = s.screen ?? p.screen ?? 'dispenser';
+    const v = s.v ?? p.variant ?? '';
+    const device = p.device ?? (s.w >= 900 ? 'desktop' : 'phone');
+    const desk = device === 'desktop';
+    const views = s.meds.map(m => this.view(m));
+    const rank = { out: 0, order: 1, ordered: 2, ok: 3 };
+    const sorted = [...views].sort((a, b) => rank[a.status] - rank[b.status]);
+    const toast = s.toast !== undefined ? s.toast : (v === 'azioni' ? { text: 'Aggiunte 30 compresse di Atorvastatina', undo: null } : null);
+    const outs = views.filter(m => m.status === 'out'), toOrder = views.filter(m => (m.status === 'out' || m.status === 'order') && !m.ordered);
+    const worst = sorted[0] ? sorted[0].status : 'ok';
+    const nOut = outs.length, nOrd = views.filter(m => m.status === 'order').length;
+    const summaryTxt = [nOut ? `${nOut} esaurit${nOut > 1 ? 'e' : 'a'}` : '', nOrd ? `${nOrd} da ordinare` : ''].filter(Boolean).join(' · ') || 'Tutto in ordine';
+    const nextPrep = s.prepared ? 'Domenica 15 novembre' : 'Oggi, domenica 8 novembre';
+    const H = (sel) => ({ sel: sel ? 'true' : 'false', bg: sel ? 'var(--px-surface)' : 'transparent', sh: sel ? '0 1px 2px rgba(14,22,32,.12)' : 'none', fg: sel ? 'var(--px-ink)' : 'var(--px-ink-2)' });
+    const isCal = screen === 'calendario', isDisp = screen === 'dispenser';
+    const labels = { accesso: 'Accesso', piani: 'I miei piani', piano: 'Piano', medicina: 'Medicinale', dispenser: 'Dispenser', storico: 'Storico', calendario: 'Calendario' };
+
+    // accesso
+    const accV = v || 'email';
+    const accErr = accV === 'errore';
+    const acc = {
+      email: accV === 'email' || accV === 'errore', scaduto: accV === 'scaduto', inviato: accV === 'inviato', nome: accV === 'nome',
+      value: accErr ? 'marco.rossi.icloud.com' : (s.screen ? s.email : ''), onEmail: e => this.setState({ email: e.target.value }),
+      invalid: accErr ? 'true' : 'false', hasErr: accErr, border: accErr ? 'var(--px-out-fg)' : 'var(--px-line-strong)',
+      send: () => this.setState({ screen: 'accesso', v: 'inviato' }), again: () => this.setState({ screen: 'accesso', v: 'email' }), toNome: () => this.setState({ screen: 'accesso', v: 'nome' })
+    };
+
+    // piani
+    const plans = [
+      { name: 'Nonna Anna', count: `${views.length} medicine`, mode: 'settimanale', worst, summary: summaryTxt, nextLabel: 'Prossima preparazione', next: nextPrep, pills: views.map(m => ({ color: m.color, shape: m.shape })), onOpen: () => this.go('dispenser') },
+      { name: 'Nonno Piero', count: '2 medicine', mode: 'giorno per giorno', worst: 'ok', summary: 'Tutto in ordine', nextLabel: 'Copertura minima', next: '38 giorni', pills: [{ color: '#93D232', shape: 'tonda' }, { color: '#12C2B0', shape: 'ovale' }], onOpen: () => this.go('dispenser') }
+    ].map(pl => ({ ...pl, aria: `${pl.name}, ${pl.count}, ${pl.summary}. ${pl.nextLabel}: ${pl.next}` }));
+
+    // dispenser
+    const disp = sorted.map(m => ({
+      view: m, panel: v === 'azioni' && s.v == null ? (m.id === 'rami' ? 'menu' : m.id === 'card' ? 'arrive' : null) : null,
+      onArrive: n => this.arrive(m.id, n), onOrdered: () => this.toggleOrdered(m.id), onRecount: n => this.recount(m.id, n),
+      onEdit: () => this.go('medicina', { form: this.formFrom(s.meds.find(x => x.id === m.id)), medDel: null }), onHistory: () => this.go('storico', { medId: m.id, hf: 'tutti' })
+    }));
+    const strip = {
+      next: nextPrep, allOk: outs.length === 0, notOk: outs.length > 0,
+      missing: 'Non c’è tutto: ' + outs.map(m => `${s.prepared ? 'servono' : 'mancano'} ${s.prepared ? m.week : m.week - m.qty} ${m.name}`).join(', '),
+      toOrder: toOrder.length, toOrderWord: toOrder.length === 1 ? 'medicina' : 'medicine', toOrderNames: toOrder.map(m => m.name).join(', ') || 'Niente da ordinare',
+      notPrepared: !s.prepared, prepared: s.prepared
+    };
+
+    // calendario
+    const ws = 1 + s.week * 7;
+    const days = [...Array(7)].map((_, i) => this.day(ws + i));
+    const a = days[0], b = days[6];
+    const calLabel = a.getMonth() === b.getMonth() ? `${a.getDate()} – ${b.getDate()} ${Component.ML[b.getMonth()]} ${b.getFullYear()}` : `${a.getDate()} ${Component.MS[a.getMonth()]} – ${b.getDate()} ${Component.MS[b.getMonth()]} ${b.getFullYear()}`;
+    const SL = [['m', 'Mattina', '8:00'], ['p', 'Pranzo', '13:00'], ['s', 'Sera', '20:00']];
+    const cal = {
+      label: calLabel, notCurrent: s.week !== 0,
+      prev: () => this.setState({ week: s.week - 1 }), next: () => this.setState({ week: s.week + 1 }), reset: () => this.setState({ week: 0 }),
+      days: days.map(d => { const t = +d === +this.day(0); return { dow: Component.DOW[d.getDay()], num: d.getDate(), bg: t ? 'var(--px-primary)' : 'transparent', fg: t ? 'var(--px-on-primary)' : 'var(--px-ink)' }; }),
+      slots: SL.map(([k, label, time]) => ({ label, time, cells: days.map(d => { const items = s.meds.filter(m => this.slotOn(m, d, k) > 0).map(m => ({ color: m.color, shape: m.shape, name: m.name, q: '×' + this.q(this.slotOn(m, d, k)) }));
+        return { items, aria: `${this.fL(d)}, ${label.toLowerCase()}: ` + (items.length ? items.map(i => `${i.name} ${i.q.slice(1)}`).join(', ') : 'niente') }; }) }))
+    };
+    const legend = s.meds.map(m => ({ color: m.color, shape: m.shape, name: m.name, dose: m.dose }));
+
+    // storico
+    const hm = views.find(m => m.id === s.medId) || views[0];
+    const TT = { prep: ['↓', 'Portapillole preparato'], arrivo: ['+', 'Arrivata confezione'], conteggio: ['=', 'Ricontrolla conteggio'], inizio: ['•', 'Conteggio iniziale'] };
+    const rowsAll = [...s.log.filter(l => l.id === hm.id).map(l => [l.at, l.t, l.delta, l.after]), ...(Component.HIST[hm.id] || [])];
+    const fmap = { tutti: null, arrivi: 'arrivo', prep: 'prep', conteggi: 'conteggio' };
+    const hist = {
+      name: hm.name, dose: hm.dose, color: hm.color, shape: hm.shape, status: hm.status,
+      summary: `${hm.qty} compresse · ${hm.days} giorni di copertura · finisce ${hm.endLabel}`,
+      filters: [['tutti', 'Tutti'], ['arrivi', 'Arrivi'], ['prep', 'Preparazioni'], ['conteggi', 'Conteggi']].map(([id, label]) => { const sel = s.hf === id; return { label, sel: sel ? 'true' : 'false', go: () => this.setState({ hf: id }), bg: sel ? 'var(--px-primary)' : 'var(--px-surface)', fg: sel ? 'var(--px-on-primary)' : 'var(--px-ink)', bc: sel ? 'var(--px-primary)' : 'var(--px-line-strong)' }; }),
+      rows: rowsAll.filter(r => !fmap[s.hf] || r[1] === fmap[s.hf] || (s.hf === 'conteggi' && r[1] === 'inizio')).map(([at, t, delta, after]) => ({
+        icon: TT[t][0], title: TT[t][1], date: at === 0 ? 'Oggi' : this.fL(this.day(at)).replace(/^./, c => c.toUpperCase()),
+        note: t === 'conteggio' ? ` · contate ${after}, risultavano ${after - delta}` : '', delta: t === 'inizio' ? String(delta) : (delta > 0 ? '+' + delta : '−' + Math.abs(delta)), after }))
+    };
+
+    // piano form
+    const pl = this.plan(v);
+    const setP = patch => this.setState({ plan: { ...pl, ...patch } });
+    const planDel = s.planDel ?? (v === 'elimina');
+    const pf = {
+      title: pl.isNew ? 'Nuovo piano' : 'Impostazioni del piano', backLabel: pl.isNew ? 'I miei piani' : 'Nonna Anna',
+      name: pl.name, onName: e => setP({ name: e.target.value }), weekly: pl.mode === 'sett',
+      modes: [['giorno', 'Giorno per giorno', 'Le compresse escono dalle scorte ogni giorno, dose per dose.'], ['sett', 'Portapillole settimanale', 'Le compresse escono dalle scorte tutte insieme quando prepari il portapillole.']].map(([id, label, sub]) => { const sel = pl.mode === id;
+        return { label, sub, sel: sel ? 'true' : 'false', go: () => setP({ mode: id }), bc: sel ? 'var(--px-ink)' : 'var(--px-line)', bg: sel ? 'var(--px-surface-2)' : 'var(--px-surface)', dot: sel ? 'var(--px-ink)' : 'var(--px-line-strong)', fill: sel ? 'var(--px-ink)' : 'var(--px-surface)' }; }),
+      days: Component.WD.map(([short, full], i) => { const sel = pl.prep === i; return { short, full, sel: sel ? 'true' : 'false', go: () => setP({ prep: i }), bc: sel ? 'var(--px-primary)' : 'var(--px-line-strong)', bg: sel ? 'var(--px-primary)' : 'var(--px-surface)', fg: sel ? 'var(--px-on-primary)' : 'var(--px-ink)' }; }),
+      alerts: [['a14', 'Sotto 14 giorni', 'Il primo promemoria, con calma.'], ['a7', 'Sotto 7 giorni', 'Manca una settimana: è ora di ordinare.'], ['last', 'Ultima confezione', 'Quando resta una sola confezione in casa.']].map(([k, label, sub]) => { const on = pl[k];
+        return { label, sub, on: on ? 'true' : 'false', go: () => setP({ [k]: !on }), track: on ? 'var(--px-ok-fg)' : 'var(--px-line-strong)', knob: on ? '21px' : '3px' }; }),
+      recs: pl.rec.map(e => ({ email: e, aria: `Togli ${e}`, remove: () => setP({ rec: pl.rec.filter(x => x !== e), err: '' }) })),
+      newEmail: pl.newEmail, onNew: e => setP({ newEmail: e.target.value, err: '' }), full: pl.rec.length >= 5,
+      add: () => { const e = pl.newEmail.trim(); if (!/^\S+@\S+\.\S+$/.test(e)) return setP({ err: 'Controlla l’indirizzo email.' }); if (pl.rec.includes(e)) return setP({ err: 'Questo indirizzo c’è già.' }); setP({ rec: [...pl.rec, e], newEmail: '', err: '' }); },
+      help: pl.err || (pl.rec.length >= 5 ? 'Hai raggiunto il massimo di 5 destinatari aggiuntivi.' : `${pl.rec.length} di 5 destinatari aggiuntivi`),
+      helpColor: pl.err ? 'var(--px-out-fg)' : 'var(--px-ink-2)',
+      save: () => { this.go(pl.isNew ? 'piani' : 'dispenser'); this.say(pl.isNew ? `Piano di ${pl.name || 'senza nome'} creato` : 'Piano salvato'); },
+      canDelete: !pl.isNew, askDel: !planDel, confirming: planDel,
+      confirm: () => this.setState({ planDel: true }), cancelDel: () => this.setState({ planDel: false }),
+      doDelete: () => { this.go('piani', { v: 'vuoto', planDel: false }); this.say('Piano eliminato'); }
+    };
+
+    // medicina form
+    const f = this.form();
+    const [sum1, sum2, fdays] = this.medSummary(f);
+    const on = {}; ['name', 'dose', 'desc', 'start', 'end'].forEach(k => on[k] = e => this.setF({ [k]: e.target.value }));
+    ['perPack', 'qty', 'n', 'x', 'y'].forEach(k => on[k] = e => this.setF({ [k]: Math.max(0, parseInt(e.target.value || '0', 10) || 0) }));
+    const medDel = s.medDel ?? (v === 'elimina');
+    const cName = (Component.COLORS.find(c => c[1] === f.color) || ['Personalizzato'])[0];
+    const pvStatus = fdays < 7 ? 'out' : fdays < 14 || f.qty <= f.perPack ? 'order' : 'ok';
+    const mf = {
+      title: f.id ? 'Modifica medicinale' : 'Nuovo medicinale', name: f.name, dose: f.dose, desc: f.desc, perPack: f.perPack, qty: f.qty, start: f.start, end: f.end, n: f.n, x: f.x, y: f.y, on,
+      rxOn: f.rx ? 'true' : 'false', toggleRx: () => this.setF({ rx: !f.rx }), rxTrack: f.rx ? 'var(--px-ok-fg)' : 'var(--px-line-strong)', rxKnob: f.rx ? '21px' : '3px',
+      color: f.color, shape: f.shape, colorName: cName, previewAria: `Anteprima: compressa ${(Component.SHAPES.find(x => x[0] === f.shape) || [, ''])[1].toLowerCase()}, ${cName.toLowerCase()}`,
+      colors: Component.COLORS.map(([name, c]) => { const sel = c === f.color; return { name, sel: sel ? 'true' : 'false', go: () => this.setF({ color: c }),
+        bg: `radial-gradient(ellipse 60% 50% at 32% 26%, rgba(255,255,255,.8), rgba(255,255,255,0) 62%), linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.22)), ${c}`,
+        ring: sel ? '0 0 0 3px var(--px-surface), 0 0 0 5px var(--px-ink)' : 'inset 0 -2px 3px rgba(0,0,0,.15)' }; }),
+      shapes: Component.SHAPES.map(([id, label]) => { const sel = id === f.shape; return { id, label, sel: sel ? 'true' : 'false', go: () => this.setF({ shape: id }), bc: sel ? 'var(--px-ink)' : 'var(--px-line)', bg: sel ? 'var(--px-surface-2)' : 'var(--px-surface)' }; }),
+      slots: [['m', 'Mattina', 'al mattino'], ['p', 'Pranzo', 'a pranzo'], ['s', 'Sera', 'alla sera']].map(([k, label, w]) => ({ label, val: this.q(f.d[k]),
+        dec: () => this.setF({ d: { ...f.d, [k]: Math.max(0, f.d[k] - .5) } }), inc: () => this.setF({ d: { ...f.d, [k]: Math.min(10, f.d[k] + .5) } }),
+        decAria: `Mezza compressa in meno ${w}`, incAria: `Mezza compressa in più ${w}` })),
+      freqs: [['ogni', 'Tutti i giorni'], ['giorni', 'Alcuni giorni della settimana'], ['n', 'Ogni N giorni'], ['ciclo', 'A cicli: X giorni sì, Y no'], ['bisogno', 'Al bisogno']].map(([id, label]) => { const sel = f.freq === id;
+        return { label, sel: sel ? 'true' : 'false', go: () => this.setF({ freq: id }), bc: sel ? 'var(--px-ink)' : 'var(--px-line)', bg: sel ? 'var(--px-surface-2)' : 'var(--px-surface)', dot: sel ? 'var(--px-ink)' : 'var(--px-line-strong)', fill: sel ? 'var(--px-ink)' : 'var(--px-surface)' }; }),
+      isGiorni: f.freq === 'giorni', isN: f.freq === 'n', isCiclo: f.freq === 'ciclo',
+      wd: Component.WD.map(([short, full], i) => { const o = f.wd.includes(i); return { short, full, on: o ? 'true' : 'false', go: () => this.setF({ wd: o ? f.wd.filter(x => x !== i) : [...f.wd, i] }), bc: o ? 'var(--px-primary)' : 'var(--px-line-strong)', bg: o ? 'var(--px-primary)' : 'var(--px-surface)', fg: o ? 'var(--px-on-primary)' : 'var(--px-ink)' }; }),
+      sum1, sum2,
+      preview: { id: 'pv', name: f.name || 'Nuovo medicinale', dose: f.dose, color: f.color, shape: f.shape, qty: f.qty, perPack: f.perPack, rx: f.rx, days: fdays, endLabel: this.fS(this.day(Math.max(1, fdays))), status: pvStatus, reason: '' },
+      save: () => {
+        const patch = { name: f.name || 'Senza nome', dose: f.dose, desc: f.desc, perPack: f.perPack, qty: f.qty, rx: f.rx, color: f.color, shape: f.shape, d: { ...f.d }, freq: f.freq === 'giorni' ? 'giorni' : 'ogni', wd: [...f.wd] };
+        const meds = f.id ? s.meds.map(m => m.id === f.id ? { ...m, ...patch } : m) : [...s.meds, { ...patch, id: 'm' + Date.now(), ordered: false, inBox: 0 }];
+        this.go('dispenser', { meds }); this.say(`${patch.name} salvato`);
+      },
+      askDel: !!f.id && !medDel, confirming: !!f.id && medDel,
+      confirm: () => this.setState({ medDel: true }), cancelDel: () => this.setState({ medDel: false }),
+      doDelete: () => { const u = this.snap(); this.go('dispenser', { meds: s.meds.filter(m => m.id !== f.id), medDel: false }); this.say(`${f.name} tolto dal piano`, u); }
+    };
+
+    return {
+      theme: p.theme ?? 'light', screenLabel: labels[screen] || screen, desk, phone: !desk, dsize: desk ? 'l' : 's',
+      showHeader: screen !== 'accesso', isAccesso: screen === 'accesso', showMain: screen !== 'accesso', acc,
+      isPiani: screen === 'piani', pianiLoading: v === 'caricamento', pianiEmpty: v === 'vuoto', pianiList: v !== 'caricamento' && v !== 'vuoto', plans,
+      inPlan: isDisp || isCal, isDispenser: isDisp, isCal, isStorico: screen === 'storico', isPlanForm: screen === 'piano', isMedForm: screen === 'medicina',
+      tabA: { ...H(isDisp), go: () => this.go('dispenser') }, tabB: { ...H(isCal), go: () => this.go('calendario') },
+      dispEmpty: v === 'vuoto' || views.length === 0, dispFull: v !== 'vuoto' && views.length > 0, disp, strip, cal, legend, hist, pf, mf,
+      goPiani: () => this.go('piani'), goDisp: () => this.go('dispenser'), planBack: () => this.go(pl.isNew ? 'piani' : 'dispenser', { plan: null }),
+      newPlan: () => this.go('piano', { v: 'nuovo', plan: null, planDel: false }), editPlan: () => this.go('piano', { plan: null, planDel: false }),
+      newMed: () => this.go('medicina', { form: this.blankForm(), medDel: false }),
+      prepare: () => this.prepare(),
+      unprepare: () => { const u = this.snap(); const meds = s.meds.map(m => ({ ...m, qty: m.qty + (m.inBox || 0), inBox: 0 })); this.setState({ meds, prepared: false }); this.say('Preparazione annullata: compresse rimesse nelle scorte', u); },
+      hasToast: !!toast, toast: { text: toast ? toast.text : '', canUndo: !!(toast && toast.undo) },
+      undo: () => this.undo(), closeToast: () => { clearTimeout(this.tt); this.setState({ toast: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

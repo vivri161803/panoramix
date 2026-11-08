@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+/* ——— Token del design (UI_mobile_pc/Panoramix.dc.html, sezione 02 · TOKEN) ——— */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --px-bg: #f3f5f7;
+  --px-surface: #ffffff;
+  --px-surface-2: #edf0f3;
+  --px-surface-3: #e1e6eb;
+  --px-line: #dae0e6;
+  --px-line-strong: #aeb8c2;
+  --px-ink: #0e1620;
+  --px-ink-2: #44505c;
+  --px-ink-3: #5b6774;
+  --px-primary: #132030;
+  --px-on-primary: #ffffff;
+  --px-link: #1c5cc8;
+  --px-focus: #2e78f5;
+  --px-ok-fg: #1a6b43;
+  --px-ok-bg: #e4f2ea;
+  --px-ok-line: #94cbae;
+  --px-order-fg: #8a4a00;
+  --px-order-bg: #fff0d9;
+  --px-order-line: #e3a54a;
+  --px-ordered-fg: #1e4da6;
+  --px-ordered-bg: #e5edfb;
+  --px-ordered-line: #94b3e8;
+  --px-out-fg: #ae2418;
+  --px-out-bg: #fceae7;
+  --px-out-line: #e48c80;
+  --px-tube-bg: #f1f4f7;
+  --px-glass-hi: rgba(255, 255, 255, 0.75);
+  --px-shadow: 0 1px 2px rgba(14, 22, 32, 0.05), 0 6px 20px rgba(14, 22, 32, 0.05);
+  --px-font: var(--font-geist), "Geist", system-ui, sans-serif;
+  --px-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+}
+
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --px-bg: #0c1117;
+  --px-surface: #141a22;
+  --px-surface-2: #1b222c;
+  --px-surface-3: #252e39;
+  --px-line: #29333e;
+  --px-line-strong: #46525f;
+  --px-ink: #e9eef3;
+  --px-ink-2: #b3bdc7;
+  --px-ink-3: #96a2ae;
+  --px-primary: #e9eef3;
+  --px-on-primary: #0c1117;
+  --px-link: #86b4ff;
+  --px-ok-fg: #7dd3a4;
+  --px-ok-bg: #11281c;
+  --px-ok-line: #2d6a49;
+  --px-order-fg: #f4c06a;
+  --px-order-bg: #2d2110;
+  --px-order-line: #7d5b22;
+  --px-ordered-fg: #a2c1ff;
+  --px-ordered-bg: #132139;
+  --px-ordered-line: #36538d;
+  --px-out-fg: #ff9c90;
+  --px-out-bg: #331410;
+  --px-out-line: #8c3b31;
+  --px-tube-bg: #0f151c;
+  --px-glass-hi: rgba(255, 255, 255, 0.12);
+  --px-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Tema scuro automatico se il sistema lo chiede */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --px-bg: #0c1117;
+    --px-surface: #141a22;
+    --px-surface-2: #1b222c;
+    --px-surface-3: #252e39;
+    --px-line: #29333e;
+    --px-line-strong: #46525f;
+    --px-ink: #e9eef3;
+    --px-ink-2: #b3bdc7;
+    --px-ink-3: #96a2ae;
+    --px-primary: #e9eef3;
+    --px-on-primary: #0c1117;
+    --px-link: #86b4ff;
+    --px-ok-fg: #7dd3a4;
+    --px-ok-bg: #11281c;
+    --px-ok-line: #2d6a49;
+    --px-order-fg: #f4c06a;
+    --px-order-bg: #2d2110;
+    --px-order-line: #7d5b22;
+    --px-ordered-fg: #a2c1ff;
+    --px-ordered-bg: #132139;
+    --px-ordered-line: #36538d;
+    --px-out-fg: #ff9c90;
+    --px-out-bg: #331410;
+    --px-out-line: #8c3b31;
+    --px-tube-bg: #0f151c;
+    --px-glass-hi: rgba(255, 255, 255, 0.12);
+    --px-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@theme inline {
+  --color-px-bg: var(--px-bg);
+  --color-px-surface: var(--px-surface);
+  --color-px-surface-2: var(--px-surface-2);
+  --color-px-surface-3: var(--px-surface-3);
+  --color-px-line: var(--px-line);
+  --color-px-line-strong: var(--px-line-strong);
+  --color-px-ink: var(--px-ink);
+  --color-px-ink-2: var(--px-ink-2);
+  --color-px-ink-3: var(--px-ink-3);
+  --color-px-primary: var(--px-primary);
+  --color-px-on-primary: var(--px-on-primary);
+  --color-px-link: var(--px-link);
+  --color-px-focus: var(--px-focus);
+  --color-px-ok-fg: var(--px-ok-fg);
+  --color-px-ok-bg: var(--px-ok-bg);
+  --color-px-ok-line: var(--px-ok-line);
+  --color-px-order-fg: var(--px-order-fg);
+  --color-px-order-bg: var(--px-order-bg);
+  --color-px-order-line: var(--px-order-line);
+  --color-px-ordered-fg: var(--px-ordered-fg);
+  --color-px-ordered-bg: var(--px-ordered-bg);
+  --color-px-ordered-line: var(--px-ordered-line);
+  --color-px-out-fg: var(--px-out-fg);
+  --color-px-out-bg: var(--px-out-bg);
+  --color-px-out-line: var(--px-out-line);
+  --font-sans: var(--px-font);
+  --font-mono: var(--px-mono);
+  /* raggi: radius.sm/md/lg/xl/pill */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --shadow-px: var(--px-shadow);
+}
+
+/* Tipografia: type.display … type.mono */
+@utility t-display {
+  font: 650 clamp(28px, 4vw, 38px) / 1.1 var(--px-font);
+  letter-spacing: -0.02em;
+}
+@utility t-title {
+  font: 650 26px / 1.2 var(--px-font);
+  letter-spacing: -0.02em;
+}
+@utility t-heading {
+  font: 650 20px / 1.25 var(--px-font);
+}
+@utility t-body-strong {
+  font: 600 16px / 1.35 var(--px-font);
+}
+@utility t-body {
+  font: 400 16px / 1.45 var(--px-font);
+}
+@utility t-label {
+  font: 500 14px / 1.3 var(--px-font);
+}
+@utility t-mono {
+  font: 500 13px / 1.3 var(--px-mono);
+}
+
+/* ——— Base ——— */
+* {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--px-bg);
+  color: var(--px-ink);
+  font: 400 16px / 1.45 var(--px-font);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+a {
+  color: var(--px-link);
+}
+a:hover {
+  color: var(--px-ink);
+}
+:focus-visible {
+  outline: 2.5px solid var(--px-focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Animazioni del dispenser */
+@keyframes pxDrop {
+  0% {
+    transform: translateY(var(--from));
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  78% {
+    transform: translateY(0);
+  }
+  88% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes pxOut {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px);
+    opacity: 0;
+  }
+}
+@keyframes pxPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Componenti ricorrenti (riprendono gli stili del design) */
+@layer components {
+  .px-card {
+    background: var(--px-surface);
+    border: 1px solid var(--px-line);
+    border-radius: 18px;
+  }
+  .px-input {
+    height: 48px;
+    width: 100%;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--px-line-strong);
+    background: var(--px-surface);
+    color: var(--px-ink);
+    font: 400 16px / 1 var(--px-font);
+  }
+  .px-input[aria-invalid="true"] {
+    border: 1.5px solid var(--px-out-fg);
+  }
+  textarea.px-input {
+    height: auto;
+    min-height: 96px;
+    padding: 12px 14px;
+    line-height: 1.45;
+    resize: vertical;
+  }
+  .px-label {
+    font: 600 15px / 1.3 var(--px-font);
+  }
+  .px-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 12px;
+    font: 600 16px / 1.2 var(--px-font);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .px-btn-sm {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 15px;
+  }
+  .px-btn-primary {
+    border: none;
+    background: var(--px-primary);
+    color: var(--px-on-primary);
+  }
+  .px-btn-primary:hover {
+    color: var(--px-on-primary);
+  }
+  .px-btn-secondary {
+    border: 1px solid var(--px-line-strong);
+    background: var(--px-surface);
+    color: var(--px-ink);
+  }
+  .px-btn-danger {
+    border: none;
+    background: var(--px-out-fg);
+    color: var(--px-surface);
+  }
+  .px-btn-link-danger {
+    min-height: 44px;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: var(--px-out-fg);
+    font: 600 15px / 1 var(--px-font);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .px-back {
+    align-self: flex-start;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px 0 0;
+    border: none;
+    background: none;
+    color: var(--px-ink-2);
+    font: 500 15px / 1 var(--px-font);
+    text-decoration: none;
+  }
+  .px-error {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    color: var(--px-out-fg);
+    font: 500 15px / 1.4 var(--px-font);
+  }
+  .sr-only-px {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

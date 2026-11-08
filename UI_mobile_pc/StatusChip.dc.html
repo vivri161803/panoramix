@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<sc-if value="{{ isOk }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 6px;border-radius:999px;background:var(--px-ok-bg,#E4F2EA);color:var(--px-ok-fg,#1A6B43);border:1px solid var(--px-ok-line,#94CBAE);font:600 14px/1 var(--px-font,system-ui);white-space:nowrap"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M4.6 8.3l2.2 2.2 4.6-4.8" stroke="var(--px-ok-bg,#E4F2EA)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>OK</span></sc-if><sc-if value="{{ isOrder }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 6px;border-radius:999px;background:var(--px-order-bg,#FFF0D9);color:var(--px-order-fg,#8A4A00);border:1px solid var(--px-order-line,#E3A54A);font:600 14px/1 var(--px-font,system-ui);white-space:nowrap"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M8 4.2v4.6" stroke="var(--px-order-bg,#FFF0D9)" stroke-width="1.9" stroke-linecap="round"></path><circle cx="8" cy="11.5" r="1.1" fill="var(--px-order-bg,#FFF0D9)"></circle></svg>Da ordinare</span></sc-if><sc-if value="{{ isOrdered }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 6px;border-radius:999px;background:var(--px-ordered-bg,#E5EDFB);color:var(--px-ordered-fg,#1E4DA6);border:1px solid var(--px-ordered-line,#94B3E8);font:600 14px/1 var(--px-font,system-ui);white-space:nowrap"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M4.5 8h6.2M8.4 5.4L11 8l-2.6 2.6" stroke="var(--px-ordered-bg,#E5EDFB)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Ordinata</span></sc-if><sc-if value="{{ isOut }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 6px;border-radius:999px;background:var(--px-out-fg,#AE2418);color:var(--px-surface,#fff);border:1px solid var(--px-out-fg,#AE2418);font:650 14px/1 var(--px-font,system-ui);white-space:nowrap"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor"></circle><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" stroke="var(--px-out-fg,#AE2418)" stroke-width="1.9" stroke-linecap="round"></path></svg>Esaurita</span></sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:140,&quot;height&quot;:40},&quot;status&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ok&quot;,&quot;order&quot;,&quot;ordered&quot;,&quot;out&quot;],&quot;default&quot;:&quot;ok&quot;,&quot;tsType&quot;:&quot;'ok'|'order'|'ordered'|'out'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.status ?? 'ok';
+    return { isOk: s === 'ok', isOrder: s === 'order', isOrdered: s === 'ordered', isOut: s === 'out' };
+  }
+}
+</script>
+</body>
+</html>

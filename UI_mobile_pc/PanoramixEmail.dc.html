@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E7EBEF}
+*{box-sizing:border-box}
+a{color:#1C5CC8}
+a:hover{color:#0E1620}
+</style>
+</helmet>
+<div data-screen-label="Email di avviso" style="width:100%;max-width:680px;margin:0 auto;padding:24px 16px;font-family:'Geist',system-ui,sans-serif;color:#0E1620;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;gap:16px">
+  <div style="background:#FFFFFF;border:1px solid #DAE0E6;border-radius:14px;padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:400 15px/1.4 'Geist',sans-serif">
+    <span style="color:#5B6774">Da</span><span>Panoramix &lt;avvisi@panoramix.app&gt;</span>
+    <span style="color:#5B6774">A</span><span>marco.rossi@icloud.com, giulia.rossi@gmail.com</span>
+    <span style="color:#5B6774">Oggetto</span><strong style="font-weight:650">Panoramix · Nonna Anna: 2 medicine da ordinare</strong>
+  </div>
+  <div style="background:#FFFFFF;border:1px solid #DAE0E6;border-radius:18px;overflow:hidden">
+    <div style="padding:24px 28px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #DAE0E6">
+      <dc-import name="AppIcon" size="32" hint-size="32px,32px"></dc-import>
+      <span style="font:650 19px/1 'Geist',sans-serif;letter-spacing:-.02em">Panoramix</span>
+    </div>
+    <div style="padding:28px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <h1 style="margin:0;font:650 26px/1.2 'Geist',sans-serif;letter-spacing:-.02em">2 medicine da ordinare per Nonna Anna</h1>
+        <p style="margin:0;font:400 17px/1.5 'Geist',sans-serif;color:#44505C">Ciao Marco, la prossima preparazione del portapillole è domenica 8 novembre. Queste medicine sono sotto soglia.</p>
+      </div>
+      <sc-for list="{{ meds }}" as="m" hint-placeholder-count="2">
+        <div style="border:1.5px solid {{ m.bc }};border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;background:{{ m.bg }}">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="flex:none;width:20px;height:20px;border-radius:50%;background:{{ m.dot }};box-shadow:inset 0 -2px 3px rgba(0,0,0,.2)"></span>
+            <span style="font:650 19px/1.2 'Geist',sans-serif;flex:1">{{ m.name }} <span style="font-weight:500;color:#44505C">{{ m.dose }}</span></span>
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font:650 14px/1 'Geist',sans-serif;background:{{ m.chipBg }};color:{{ m.chipFg }};border:1px solid {{ m.chipBc }}">{{ m.state }}</span>
+          </div>
+          <table role="presentation" style="width:100%;border-collapse:collapse;font:400 16px/1.4 'Geist',sans-serif">
+            <tr><td style="padding:4px 0;color:#44505C">Compresse rimaste</td><td style="padding:4px 0;text-align:right;font-weight:650">{{ m.qty }}</td></tr>
+            <tr><td style="padding:4px 0;color:#44505C">Giorni di copertura</td><td style="padding:4px 0;text-align:right;font-weight:650">{{ m.days }}</td></tr>
+            <tr><td style="padding:4px 0;color:#44505C">Finisce</td><td style="padding:4px 0;text-align:right;font-weight:650">{{ m.end }}</td></tr>
+            <tr><td style="padding:4px 0;color:#44505C">Ricetta</td><td style="padding:4px 0;text-align:right;font-weight:650">{{ m.rx }}</td></tr>
+          </table>
+        </div>
+      </sc-for>
+      <div style="border-radius:14px;background:#EDF0F3;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:650 16px/1.3 'Geist',sans-serif">Testo pronto per il medico</span>
+        <span style="font:400 15px/1.4 'Geist',sans-serif;color:#44505C">Copialo e invialo per chiedere la ricetta.</span>
+        <div style="background:#FFFFFF;border:1px solid #DAE0E6;border-radius:10px;padding:14px 16px;font:400 16px/1.55 'Geist',sans-serif;white-space:pre-line">Buongiorno dottore,
+per mia nonna Anna Bianchi avrei bisogno della ricetta per:
+– Ramipril 5 mg, 1 confezione da 28 compresse (1 al mattino)
+Grazie, Marco Rossi</div>
+      </div>
+      <a href="PanoramixApp.dc.html" style="align-self:flex-start;display:inline-block;padding:15px 24px;border-radius:12px;background:#132030;color:#FFFFFF;font:600 17px/1 'Geist',sans-serif;text-decoration:none">Apri il piano</a>
+    </div>
+    <div style="padding:20px 28px;border-top:1px solid #DAE0E6;background:#F3F5F7;font:400 14px/1.5 'Geist',sans-serif;color:#44505C;display:flex;flex-direction:column;gap:8px">
+      <p style="margin:0">Panoramix è un promemoria: i conti si basano sui dati inseriti nel piano. Per dosi e terapie segui sempre le indicazioni del medico o del farmacista.</p>
+      <p style="margin:0">Ricevi questa email perché sei tra i destinatari del piano Nonna Anna. <a href="PanoramixApp.dc.html">Gestisci gli avvisi</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return { meds: [
+      { name: 'Cardioaspirina', dose: '100 mg', dot: '#FF5E4D', state: 'Esaurita', qty: '5', days: '5', end: 'venerdì 13 novembre', rx: 'Non serve',
+        bc: '#AE2418', bg: '#FCEAE7', chipBg: '#AE2418', chipFg: '#FFFFFF', chipBc: '#AE2418' },
+      { name: 'Ramipril', dose: '5 mg', dot: '#FFC020', state: 'Da ordinare', qty: '16', days: '16', end: 'martedì 24 novembre', rx: 'Serve la ricetta',
+        bc: '#E3A54A', bg: '#FFFFFF', chipBg: '#FFF0D9', chipFg: '#8A4A00', chipBc: '#E3A54A' }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

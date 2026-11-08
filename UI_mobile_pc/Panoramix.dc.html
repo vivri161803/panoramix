@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--px-bg:#F3F5F7;--px-surface:#FFFFFF;--px-surface-2:#EDF0F3;--px-surface-3:#E1E6EB;--px-line:#DAE0E6;--px-line-strong:#AEB8C2;--px-ink:#0E1620;--px-ink-2:#44505C;--px-ink-3:#5B6774;--px-primary:#132030;--px-on-primary:#FFFFFF;--px-link:#1C5CC8;--px-focus:#2E78F5;--px-ok-fg:#1A6B43;--px-ok-bg:#E4F2EA;--px-ok-line:#94CBAE;--px-order-fg:#8A4A00;--px-order-bg:#FFF0D9;--px-order-line:#E3A54A;--px-ordered-fg:#1E4DA6;--px-ordered-bg:#E5EDFB;--px-ordered-line:#94B3E8;--px-out-fg:#AE2418;--px-out-bg:#FCEAE7;--px-out-line:#E48C80;--px-tube-bg:#F1F4F7;--px-glass-hi:rgba(255,255,255,.75);--px-shadow:0 1px 2px rgba(14,22,32,.05),0 6px 20px rgba(14,22,32,.05);--px-font:"Geist",system-ui,sans-serif;--px-mono:"Geist Mono",ui-monospace,monospace}
+[data-theme="dark"]{color-scheme:dark;--px-bg:#0C1117;--px-surface:#141A22;--px-surface-2:#1B222C;--px-surface-3:#252E39;--px-line:#29333E;--px-line-strong:#46525F;--px-ink:#E9EEF3;--px-ink-2:#B3BDC7;--px-ink-3:#96A2AE;--px-primary:#E9EEF3;--px-on-primary:#0C1117;--px-link:#86B4FF;--px-ok-fg:#7DD3A4;--px-ok-bg:#11281C;--px-ok-line:#2D6A49;--px-order-fg:#F4C06A;--px-order-bg:#2D2110;--px-order-line:#7D5B22;--px-ordered-fg:#A2C1FF;--px-ordered-bg:#132139;--px-ordered-line:#36538D;--px-out-fg:#FF9C90;--px-out-bg:#331410;--px-out-line:#8C3B31;--px-tube-bg:#0F151C;--px-glass-hi:rgba(255,255,255,.12);--px-shadow:0 1px 2px rgba(0,0,0,.4)}
+body{margin:0;background:#E4E8EC;font-family:var(--px-font);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:var(--px-link)}
+a:hover{color:var(--px-ink)}
+</style>
+</helmet>
+<div style="padding:80px;display:flex;flex-direction:column;gap:120px;color:#0E1620;font-family:var(--px-font);font-variant-numeric:tabular-nums;width:max-content">
+
+<section data-screen-label="Identità" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">01 · IDENTITÀ</span>
+    <h1 style="margin:0;font:700 56px/1.05 var(--px-font);letter-spacing:-.03em">Panoramix</h1>
+    <p style="margin:0;font:400 20px/1.5 var(--px-font);color:#44505C">Strumento chiaro e preciso; le compresse sono l’unica nota di colore. Stati sempre con testo e icona, mai solo colore.</p>
+  </div>
+  <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:24px;padding:40px;display:flex;align-items:flex-end;gap:32px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><dc-import name="AppIcon" size="160" hint-size="160px,160px"></dc-import><span style="font:500 13px/1 var(--px-mono);color:#5B6774">160</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><dc-import name="AppIcon" size="64" hint-size="64px,64px"></dc-import><span style="font:500 13px/1 var(--px-mono);color:#5B6774">64</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><dc-import name="AppIcon" size="32" hint-size="32px,32px"></dc-import><span style="font:500 13px/1 var(--px-mono);color:#5B6774">32</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><dc-import name="AppIcon" size="16" hint-size="16px,16px"></dc-import><span style="font:500 13px/1 var(--px-mono);color:#5B6774">16</span></div>
+    </div>
+    <div style="background:#fff;border-radius:24px;padding:40px;display:flex;flex-direction:column;justify-content:center;gap:28px">
+      <div style="display:flex;align-items:center;gap:14px"><dc-import name="AppIcon" size="48" hint-size="48px,48px"></dc-import><span style="font:650 34px/1 var(--px-font);letter-spacing:-.02em">Panoramix</span></div>
+      <div style="display:flex;align-items:center;gap:14px;background:#0C1117;color:#E9EEF3;padding:16px 20px;border-radius:14px"><dc-import name="AppIcon" size="40" hint-size="40px,40px"></dc-import><span style="font:650 28px/1 var(--px-font);letter-spacing:-.02em">Panoramix</span></div>
+    </div>
+    <div style="background:#fff;border-radius:24px;padding:40px;display:flex;flex-direction:column;gap:16px">
+      <span style="font:600 15px/1 var(--px-font)">Compresse · pill.color × pill.shape</span>
+      <div style="display:grid;grid-template-columns:110px repeat(4,72px);gap:14px 10px;align-items:center">
+        <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">tonda</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">ovale</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">oblunga</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">capsula</span>
+        <sc-for list="{{ pillColors }}" as="pc" hint-placeholder-count="6">
+          <span style="font:500 14px/1.2 var(--px-font)">{{ pc.name }}<br><span style="font:500 12px/1 var(--px-mono);color:#5B6774">{{ pc.hex }}</span></span>
+          <dc-import name="Pill" color="{{ pc.hex }}" shape="tonda" size="40" hint-size="32px,32px"></dc-import>
+          <dc-import name="Pill" color="{{ pc.hex }}" shape="ovale" size="40" hint-size="40px,26px"></dc-import>
+          <dc-import name="Pill" color="{{ pc.hex }}" shape="oblunga" size="44" hint-size="44px,18px"></dc-import>
+          <dc-import name="Pill" color="{{ pc.hex }}" shape="capsula" size="44" hint-size="44px,18px"></dc-import>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Token" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">02 · TOKEN</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Colori, tipografia, spaziature, raggi</h2></div>
+  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:4px;width:640px">
+      <div style="display:grid;grid-template-columns:1fr 120px 120px;gap:12px;padding-bottom:10px;font:600 13px/1 var(--px-mono);color:#5B6774"><span>token</span><span>chiaro</span><span>scuro</span></div>
+      <sc-for list="{{ colorTokens }}" as="t" hint-placeholder-count="12">
+        <div style="display:grid;grid-template-columns:1fr 120px 120px;gap:12px;align-items:center;padding:6px 0;border-top:1px solid #EDF0F3">
+          <span style="font:500 14px/1.2 var(--px-mono)">{{ t.name }}<br><span style="font:400 13px/1.3 var(--px-font);color:#5B6774">{{ t.use }}</span></span>
+          <span style="display:flex;align-items:center;gap:8px;font:500 12px/1 var(--px-mono)"><span style="width:28px;height:28px;border-radius:8px;background:{{ t.light }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span>{{ t.light }}</span>
+          <span style="display:flex;align-items:center;gap:8px;font:500 12px/1 var(--px-mono)"><span style="width:28px;height:28px;border-radius:8px;background:{{ t.dark }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span>{{ t.dark }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:24px;width:560px">
+      <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px">
+        <span style="font:600 15px/1 var(--px-font)">Tipografia · Geist, cifre tabellari (font-variant-numeric: tabular-nums)</span>
+        <sc-for list="{{ typeTokens }}" as="ty" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:baseline;border-top:1px solid #EDF0F3;padding-top:10px">
+            <span style="font:500 13px/1.3 var(--px-mono);color:#5B6774">{{ ty.name }}<br>{{ ty.spec }}</span>
+            <span style="{{ ty.style }}">{{ ty.sample }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px">
+        <span style="font:600 15px/1 var(--px-font)">Spaziature · space.*</span>
+        <div style="display:flex;align-items:flex-end;gap:14px">
+          <sc-for list="{{ spaceTokens }}" as="sp" hint-placeholder-count="8">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:{{ sp.px }};height:{{ sp.px }};background:#2E78F5;border-radius:3px"></span><span style="font:500 12px/1.2 var(--px-mono);color:#5B6774;text-align:center">{{ sp.name }}<br>{{ sp.px }}</span></div>
+          </sc-for>
+        </div>
+        <span style="font:600 15px/1 var(--px-font);margin-top:12px">Raggi · radius.*</span>
+        <div style="display:flex;align-items:flex-end;gap:16px">
+          <sc-for list="{{ radiusTokens }}" as="ra" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:64px;height:64px;border:2px solid #0E1620;border-radius:{{ ra.px }};background:#EDF0F3"></span><span style="font:500 12px/1.2 var(--px-mono);color:#5B6774;text-align:center">{{ ra.name }}<br>{{ ra.px }}</span></div>
+          </sc-for>
+        </div>
+        <span style="font:400 14px/1.5 var(--px-font);color:#44505C">Aree toccabili ≥ 44 px (control.min) · campi 48 px · contrasto testo ≥ 4,5:1 in entrambi i temi.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Componenti" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">03 · COMPONENTI</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Dispenser, stati, controlli</h2></div>
+  <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:20px">
+    <span style="font:600 15px/1 var(--px-font)">Dispenser · scala comune 0–60 giorni, tacche a 7 e 14. Sotto soglia: bordo, etichetta, tacca superata evidenziata. Esaurita: fondo tinto e bordo pieno.</span>
+    <div style="display:grid;grid-template-columns:repeat(5,250px);gap:16px;align-items:stretch">
+      <sc-for list="{{ dispStates }}" as="ds" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font:500 13px/1 var(--px-mono);color:#5B6774">{{ ds.label }}</span><dc-import name="Dispenser" med="{{ ds.med }}" size="l" panel="{{ ds.panel }}" hint-size="250px,620px"></dc-import></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:40px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #EDF0F3">
+      <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px/1 var(--px-mono);color:#5B6774">StatusChip · ok / order / ordered / out</span>
+        <div style="display:flex;gap:8px"><dc-import name="StatusChip" status="ok" hint-size="60px,28px"></dc-import><dc-import name="StatusChip" status="order" hint-size="110px,28px"></dc-import><dc-import name="StatusChip" status="ordered" hint-size="96px,28px"></dc-import><dc-import name="StatusChip" status="out" hint-size="96px,28px"></dc-import></div>
+        <div data-theme="dark" style="display:flex;gap:8px;background:#141A22;padding:12px;border-radius:12px"><dc-import name="StatusChip" status="ok" hint-size="60px,28px"></dc-import><dc-import name="StatusChip" status="order" hint-size="110px,28px"></dc-import><dc-import name="StatusChip" status="ordered" hint-size="96px,28px"></dc-import><dc-import name="StatusChip" status="out" hint-size="96px,28px"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px/1 var(--px-mono);color:#5B6774">Button · primary / secondary / danger / link-danger</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" style="height:48px;padding:0 20px;border-radius:12px;border:none;background:#132030;color:#fff;font:600 16px/1 var(--px-font)">Salva piano</button>
+          <button type="button" style="height:48px;padding:0 20px;border-radius:12px;border:1px solid #AEB8C2;background:#fff;color:#0E1620;font:600 16px/1 var(--px-font)">Annulla</button>
+          <button type="button" style="height:44px;padding:0 16px;border-radius:12px;border:none;background:#AE2418;color:#fff;font:600 15px/1 var(--px-font)">Elimina</button>
+          <button type="button" style="height:44px;padding:0 4px;border:none;background:none;color:#AE2418;font:600 15px/1 var(--px-font);text-decoration:underline;text-underline-offset:3px">Elimina piano</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:300px"><span style="font:500 13px/1 var(--px-mono);color:#5B6774">Field · default / errore</span>
+        <input value="Nonna Anna" aria-label="Esempio campo" style="height:48px;padding:0 14px;border-radius:12px;border:1px solid #AEB8C2;font:400 16px/1 var(--px-font)">
+        <input value="marco.rossi.icloud.com" aria-label="Esempio campo con errore" style="height:48px;padding:0 14px;border-radius:12px;border:1.5px solid #AE2418;font:400 16px/1 var(--px-font)">
+        <span style="color:#AE2418;font:500 15px/1.4 var(--px-font)">Controlla l’indirizzo: sembra mancare la @.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px/1 var(--px-mono);color:#5B6774">EmailChip · Toast</span>
+        <div style="display:flex;gap:8px"><span style="display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;background:#EDF0F3;font:500 15px/1.2 var(--px-font)">Tu · marco.rossi@icloud.com</span><span style="display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #AEB8C2;font:500 15px/1.2 var(--px-font)">giulia.rossi@gmail.com ✕</span></div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px;border-radius:14px;background:#0E1620;color:#fff;font:500 16px/1.35 var(--px-font);width:max-content">✓ Aggiunte 30 compresse di Atorvastatina <span style="font-weight:650;text-decoration:underline;text-underline-offset:3px;padding-left:8px">Annulla</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Telefono" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:960px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">04 · TELEFONO · 390 PX</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Schermate telefono</h2><p style="margin:0;font:400 18px/1.5 var(--px-font);color:#44505C">Dispenser in griglia a 2 colonne, ordinati per gravità (Esaurita → Da ordinare → Ordinata → OK): le 4 medicine sono visibili insieme e il problema più serio è sempre il primo in alto a sinistra. La fila scorrevole nasconderebbe metà dei tubi. Ogni schermata è interattiva.</p></div>
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;width:2400px">
+    <sc-for list="{{ phone }}" as="fr" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+        <span style="font:600 14px/1.3 var(--px-mono);color:#44505C">{{ fr.id }} · {{ fr.label }}</span>
+        <div style="width:390px;min-height:844px;border-radius:32px;overflow:hidden;background:var(--px-bg);box-shadow:0 0 0 1px rgba(14,22,32,.12),0 20px 50px rgba(14,22,32,.12);display:flex;flex-direction:column">
+          <dc-import name="PanoramixApp" screen="{{ fr.screen }}" variant="{{ fr.variant }}" device="phone" theme="{{ fr.theme }}" style="width:100%;flex:1;min-height:844px;display:flex;flex-direction:column" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Desktop" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">05 · DESKTOP · 1440 PX</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Schermate desktop</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start;width:3000px">
+    <sc-for list="{{ desktop }}" as="fr" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:12px;width:1440px">
+        <span style="font:600 16px/1.3 var(--px-mono);color:#44505C">{{ fr.id }} · {{ fr.label }}</span>
+        <div style="width:1440px;min-height:900px;border-radius:16px;overflow:hidden;background:var(--px-bg);box-shadow:0 0 0 1px rgba(14,22,32,.12),0 20px 50px rgba(14,22,32,.12);display:flex;flex-direction:column">
+          <dc-import name="PanoramixApp" screen="{{ fr.screen }}" variant="{{ fr.variant }}" device="desktop" theme="{{ fr.theme }}" style="width:100%;flex:1;min-height:900px;display:flex;flex-direction:column" hint-size="1440px,900px"></dc-import>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Stampa ed email" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">06 · STAMPA ED EMAIL</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Foglio A4 per la nonna · Email di avviso</h2></div>
+  <div style="display:flex;gap:56px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px"><span style="font:600 14px/1.3 var(--px-mono);color:#44505C">P01 · A4 verticale · <a href="PanoramixStampa.dc.html">apri</a></span><div style="box-shadow:0 0 0 1px rgba(14,22,32,.12),0 20px 50px rgba(14,22,32,.12)"><dc-import name="PanoramixStampa" hint-size="794px,1123px"></dc-import></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;width:680px"><span style="font:600 14px/1.3 var(--px-mono);color:#44505C">E01 · Email · <a href="PanoramixEmail.dc.html">apri</a></span><div style="background:#E7EBEF;border-radius:16px"><dc-import name="PanoramixEmail" hint-size="680px,1300px"></dc-import></div></div>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = ['bg','surface','surface-2','surface-3','line','line-strong','ink','ink-2','ink-3','primary','focus','ok-fg','ok-bg','order-fg','order-bg','ordered-fg','ordered-bg','out-fg','out-bg'];
+    const light = { bg:'#F3F5F7', surface:'#FFFFFF','surface-2':'#EDF0F3','surface-3':'#E1E6EB', line:'#DAE0E6','line-strong':'#AEB8C2', ink:'#0E1620','ink-2':'#44505C','ink-3':'#5B6774', primary:'#132030', focus:'#2E78F5','ok-fg':'#1A6B43','ok-bg':'#E4F2EA','order-fg':'#8A4A00','order-bg':'#FFF0D9','ordered-fg':'#1E4DA6','ordered-bg':'#E5EDFB','out-fg':'#AE2418','out-bg':'#FCEAE7' };
+    const dark = { bg:'#0C1117', surface:'#141A22','surface-2':'#1B222C','surface-3':'#252E39', line:'#29333E','line-strong':'#46525F', ink:'#E9EEF3','ink-2':'#B3BDC7','ink-3':'#96A2AE', primary:'#E9EEF3', focus:'#2E78F5','ok-fg':'#7DD3A4','ok-bg':'#11281C','order-fg':'#F4C06A','order-bg':'#2D2110','ordered-fg':'#A2C1FF','ordered-bg':'#132139','out-fg':'#FF9C90','out-bg':'#331410' };
+    const use = { bg:'Fondo pagina', surface:'Schede, campi', 'surface-2':'Fondi secondari, celle', 'surface-3':'Tappo e base del tubo', line:'Divisori', 'line-strong':'Bordi di campi e pulsanti', ink:'Testo principale', 'ink-2':'Testo secondario', 'ink-3':'Etichette, didascalie', primary:'Pulsante principale', focus:'Anello di focus', 'ok-fg':'Stato OK', 'ok-bg':'Stato OK, fondo', 'order-fg':'Da ordinare', 'order-bg':'Da ordinare, fondo', 'ordered-fg':'Ordinata', 'ordered-bg':'Ordinata, fondo', 'out-fg':'Esaurita, distruttivo', 'out-bg':'Esaurita, fondo' };
+    const colorTokens = L.map(k => ({ name: 'color.' + k, use: use[k], light: light[k], dark: dark[k] }));
+    const T = [['display','650 38/1.1 −2%','font:650 38px/1.1 var(--px-font);letter-spacing:-.02em','Nonna Anna'],['title','650 26/1.2','font:650 26px/1.2 var(--px-font)','Ti abbiamo inviato un link'],['heading','650 20/1.25','font:650 20px/1.25 var(--px-font)','Prossima preparazione'],['body-strong','600 16/1.35','font:600 16px/1.35 var(--px-font)','16 compresse rimaste'],['body','400 16/1.45','font:400 16px/1.45 var(--px-font)','Finisce mar 24 nov'],['label','500 14/1.3','font:500 14px/1.3 var(--px-font);color:#5B6774','Da ordinare'],['mono','500 13 Geist Mono','font:500 13px/1.3 var(--px-mono)','14g · 60+']];
+    const typeTokens = T.map(([name, spec, style, sample]) => ({ name: 'type.' + name, spec, style, sample }));
+    const spaceTokens = [4, 8, 12, 16, 20, 24, 32, 40].map((n, i) => ({ name: 'space.' + (i + 1), px: n + 'px' }));
+    const radiusTokens = [['sm', 8], ['md', 12], ['lg', 18], ['xl', 28], ['pill', 999]].map(([n, v]) => ({ name: 'radius.' + n, px: v + 'px' }));
+    const pillColors = [['Corallo','#FF5E4D'],['Giallo sole','#FFC020'],['Turchese','#12C2B0'],['Viola','#8D5BF5'],['Verde lime','#93D232'],['Blu','#2E78F5']].map(([name, hex]) => ({ name, hex }));
+    const base = { perPack: 30, rx: false };
+    const dispStates = [
+      { label: 'ok', med: { ...base, name: 'Atorvastatina', dose: '20 mg', color: '#2E78F5', shape: 'ovale', qty: 42, days: 42, endLabel: 'dom 20 dic', status: 'ok', reason: '' } },
+      { label: 'ok · 60+', med: { ...base, name: 'Metformina', dose: '500 mg', color: '#93D232', shape: 'oblunga', qty: 90, days: 90, endLabel: 'sab 6 feb', status: 'ok', reason: '' } },
+      { label: 'order · menu aperto', panel: 'menu', med: { ...base, name: 'Ramipril', dose: '5 mg', color: '#FFC020', shape: 'oblunga', qty: 16, perPack: 28, rx: true, days: 16, endLabel: 'mar 24 nov', status: 'order', reason: 'Dopo la preparazione restano 9 giorni' } },
+      { label: 'ordered', med: { ...base, name: 'Vitamina D', dose: '25.000 UI', color: '#8D5BF5', shape: 'capsula', qty: 3, perPack: 4, days: 21, endLabel: 'dom 29 nov', status: 'ordered', reason: 'Ordinata oggi, in arrivo', ordered: true } },
+      { label: 'out · arrivo aperto', panel: 'arrive', med: { ...base, name: 'Cardioaspirina', dose: '100 mg', color: '#FF5E4D', shape: 'tonda', qty: 5, days: 5, endLabel: 'ven 13 nov', status: 'out', reason: 'Ne mancano 2 per la settimana' } }
+    ];
+    const F = (id, label, screen, variant, theme) => ({ id, label, screen, variant: variant || '', theme: theme || 'light' });
+    const phone = [
+      F('T01','Dispenser','dispenser'), F('T02','Dispenser · azioni aperte e conferma','dispenser','azioni'), F('T03','Dispenser · piano senza medicine','dispenser','vuoto'),
+      F('T04','Calendario','calendario'), F('T05','Storico · Ramipril','storico'), F('T06','Aggiungi / modifica medicinale','medicina'),
+      F('T07','I miei piani','piani'), F('T08','I miei piani · vuoto','piani','vuoto'), F('T09','I miei piani · caricamento','piani','caricamento'),
+      F('T10','Impostazioni piano','piano'), F('T11','Impostazioni piano · conferma eliminazione','piano','elimina'), F('T12','Nuovo piano','piano','nuovo'),
+      F('T13','Accesso · email','accesso','email'), F('T14','Accesso · email non valida','accesso','errore'), F('T15','Accesso · link inviato','accesso','inviato'),
+      F('T16','Accesso · link scaduto','accesso','scaduto'), F('T17','Primo accesso · nome e cognome','accesso','nome'), F('T18','Tema scuro · Dispenser','dispenser','','dark'),
+      F('T19','Tema scuro · Calendario','calendario','','dark'), F('T20','Tema scuro · Medicinale','medicina','','dark')
+    ];
+    const desktop = [
+      F('D01','Dispenser','dispenser'), F('D02','Dispenser · azioni aperte e conferma','dispenser','azioni'),
+      F('D03','Calendario','calendario'), F('D04','Aggiungi / modifica medicinale','medicina'),
+      F('D05','I miei piani','piani'), F('D06','Impostazioni piano · conferma eliminazione','piano','elimina'),
+      F('D07','Storico · Ramipril','storico'), F('D08','Accesso · link inviato','accesso','inviato'),
+      F('D09','Tema scuro · Dispenser','dispenser','','dark'), F('D10','Tema scuro · I miei piani','piani','','dark')
+    ];
+    return { colorTokens, typeTokens, spaceTokens, radiusTokens, pillColors, dispStates, phone, desktop };
+  }
+}
+</script>
+</body>
+</html>

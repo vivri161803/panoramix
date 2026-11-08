@@ -1,0 +1,37 @@
+<!-- Modello "Magic Link" e "Confirm signup" di Supabase (Authentication → Emails → Templates).
+     Oggetto consigliato: "Il tuo link per entrare in Panoramix" -->
+<!doctype html>
+<html lang="it">
+  <body style="margin:0;padding:0;background:#E7EBEF;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#E7EBEF;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFFFF;border:1px solid #DAE0E6;border-radius:18px;">
+            <tr>
+              <td style="padding:22px 28px;border-bottom:1px solid #DAE0E6;font:600 19px/1 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0E1620;">Panoramix</td>
+            </tr>
+            <tr>
+              <td style="padding:28px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0E1620;">
+                <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;">Ecco il tuo link per entrare</h1>
+                <p style="margin:0 0 22px;font-size:17px;line-height:1.5;color:#44505C;">Tocca il pulsante per accedere a Panoramix. Il link vale 15 minuti e si usa una volta sola.</p>
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="border-radius:12px;background:#132030;">
+                      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="display:inline-block;padding:15px 24px;font-size:17px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:12px;">Entra in Panoramix</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:22px 0 0;font-size:14px;line-height:1.5;color:#5B6774;">Se non hai chiesto tu di entrare, ignora questa email: senza il link nessuno può accedere.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px;border-top:1px solid #DAE0E6;background:#F3F5F7;border-radius:0 0 18px 18px;font:400 13px/1.5 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#44505C;">
+                Panoramix è un promemoria: non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

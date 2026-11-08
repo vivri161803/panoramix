@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div role="img" aria-label="Panoramix" style="position:relative;flex:none;width:{{ px }};height:{{ px }};border-radius:23%;background:linear-gradient(160deg,#1E2A38,#0E1620);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)"><span style="position:absolute;left:13%;top:20%;width:66%;height:27%;border-radius:999px;transform:rotate(-32deg);background:radial-gradient(ellipse 60% 50% at 30% 25%, rgba(255,255,255,.8), rgba(255,255,255,0) 60%),linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,0) 45%, rgba(0,0,0,.28)),linear-gradient(90deg,#FF5E4D 50%,#F5F4EF 50%);box-shadow:0 2px 3px rgba(0,0,0,.35)"></span><span style="position:absolute;left:52%;top:52%;width:34%;height:34%;border-radius:50%;background:radial-gradient(ellipse 60% 50% at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,0) 62%),linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,0) 45%, rgba(0,0,0,.28)),#FFC020;box-shadow:0 2px 3px rgba(0,0,0,.35)"></span><span style="position:absolute;left:16%;top:63%;width:22%;height:22%;border-radius:50%;background:radial-gradient(ellipse 60% 50% at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,0) 62%),linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,0) 45%, rgba(0,0,0,.28)),#12C2B0;box-shadow:0 2px 3px rgba(0,0,0,.35)"></span></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:160,&quot;height&quot;:160},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:128,&quot;min&quot;:16,&quot;max&quot;:512,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { px: (this.props.size ?? 64) + 'px' }; }
+}
+</script>
+</body>
+</html>
