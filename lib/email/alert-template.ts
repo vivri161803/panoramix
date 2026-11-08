@@ -134,7 +134,7 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #DAE0E6;border-radius:18px;">
   <tr><td style="padding:22px 28px;border-bottom:1px solid #DAE0E6;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-      <td valign="middle" style="padding-right:10px;"><img src="${esc(logoUrl(d))}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border:0;border-radius:8px;background:#132030;"></td>
+      <td valign="middle" style="padding-right:10px;"><img src="${esc(logoUrl(d))}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border:1px solid #DAE0E6;border-radius:8px;background:#F4F3EE;"></td>
       <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Panoramix</td>
     </tr></table>
   </td></tr>

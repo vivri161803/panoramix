@@ -28,6 +28,7 @@ Panoramix aiuta chi gestisce le medicine di un familiare a sapere **quando** va 
 | `supabase/seed.sql` | Dati d’esempio, marcati `[ESEMPIO]` |
 | `supabase/templates/magic-link.html` | Modello italiano dell’email con il link di accesso |
 | `tests/` | Test Vitest della logica di dominio |
+| `app/icon.svg` | Icona “Vischio di pillole”: unica fonte del disegno. `node scripts/build-icons.mjs` rigenera `public/email-logo.png` e `app/apple-icon.png` |
 
 ### Pagine
 

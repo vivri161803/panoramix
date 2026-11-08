@@ -1,13 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#1E2A38"/><stop offset="1" stop-color="#0E1620"/></linearGradient>
-    <radialGradient id="hi" cx="0.32" cy="0.26" r="0.6"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-    <clipPath id="cap"><rect x="-21" y="-8.6" width="42" height="17.2" rx="8.6"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfaf6"/><stop offset="1" stop-color="#ecebe4"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a7a"/><stop offset="1" stop-color="#e2463a"/></linearGradient>
+    <linearGradient id="wht" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfaf5"/><stop offset="1" stop-color="#d6d2c6"/></linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fdcc4"/><stop offset="1" stop-color="#159a86"/></linearGradient>
+    <linearGradient id="grn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8be0a6"/><stop offset="1" stop-color="#2e9a63"/></linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14.7" fill="url(#bg)"/>
-  <g transform="translate(29.4 21.4) rotate(-32)">
-    <g clip-path="url(#cap)"><rect x="-21" y="-8.6" width="21" height="17.2" fill="#FF5E4D"/><rect x="0" y="-8.6" width="21" height="17.2" fill="#F5F4EF"/><rect x="-21" y="-8.6" width="42" height="17.2" fill="url(#hi)"/></g>
-  </g>
-  <circle cx="44.2" cy="44.2" r="10.9" fill="#FFC020"/><circle cx="44.2" cy="44.2" r="10.9" fill="url(#hi)"/>
-  <circle cx="17.3" cy="47.4" r="7" fill="#12C2B0"/><circle cx="17.3" cy="47.4" r="7" fill="url(#hi)"/>
+  <rect width="100" height="100" rx="22.5" fill="url(#bg)"/>
+  <path d="M50 64 L50 84" stroke="#2e9a63" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="36" cy="44" rx="10" ry="23" fill="url(#grn)" transform="rotate(-40 36 44)"/>
+  <ellipse cx="64" cy="44" rx="10" ry="23" fill="url(#grn)" transform="rotate(40 64 44)"/>
+  <circle cx="35" cy="72" r="8" fill="url(#teal)"/>
+  <circle cx="66" cy="73" r="8.5" fill="url(#red)"/>
+  <circle cx="50" cy="63" r="10" fill="url(#wht)" stroke="#cfcabb" stroke-width="1"/>
+  <path d="M43.5 63 H56.5" stroke="#b9b4a6" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="46.5" cy="59" r="2.2" fill="#fff" opacity="0.8"/>
 </svg>
