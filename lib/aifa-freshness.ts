@@ -42,7 +42,7 @@ export function staleAifaProblems(rows: AifaImportRow[], now: Date): string[] {
     const since = lastGoodAt
       ? `da ${Math.floor((now.getTime() - lastGoodAt.getTime()) / DAY_MS)} giorni (ultimo import riuscito il ${formatDayMonthYear(lastGoodAt.toISOString().slice(0, 10))})`
       : "da più di due mesi o mai";
-    const why = lastFail?.error ? ` Ultimo errore: ${lastFail.error.slice(0, 300)}` : " Il workflow non risulta partito.";
+    const why = lastFail?.error ? ` Ultimo errore: ${lastFail.error.slice(0, 300).replace(/[.\s]+$/, "")}.` : " Il workflow non risulta partito.";
     problems.push(
       `Dati AIFA (${AIFA_SOURCE_LABEL[source]}) non aggiornati ${since}.${why} Le tabelle restano quelle dell'ultimo import riuscito finché il file non torna leggibile.`,
     );

@@ -25,7 +25,7 @@ describe("staleAifaProblems", () => {
     expect(p[0]).toMatch(/farmaci carenti/);
     expect(p[0]).toMatch(/da 9 giorni/);
     expect(p[0]).toMatch(/11 novembre 2026/);
-    expect(p[0]).toMatch(/404 Not Found/);
+    expect(p[0]).toMatch(/Ultimo errore: Download non riuscito \(404 Not Found\)\. Le tabelle/);
     expect(p[0]).toMatch(/restano quelle dell'ultimo import riuscito/);
   });
 

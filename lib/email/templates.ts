@@ -225,9 +225,13 @@ export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
 
 export function renderOpsEmail(d: { title: string; problems: string[]; appUrl: string; when: string }): RenderedEmail {
   const subject = `[Panoramix] ${d.title}`;
-  const intro = `Controllo automatico del ${d.when}. Gli utenti potrebbero non aver ricevuto avvisi o promemoria.`;
+  // solo dati AIFA fermi: avvisi e promemoria sono partiti normalmente
+  const onlyAifa = d.problems.length > 0 && d.problems.every((p) => p.startsWith("Dati AIFA"));
+  const intro = onlyAifa
+    ? `Controllo automatico del ${d.when}. Avvisi e promemoria sono partiti: il problema riguarda solo i dati AIFA (codice AIC e scheda Disponibilità).`
+    : `Controllo automatico del ${d.when}. Gli utenti potrebbero non aver ricevuto avvisi o promemoria.`;
   const list = `<ul style="margin:0 0 20px;padding-left:20px;font:400 16px/1.5 ${FONT};color:#0E1620;">${d.problems.map((p) => `<li style="margin:0 0 6px;">${esc(p)}</li>`).join("")}</ul>`;
-  const hint = "Dettagli nei log di Vercel e nelle tabelle cron_runs, alert_runs e notification_runs su Supabase.";
+  const hint = "Dettagli nei log di Vercel e nelle tabelle cron_runs, alert_runs e notification_runs su Supabase; per i dati AIFA in aifa_imports e nelle esecuzioni di «Import dati AIFA» su GitHub Actions.";
   const html = renderLayout({ subject, preheader: d.problems[0] ?? d.title, title: d.title, intro, body: list + noteBox(hint), footer: ["Email tecnica di Panoramix: arriva solo all’indirizzo impostato in OPS_ALERT_EMAIL."], appUrl: d.appUrl });
   const text = lines([d.title, "", intro, "", ...d.problems.map((p) => `• ${p}`), "", hint]);
   return { subject, html, text };

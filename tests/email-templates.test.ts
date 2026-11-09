@@ -71,4 +71,12 @@ describe("avviso tecnico", () => {
     expect(e.subject).toBe("[Panoramix] Problema nel controllo");
     expect(e.text).toContain("• Ieri non è partito\n• SMTP giù");
   });
+
+  it("email tecnica con soli dati AIFA fermi: dice che avvisi e promemoria sono partiti", () => {
+    const e = renderOpsEmail({ title: "Problema nel controllo", problems: ["Dati AIFA (farmaci carenti) non aggiornati da 9 giorni."], appUrl, when: "9 novembre 2026" });
+    expect(e.text).toContain("Avvisi e promemoria sono partiti");
+    expect(e.text).not.toContain("potrebbero non aver ricevuto");
+    const mixed = renderOpsEmail({ title: "2 problemi", problems: ["Dati AIFA (atc) fermi.", "SMTP giù"], appUrl, when: "9 novembre 2026" });
+    expect(mixed.text).toContain("potrebbero non aver ricevuto");
+  });
 });
