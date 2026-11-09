@@ -42,6 +42,12 @@ test.beforeAll(async () => {
   await loadAifaSample(admin);
 });
 
+test("il WebAssembly dello scanner si scarica anche senza sessione", async ({ request }) => {
+  const res = await request.get("/zxing/zxing_reader.wasm", { maxRedirects: 0 });
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("application/wasm");
+});
+
 test("codice AIC, colore per gruppo e scheda Disponibilità", async ({ page }) => {
   await login(page);
   await page.getByRole("link", { name: "Crea il primo piano" }).click();
