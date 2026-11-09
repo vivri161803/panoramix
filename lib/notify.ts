@@ -6,7 +6,8 @@ import { toPlanSettings, toPrepRun, type PlanRow } from "@/lib/db-types";
 import { forecastPlan } from "@/lib/forecast";
 import { loadCronData, planAudience, type CronData } from "@/lib/cron-data";
 import { buildReminderItems, buildSummaryMeds } from "@/lib/digest";
-import { getEmailProvider } from "@/lib/email/provider";
+import { getEmailProvider, type EmailProvider } from "@/lib/email/provider";
+import { CRON_CONCURRENCY, runPool, timeoutMessage, type CronRunOptions } from "@/lib/batch";
 import { renderPrepReminderEmail, renderWeeklySummaryEmail, type RenderedEmail } from "@/lib/email/templates";
 
 export type NotificationKind = "prep_reminder" | "weekly_summary";
@@ -24,7 +25,7 @@ export interface NotifyResult {
  * Manda un'email al massimo una volta al giorno per piano e tipo.
  * La riga di notification_runs fa da "prenotazione": se esiste già, si riprova solo dopo un errore.
  */
-async function sendOnce(admin: SupabaseClient, plan: PlanRow, kind: NotificationKind, today: ISODate, to: string[], replyTo: string | undefined, email: RenderedEmail) {
+async function sendOnce(admin: SupabaseClient, provider: EmailProvider, plan: PlanRow, kind: NotificationKind, today: ISODate, to: string[], replyTo: string | undefined, email: RenderedEmail) {
   const claim = await admin
     .from("notification_runs")
     .insert({ plan_id: plan.id, kind, run_date: today, status: "sending", recipients: to })
@@ -46,7 +47,7 @@ async function sendOnce(admin: SupabaseClient, plan: PlanRow, kind: Notification
     if (!runId) return { outcome: "already_sent_today" as const };
   }
   try {
-    await getEmailProvider().send({ to, replyTo, ...email });
+    await provider.send({ to, replyTo, ...email });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await admin.from("notification_runs").update({ status: "failed", error: msg.slice(0, 1000), updated_at: new Date().toISOString() }).eq("id", runId);
@@ -67,21 +68,31 @@ function planForecast(data: CronData, plan: PlanRow, today: ISODate) {
 
 type Builder = (plan: PlanRow, data: CronData) => RenderedEmail | null;
 
-async function runKind(admin: SupabaseClient, kind: NotificationKind, today: ISODate, dryRun: boolean, wanted: (p: PlanRow) => boolean, build: Builder, data?: CronData): Promise<NotifyResult> {
+export interface NotifyOptions extends CronRunOptions {
+  /** Dati già letti (per non rileggerli); altrimenti si leggono qui. */
+  data?: CronData;
+}
+
+const KIND_PATH: Record<NotificationKind, string> = { prep_reminder: "/api/cron/reminders", weekly_summary: "/api/cron/alerts?riepilogo=1" };
+
+async function runKind(admin: SupabaseClient, kind: NotificationKind, today: ISODate, dryRun: boolean, wanted: (p: PlanRow) => boolean, build: Builder, opts: NotifyOptions): Promise<NotifyResult> {
   const result: NotifyResult = { runDate: today, dryRun, plansChecked: 0, emailsSent: 0, plans: [], errors: [] };
-  const d = data ?? (await loadCronData(admin));
-  for (const plan of d.plans.filter(wanted)) {
+  const d = opts.data ?? (await loadCronData(admin));
+  const plans = d.plans.filter(wanted);
+  const provider = dryRun ? null : getEmailProvider({ pooled: true });
+
+  async function notifyPlan(plan: PlanRow) {
     result.plansChecked++;
     try {
       const email = build(plan, d);
-      if (!email) continue;
+      if (!email) return;
       const to = planAudience(d, plan);
-      if (!to.length) continue;
+      if (!to.length) return;
       if (dryRun) {
         result.plans.push({ planId: plan.id, outcome: "would_send" });
-        continue;
+        return;
       }
-      const res = await sendOnce(admin, plan, kind, today, to, d.profiles.get(plan.owner_id)?.email, email);
+      const res = await sendOnce(admin, provider!, plan, kind, today, to, d.profiles.get(plan.owner_id)?.email, email);
       result.plans.push({ planId: plan.id, ...res });
       if (res.outcome === "sent") {
         result.emailsSent++;
@@ -94,11 +105,18 @@ async function runKind(admin: SupabaseClient, kind: NotificationKind, today: ISO
       result.errors.push(`Piano ${plan.id} (${kind}): ${msg}`);
     }
   }
+
+  try {
+    const { skipped } = await runPool(plans, { concurrency: CRON_CONCURRENCY, deadline: opts.deadline }, notifyPlan);
+    if (skipped.length) result.errors.push(timeoutMessage(kind, skipped.length, plans.length, KIND_PATH[kind]));
+  } finally {
+    provider?.close?.();
+  }
   return result;
 }
 
 /** Promemoria della sera: domani è il giorno di preparazione del portapillole. */
-export async function runPrepReminders(admin: SupabaseClient, today: ISODate, dryRun = false, data?: CronData): Promise<NotifyResult> {
+export async function runPrepReminders(admin: SupabaseClient, today: ISODate, dryRun = false, opts: NotifyOptions = {}): Promise<NotifyResult> {
   const tomorrow = addDays(today, 1);
   return runKind(
     admin,
@@ -123,7 +141,7 @@ export async function runPrepReminders(admin: SupabaseClient, today: ISODate, dr
         appUrl: env.appUrl(),
       });
     },
-    data,
+    opts,
   );
 }
 
@@ -133,7 +151,7 @@ export function isSummaryDay(today: ISODate): boolean {
 }
 
 /** Riepilogo del lunedì: stato delle scorte anche quando va tutto bene. */
-export async function runWeeklySummaries(admin: SupabaseClient, today: ISODate, dryRun = false, data?: CronData): Promise<NotifyResult> {
+export async function runWeeklySummaries(admin: SupabaseClient, today: ISODate, dryRun = false, opts: NotifyOptions = {}): Promise<NotifyResult> {
   return runKind(
     admin,
     "weekly_summary",
@@ -154,6 +172,6 @@ export async function runWeeklySummaries(admin: SupabaseClient, today: ISODate, 
         appUrl: env.appUrl(),
       });
     },
-    data,
+    opts,
   );
 }

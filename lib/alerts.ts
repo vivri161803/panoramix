@@ -5,6 +5,7 @@ import { toPlanSettings, toPrepRun, type Medication, type PlanRow, type ProfileR
 import { loadCronData, planAudience } from "@/lib/cron-data";
 import { dosesAt, dosesPhrase, evaluateAlerts, forecastPlan, type AlertType, type Forecast, type PlanForecast } from "@/lib/forecast";
 import { getEmailProvider } from "@/lib/email/provider";
+import { CRON_CONCURRENCY, groupBy, runPool, selectAll, timeoutMessage, type CronRunOptions } from "@/lib/batch";
 import { renderAlertEmail, type AlertEmailMed } from "@/lib/email/alert-template";
 import type { ISODate } from "@/lib/dates";
 
@@ -66,8 +67,9 @@ export interface DailyRunResult {
 /**
  * Controllo giornaliero: valuta le soglie di ogni piano, apre/chiude gli episodi
  * e manda al massimo un'email al giorno per piano. Idempotente sullo stesso giorno.
+ * I piani si controllano CRON_CONCURRENCY alla volta, con una sola connessione SMTP condivisa.
  */
-export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryRun = false): Promise<DailyRunResult> {
+export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryRun = false, opts: CronRunOptions = {}): Promise<DailyRunResult> {
   const result: DailyRunResult = { runDate: today, dryRun, plansChecked: 0, emailsSent: 0, plans: [], errors: [] };
 
   let cronRunId: string | null = null;
@@ -78,31 +80,29 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
 
   // Lettura di tutti i dati (anche la query quotidiana che tiene sveglio il progetto Supabase).
   const data = await loadCronData(admin);
-  const { plans: planRows, meds, runs } = data;
-  const medIds = meds.map((m) => m.id);
-  const { data: openRows } = medIds.length
-    ? await admin.from("alert_log").select("id, medication_id, alert_type, sent_at").in("medication_id", medIds).is("closed_at", null)
-    : { data: [] };
-  const openEpisodes = (openRows ?? []) as OpenEpisodeRow[];
+  const { plans: planRows } = data;
+  const openEpisodes = data.meds.length ? await loadOpenEpisodes(admin) : [];
+  const medsByPlan = groupBy(data.meds, (m) => m.planId);
+  const runsByPlan = groupBy(data.runs, (r) => r.plan_id);
+  const episodesByMed = groupBy(openEpisodes, (e) => e.medication_id);
 
-  const provider = dryRun ? null : getEmailProvider();
+  const provider = dryRun ? null : getEmailProvider({ pooled: true });
 
-  for (const plan of planRows) {
+  async function checkPlan(plan: PlanRow) {
     result.plansChecked++;
     try {
       const owner = data.profiles.get(plan.owner_id);
-      if (!owner?.email) continue;
-      const planMeds = meds.filter((m) => m.planId === plan.id);
+      if (!owner?.email) return;
       const fc = forecastPlan(
         toPlanSettings(plan),
-        planMeds,
-        runs.filter((r) => r.plan_id === plan.id).map(toPrepRun),
+        medsByPlan.get(plan.id) ?? [],
+        (runsByPlan.get(plan.id) ?? []).map(toPrepRun),
         today,
       );
 
       const toSend: { med: Medication; episodeIds: string[] }[] = [];
       for (const { med, forecast } of fc.items) {
-        const open = openEpisodes.filter((e) => e.medication_id === med.id);
+        const open = episodesByMed.get(med.id) ?? [];
         const d = evaluateAlerts(forecast.triggered, !!med.orderedAt, open.map((e) => ({ alertType: e.alert_type, sentAt: e.sent_at })));
         if (dryRun) {
           if (d.send.length) toSend.push({ med, episodeIds: [] });
@@ -134,14 +134,14 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
 
       if (!toSend.length) {
         result.plans.push({ planId: plan.id, outcome: "nothing" });
-        continue;
+        return;
       }
 
       const to = planAudience(data, plan);
       const names = toSend.map((s) => s.med.name);
       if (dryRun) {
         result.plans.push({ planId: plan.id, outcome: "would_send", medications: names });
-        continue;
+        return;
       }
 
       // Un'email al giorno per piano: la riga di alert_runs fa da "prenotazione".
@@ -165,7 +165,7 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
         runId = retry?.id;
         if (!runId) {
           result.plans.push({ planId: plan.id, outcome: "already_sent_today", medications: names });
-          continue;
+          return;
         }
       }
 
@@ -178,7 +178,7 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
         console.error(`[cron] invio non riuscito per il piano ${plan.id}:`, msg);
         result.errors.push(`Piano ${plan.id}: invio non riuscito (${msg})`);
         result.plans.push({ planId: plan.id, outcome: "failed", medications: names, error: msg });
-        continue;
+        return;
       }
       const sentAt = new Date().toISOString();
       await admin.from("alert_runs").update({ status: "sent", updated_at: sentAt }).eq("id", runId);
@@ -193,6 +193,13 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
     }
   }
 
+  try {
+    const { skipped } = await runPool(planRows, { concurrency: CRON_CONCURRENCY, deadline: opts.deadline }, checkPlan);
+    if (skipped.length) result.errors.push(timeoutMessage("avvisi", skipped.length, planRows.length, "/api/cron/alerts"));
+  } finally {
+    provider?.close?.();
+  }
+
   if (cronRunId) {
     await admin
       .from("cron_runs")
@@ -200,4 +207,11 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
       .eq("id", cronRunId);
   }
   return result;
+}
+
+/** Episodi aperti di tutti i medicinali, a pagine (vedi loadCronData). */
+async function loadOpenEpisodes(admin: SupabaseClient): Promise<OpenEpisodeRow[]> {
+  return selectAll<OpenEpisodeRow>("episodi aperti", (from, to) =>
+    admin.from("alert_log").select("id, medication_id, alert_type, sent_at").is("closed_at", null).order("id").range(from, to),
+  );
 }

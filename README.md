@@ -79,7 +79,7 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 ```mermaid
 flowchart LR
   U["Browser e iPhone"] --> N["Next.js 16 su Vercel<br/>App Router e Server Actions"]
-  N --> DB[("Supabase Postgres<br/>RLS, regione UE")]
+  N --> DB[("Supabase Postgres<br/>RLS, Londra")]
   N --> AU["Supabase Auth<br/>link magico"]
   CR["Vercel Cron<br/>07:00 e 17:00 UTC"] --> N
   N --> EM["Email<br/>SMTP Gmail o Resend"]
@@ -96,10 +96,22 @@ flowchart LR
 ```
 
 - Next.js 16 (App Router, Server Actions) e TypeScript, Tailwind CSS 4 con i token del design in `app/globals.css`.
-- Supabase: Postgres, Auth con link magico e Row Level Security. Il progetto è nella regione UE di Francoforte e le funzioni Vercel girano in `fra1`, vicino al database.
+- Supabase: Postgres, Auth con link magico e Row Level Security.
 - Email con Nodemailer via SMTP Gmail, dietro l'interfaccia `EmailProvider` (`lib/email/provider.ts`). Con `EMAIL_PROVIDER=resend` si passa a Resend.
 - Due Vercel Cron protetti da `CRON_SECRET`: avvisi alle 07:00 UTC su `/api/cron/alerts`, promemoria alle 17:00 UTC su `/api/cron/reminders`.
 - Test con Vitest per la logica e le Server Actions, test sul database locale per le regole RLS, Playwright per il percorso nel browser.
+
+### Dove gira cosa
+
+| Parte | Servizio | Dove |
+| --- | --- | --- |
+| Pagine, Server Actions e route dei cron | Vercel Functions, piano Hobby | `fra1`, Francoforte (scelta in [`vercel.json`](vercel.json)) |
+| Avvio dei controlli automatici | Vercel Cron, due volte al giorno | chiama le route qui sopra, quindi Francoforte |
+| Database Postgres, Auth e link magico | Supabase, piano Free, progetto "Panoramix" | `eu-west-2`, Londra |
+| Invio delle email (avvisi, inviti, link di accesso) | Gmail SMTP (`smtp.gmail.com`) | server di Google |
+| Indirizzo pubblico | dominio predefinito di Vercel | [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) |
+
+Funzioni e database sono in due regioni diverse, quindi ogni lettura o scrittura va da Francoforte a Londra e torna. Londra non è nell'Unione Europea. Per ora resta così; per avvicinarli si possono spostare le funzioni in `lhr1` (Londra) da `vercel.json`, oppure creare un nuovo progetto Supabase a Francoforte e migrarci i dati.
 
 ### Scelte tecniche
 
@@ -108,6 +120,7 @@ flowchart LR
 - I movimenti di magazzino passano da funzioni SQL atomiche (`record_stock_event`, `apply_prep`, `undo_prep`), quindi una preparazione del portapillole si annulla esattamente.
 - I permessi sono controllati due volte: le Server Actions verificano il ruolo e le regole RLS del database bloccano comunque ogni scrittura non permessa.
 - I cron sono idempotenti: se girano due volte nello stesso giorno non partono email doppie (`alert_runs`, `notification_runs`).
+- I cron leggono ogni tabella a pagine da 1000 righe, il massimo che Supabase restituisce per richiesta, senza mettere elenchi di identificativi nell'indirizzo. Controllano 5 piani alla volta e mandano le email su 3 connessioni SMTP riaperte una sola volta (`lib/batch.ts`, `lib/email/provider.ts`).
 - Se un controllo automatico fallisce, o quello del giorno prima non è partito, arriva un'email tecnica a `OPS_ALERT_EMAIL`.
 
 Il comportamento segue la specifica funzionale. L'aspetto viene dall'export di Claude Design in [`UI_mobile_pc/`](UI_mobile_pc): token, componenti, schermate per telefono e desktop, email e foglio A4.
@@ -248,6 +261,7 @@ In Supabase si configura lo stesso SMTP Gmail (Authentication → Emails → SMT
 - Per ogni medicinale e soglia attiva l'avviso parte una volta per "episodio". L'episodio si chiude quando la scorta torna sopra soglia, per un arrivo o un nuovo conteggio.
 - Al massimo un'email al giorno per piano, al gestore e ai destinatari, con `Reply-To` del gestore. Se il cron gira due volte nello stesso giorno non manda doppioni (`alert_runs`).
 - Esiti ed errori finiscono nelle tabelle `alert_runs` e `cron_runs` e nei log di Vercel.
+- Le route dei cron hanno 60 secondi (`maxDuration`). Dopo 45 secondi il controllo non inizia altri piani, salva l'esito e manda l'email tecnica con quanti piani sono rimasti fuori. Si può rilanciare a mano (vedi sotto): chi ha già ricevuto l'email quel giorno non la riceve di nuovo.
 - Nelle impostazioni del piano c'è "Mandami un'email di prova": arriva solo al gestore e non tocca gli avvisi veri.
 
 ### Promemoria, riepiloghi e destinatari
@@ -282,9 +296,9 @@ npm run lint
 ```
 
 - `npm test` copre mezze compresse, giorni della settimana, ogni N giorni, cicli, data di fine, al bisogno, preparazione e annullamento, ora legale, i criteri dal 2 al 5 della specifica, cambi di dose, lista farmacia, promemoria e riepiloghi, email e le Server Actions (permessi per ruolo, presa al bisogno e annullamento, cambi di dose, inviti) con Supabase simulato.
-- `npm run test:db` usa utenti veri dell'Auth locale e verifica che chi non è invitato non veda nulla, che solo l'invitato possa accettare l'invito, che la sola lettura non scriva in nessuna tabella né funzione, che il permesso di modifica non tocchi impostazioni e persone, il limite di 10 persone e l'uscita dal piano. Poi prova avvisi, promemoria (inviati una volta sola), riepilogo e controllo saltato. Gira solo su un indirizzo `localhost`.
+- `npm run test:db` usa utenti veri dell'Auth locale e verifica che chi non è invitato non veda nulla, che solo l'invitato possa accettare l'invito, che la sola lettura non scriva in nessuna tabella né funzione, che il permesso di modifica non tocchi impostazioni e persone, il limite di 10 persone e l'uscita dal piano. Poi prova avvisi, promemoria (inviati una volta sola), riepilogo e controllo saltato, un database con più di 1000 medicine e 260 piani, lo stop quando il tempo finisce e 25 email mandate in parallelo al Mailpit locale su poche connessioni SMTP. Gira solo su un indirizzo `localhost`.
 - `npm run test:e2e` rifà il percorso nel browser: accesso con il link da Mailpit, nuovo piano, medicinale al bisogno e presa, lista per la farmacia, invito, accettazione e verifica della sola lettura. La prima volta serve `npx playwright install chromium`; prima di lanciarlo ferma gli altri `npm run dev` del progetto.
 
 ## Deploy
 
-Il progetto Vercel è collegato al repository, con il dominio predefinito [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) e le funzioni nella regione `fra1`. I due cron sono dichiarati in [`vercel.json`](vercel.json). Prima di pubblicare codice che usa tabelle nuove applica le migrazioni al progetto Supabase con `npx supabase db push`. Le variabili si impostano in Vercel → Project → Settings → Environment Variables.
+Il progetto Vercel è collegato al repository, con il dominio predefinito [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) e le funzioni nella regione `fra1` (vedi [Dove gira cosa](#dove-gira-cosa)). I due cron sono dichiarati in [`vercel.json`](vercel.json). Prima di pubblicare codice che usa tabelle nuove applica le migrazioni al progetto Supabase con `npx supabase db push`. Le variabili si impostano in Vercel → Project → Settings → Environment Variables.

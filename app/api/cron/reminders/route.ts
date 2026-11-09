@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runPrepReminders } from "@/lib/notify";
 import { findMissedRun, finishCronRun, notifyOps, startCronRun } from "@/lib/ops";
 import { todayInRome } from "@/lib/dates";
+import { CRON_TIME_BUDGET_MS } from "@/lib/batch";
 import { authorized } from "../auth";
 
 export const maxDuration = 60;
@@ -12,6 +13,7 @@ export const maxDuration = 60;
 // ?dry=1 calcola senza scrivere né inviare.
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
+  const deadline = Date.now() + CRON_TIME_BUDGET_MS;
   const dry = req.nextUrl.searchParams.get("dry") === "1";
   const today = todayInRome();
   const problems: string[] = [];
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest) {
       if (missed) problems.push(missed);
       runId = await startCronRun(admin, "reminders", today);
     }
-    const result = await runPrepReminders(admin, today, dry);
+    const result = await runPrepReminders(admin, today, dry, { deadline });
     problems.push(...result.errors);
     await finishCronRun(admin, runId, result);
     if (!dry) await notifyOps("reminders", today, problems);

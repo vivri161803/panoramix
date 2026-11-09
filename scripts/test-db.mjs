@@ -15,6 +15,7 @@ const env = {
   TEST_SUPABASE_URL: status.API_URL,
   TEST_SUPABASE_ANON_KEY: status.ANON_KEY,
   TEST_SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
+  TEST_MAILPIT_URL: status.MAILPIT_URL ?? status.INBUCKET_URL ?? "",
 };
 const r = spawnSync("npx", ["vitest", "run", "tests/db", ...process.argv.slice(2)], { stdio: "inherit", env });
 process.exit(r.status ?? 1);

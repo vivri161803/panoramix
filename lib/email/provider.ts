@@ -13,7 +13,20 @@ export interface EmailMessage {
 export interface EmailProvider {
   readonly name: string;
   send(message: EmailMessage): Promise<{ id?: string }>;
+  /** Chiude le connessioni aperte (serve solo con `pooled`). */
+  close?(): void;
 }
+
+export interface ProviderOptions {
+  /**
+   * Per i controlli automatici: tiene aperte poche connessioni SMTP e le riusa per tutti gli invii,
+   * invece di aprirne una nuova (con TLS e login) per ogni email. Va chiuso con `close()` alla fine.
+   */
+  pooled?: boolean;
+}
+
+/** Connessioni SMTP aperte insieme durante un controllo automatico. */
+export const SMTP_POOL_CONNECTIONS = 3;
 
 function required(name: string): string {
   const v = process.env[name];
@@ -24,12 +37,24 @@ function required(name: string): string {
 /** Gmail (o altro SMTP) con password per le app. */
 class SmtpProvider implements EmailProvider {
   readonly name = "smtp";
-  private transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: Number(process.env.SMTP_PORT || 465) === 465,
-    auth: { user: required("SMTP_USER"), pass: required("SMTP_PASSWORD") },
-  });
+  private transport;
+
+  constructor(opts: ProviderOptions) {
+    const port = Number(process.env.SMTP_PORT || 465);
+    const base = {
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port,
+      secure: port === 465,
+      auth: { user: required("SMTP_USER"), pass: required("SMTP_PASSWORD") },
+    };
+    this.transport = opts.pooled
+      ? nodemailer.createTransport({ ...base, pool: true, maxConnections: SMTP_POOL_CONNECTIONS, maxMessages: 100 })
+      : nodemailer.createTransport(base);
+  }
+
+  close() {
+    this.transport.close();
+  }
 
   async send(m: EmailMessage) {
     const info = await this.transport.sendMail({
@@ -69,6 +94,6 @@ class ResendProvider implements EmailProvider {
 }
 
 /** Si cambia fornitore con EMAIL_PROVIDER=smtp|resend, senza toccare il resto. */
-export function getEmailProvider(): EmailProvider {
-  return env.emailProvider() === "resend" ? new ResendProvider() : new SmtpProvider();
+export function getEmailProvider(opts: ProviderOptions = {}): EmailProvider {
+  return env.emailProvider() === "resend" ? new ResendProvider() : new SmtpProvider(opts);
 }

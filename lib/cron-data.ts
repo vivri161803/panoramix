@@ -11,6 +11,7 @@ import {
   type ProfileRow,
 } from "@/lib/db-types";
 import { uniqueEmails, type MemberRole } from "@/lib/roles";
+import { selectAll } from "@/lib/batch";
 
 export interface CronData {
   plans: PlanRow[];
@@ -22,35 +23,35 @@ export interface CronData {
   runs: PrepRunRow[];
 }
 
-/** Tutti i dati che servono ai controlli automatici (con la service role, che ignora RLS). */
+/**
+ * Tutti i dati che servono ai controlli automatici (con la service role, che ignora RLS).
+ * Ogni tabella si legge a pagine ordinate per chiave: Supabase restituisce al massimo 1000 righe
+ * per richiesta, e un elenco di identificativi nell'indirizzo (`.in(...)`) diventa troppo lungo
+ * con qualche centinaio di piani.
+ */
 export async function loadCronData(admin: SupabaseClient): Promise<CronData> {
-  const { data: plans, error: pErr } = await admin.from("plans").select(PLAN_COLUMNS);
-  if (pErr) throw new Error(`Lettura piani non riuscita: ${pErr.message}`);
-  const planRows = (plans ?? []) as PlanRow[];
-  const planIds = planRows.map((p) => p.id);
-  if (!planIds.length) return { plans: [], profiles: new Map(), recipients: [], members: [], meds: [], runs: [] };
+  const planRows = await selectAll<PlanRow>("piani", (from, to) => admin.from("plans").select(PLAN_COLUMNS).order("id").range(from, to));
+  if (!planRows.length) return { plans: [], profiles: new Map(), recipients: [], members: [], meds: [], runs: [] };
 
-  const [recRes, memRes, medsRes, runsRes] = await Promise.all([
-    admin.from("plan_recipients").select("plan_id, email").in("plan_id", planIds),
-    admin.from("plan_members").select("plan_id, user_id, role").in("plan_id", planIds),
-    admin.from("medications").select(MEDICATION_COLUMNS).in("plan_id", planIds).eq("archived", false),
-    admin.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").in("plan_id", planIds).is("undone_at", null),
+  const [recipients, members, medRows, runs, profiles] = await Promise.all([
+    selectAll<CronData["recipients"][number]>("destinatari", (from, to) => admin.from("plan_recipients").select("plan_id, email").order("id").range(from, to)),
+    selectAll<CronData["members"][number]>("membri", (from, to) =>
+      admin.from("plan_members").select("plan_id, user_id, role").order("plan_id").order("user_id").range(from, to),
+    ),
+    selectAll<MedicationRow>("medicinali", (from, to) => admin.from("medications").select(MEDICATION_COLUMNS).eq("archived", false).order("id").range(from, to)),
+    selectAll<PrepRunRow>("preparazioni", (from, to) =>
+      admin.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").is("undone_at", null).order("id").range(from, to),
+    ),
+    selectAll<ProfileRow>("profili", (from, to) => admin.from("profiles").select("id, email, first_name, last_name").order("id").range(from, to)),
   ]);
-  for (const [name, res] of [["destinatari", recRes], ["membri", memRes], ["medicinali", medsRes], ["preparazioni", runsRes]] as const) {
-    if (res.error) throw new Error(`Lettura ${name} non riuscita: ${res.error.message}`);
-  }
-  const members = (memRes.data ?? []) as CronData["members"];
-  const userIds = [...new Set([...planRows.map((p) => p.owner_id), ...members.map((m) => m.user_id)])];
-  const { data: profiles, error: prErr } = await admin.from("profiles").select("id, email, first_name, last_name").in("id", userIds);
-  if (prErr) throw new Error(`Lettura profili non riuscita: ${prErr.message}`);
 
   return {
     plans: planRows,
-    profiles: new Map(((profiles ?? []) as ProfileRow[]).map((p) => [p.id, p])),
-    recipients: (recRes.data ?? []) as CronData["recipients"],
+    profiles: new Map(profiles.map((p) => [p.id, p])),
+    recipients,
     members,
-    meds: ((medsRes.data ?? []) as MedicationRow[]).map(toMedication),
-    runs: (runsRes.data ?? []) as PrepRunRow[],
+    meds: medRows.map(toMedication),
+    runs,
   };
 }
 
