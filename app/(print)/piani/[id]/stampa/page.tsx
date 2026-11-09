@@ -63,7 +63,7 @@ export default async function StampaPage({ params, searchParams }: PageProps<"/p
                 <span style={{ font: `600 ${19 * legendScale}px/1.25 var(--px-font)` }}>
                   {m.name}{" "}
                   <span style={{ fontWeight: 400, color: "#44505C" }}>
-                    {[m.strength, pillLook(m.color, m.shape)].filter(Boolean).join(" · ")}
+                    {[m.strength, pillLook(m.atcCode, m.shape)].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </div>

@@ -58,7 +58,10 @@ export async function loadAifaSample(admin: SupabaseClient) {
     const { error } = await s;
     if (error) throw new Error(`loadAifaSample: ${error.message}`);
   }
-  await admin.from("aifa_shortages").delete().in("aic", SAMPLE_SHORTAGES.map((s) => s.aic));
+  // stato noto per le confezioni di prova: fuori dalla trasparenza e dalle carenze se non sono qui sopra
+  const inList = new Set(SAMPLE_TRANSPARENCY.map((t) => t.aic));
+  await admin.from("aifa_transparency").delete().in("aic", SAMPLE_PACKS.map((p) => p.aic).filter((a) => !inList.has(a)));
+  await admin.from("aifa_shortages").delete().in("aic", SAMPLE_PACKS.map((p) => p.aic));
   const { error } = await admin.from("aifa_shortages").insert(tag(SAMPLE_SHORTAGES));
   if (error) throw new Error(`loadAifaSample: ${error.message}`);
   const now = new Date().toISOString();

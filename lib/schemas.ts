@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isISODate } from "./dates";
-import { PILL_COLOR_HEXES, PILL_SHAPE_IDS } from "./pills";
+import { PILL_SHAPE_IDS } from "./pills";
+import { ATC_CODE_RE, ATC_UNKNOWN_VALUE } from "./atc";
 
 const halfStep = (label: string, max: number) =>
   z
@@ -43,7 +44,14 @@ export const medicationSchema = z
     description: z.string().trim().max(200, "Al massimo 200 caratteri."),
     pills_per_pack: z.number("Indica quante compresse ci sono in una confezione.").int("Usa un numero intero.").min(1, "Almeno 1 compressa per confezione.").max(1000, "Al massimo 1000."),
     requires_prescription: z.boolean(),
-    color: z.enum(PILL_COLOR_HEXES, "Scegli un colore."),
+    /** codice AIC a 9 cifre, se il medicinale viene dall'anagrafica AIFA */
+    aic: z.string().regex(/^\d{9}$/, "Il codice AIC ha 9 cifre.").nullable(),
+    /** codice ATC completo o lettera del gruppo; "?" = "Non so". Il colore lo calcola il server. */
+    atc_code: z
+      .string("Scegli a cosa serve il medicinale.")
+      .trim()
+      .toUpperCase()
+      .refine((v) => v === ATC_UNKNOWN_VALUE || ATC_CODE_RE.test(v), "Scegli a cosa serve il medicinale."),
     shape: z.enum(PILL_SHAPE_IDS, "Scegli una forma."),
     dose_morning: halfStep("Mattina", 20),
     dose_noon: halfStep("Pranzo", 20),

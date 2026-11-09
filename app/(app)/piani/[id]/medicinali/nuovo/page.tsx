@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getPlanBundle } from "@/lib/data";
 import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
-import { PILL_COLORS } from "@/lib/pills";
 
 export const metadata: Metadata = { title: "Nuovo medicinale" };
 
@@ -11,9 +10,6 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
   const { id } = await params;
   const b = await getPlanBundle(id);
   if (!canEdit(b.role)) redirect(`/piani/${id}`);
-  // colore non ancora usato nel piano, per distinguerle a colpo d'occhio
-  const used = new Set(b.medications.map((m) => m.color));
-  const color = PILL_COLORS.find((c) => !used.has(c.hex))?.hex ?? PILL_COLORS[0].hex;
   return (
     <MedicationForm
       planId={b.plan.id}
@@ -27,7 +23,9 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
         description: "",
         pills_per_pack: 30,
         requires_prescription: false,
-        color,
+        // il colore lo decide il gruppo ATC: da AIFA (codice AIC) o da "A cosa serve"
+        aic: null,
+        atc_code: "",
         shape: "tonda",
         dose_morning: 1,
         dose_noon: 0,

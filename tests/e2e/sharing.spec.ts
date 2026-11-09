@@ -54,6 +54,7 @@ test("piano condiviso: il proprietario aggiorna, chi ha sola lettura guarda", as
   await ownerPage.getByRole("link", { name: "Aggiungi il primo medicinale" }).click();
   await ownerPage.getByLabel("Nome", { exact: true }).fill("Paracetamolo");
   await ownerPage.getByRole("radio", { name: "Al bisogno" }).click();
+  await ownerPage.getByLabel("A cosa serve").selectOption({ label: "Sistema nervoso" });
   await ownerPage.getByLabel(/Scorta in casa|Compresse in casa/).fill("6");
   await ownerPage.getByRole("button", { name: "Salva medicinale" }).click();
   await expect(ownerPage).toHaveURL(planUrl);
@@ -97,6 +98,12 @@ test("piano condiviso: il proprietario aggiorna, chi ha sola lettura guarda", as
   await viewerPage.getByRole("link", { name: "Storico" }).click();
   await expect(viewerPage.getByText(/Presa al bisogno/)).toBeVisible();
   await expect(viewerPage.getByText(/da Carlo E2E/).first()).toBeVisible();
+
+  // la scheda Disponibilità si apre anche in sola lettura
+  await viewerPage.goto(`${planUrl}/disponibilita`);
+  await expect(viewerPage.getByRole("heading", { name: "Carenze ed equivalenti" })).toBeVisible();
+  await expect(viewerPage.getByText("Aggiungi il codice AIC per vedere carenze ed equivalenti.")).toBeVisible();
+  await expect(viewerPage.getByRole("link", { name: "Aggiungi il codice →" })).toHaveCount(0);
 
   // il piano compare tra i suoi, segnato come condiviso
   await viewerPage.goto("/piani");

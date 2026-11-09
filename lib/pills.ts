@@ -1,14 +1,27 @@
 import type { CSSProperties } from "react";
 
+import { atcGroup } from "./atc";
+
 // Palette e forme delle compresse (design: Pill.dc.html). La specifica prevede tre forme.
+// Il colore non si sceglie più a mano: dipende dal gruppo ATC (lib/atc.ts). Le prime sei tinte
+// sono quelle di prima e restano valide per i medicinali non ancora aggiornati.
 
 export const PILL_COLORS = [
-  { hex: "#FF5E4D", name: "Corallo", adjective: "corallo" },
-  { hex: "#FFC020", name: "Giallo sole", adjective: "gialla" },
-  { hex: "#12C2B0", name: "Turchese", adjective: "turchese" },
-  { hex: "#8D5BF5", name: "Viola", adjective: "viola" },
-  { hex: "#93D232", name: "Verde lime", adjective: "verde" },
-  { hex: "#2E78F5", name: "Blu", adjective: "blu" },
+  { hex: "#FF5E4D", name: "Corallo" },
+  { hex: "#FFC020", name: "Giallo sole" },
+  { hex: "#12C2B0", name: "Turchese" },
+  { hex: "#8D5BF5", name: "Viola" },
+  { hex: "#93D232", name: "Verde lime" },
+  { hex: "#2E78F5", name: "Blu" },
+  { hex: "#F25CA2", name: "Fucsia" },
+  { hex: "#FF8A1F", name: "Arancio" },
+  { hex: "#4FC3F7", name: "Azzurro" },
+  { hex: "#2E9E5A", name: "Verde bosco" },
+  { hex: "#B23A5B", name: "Bordeaux" },
+  { hex: "#A8703F", name: "Nocciola" },
+  { hex: "#F9A8D4", name: "Rosa" },
+  { hex: "#8E8A2C", name: "Oliva" },
+  { hex: "#9AA1A9", name: "Grigio" },
 ] as const;
 
 export const PILL_SHAPES = [
@@ -27,11 +40,14 @@ export function colorName(hex: string): string {
   return PILL_COLORS.find((c) => c.hex === hex)?.name ?? "Personalizzato";
 }
 
-/** Descrizione a parole per la stampa: "gialla, tonda", "viola e bianca, capsula". */
-export function pillLook(hex: string, shape: string): string {
-  const adj = PILL_COLORS.find((c) => c.hex === hex)?.adjective ?? "";
-  if (shape === "capsula") return `capsula ${adj} e bianca`;
-  return `${adj}, ${shape}`;
+/**
+ * Descrizione per la stampa: gruppo e forma, "Cuore e circolazione · tonda".
+ * Il colore non descrive la compressa vera (è quello del gruppo), quindi non si scrive.
+ * Medicinale senza gruppo (non ancora aggiornato o "Non so"): solo la forma.
+ */
+export function pillLook(atcCode: string | null, shape: string): string {
+  const group = atcGroup(atcCode);
+  return group ? `${group.label} · ${shape}` : shape;
 }
 
 /** Stile CSS della compressa (riflessi, ombra, solco o metà bianca). */

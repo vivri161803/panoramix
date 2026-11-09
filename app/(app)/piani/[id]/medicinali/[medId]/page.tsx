@@ -5,7 +5,8 @@ import { dosesAt, upcomingChanges } from "@/lib/forecast";
 import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
 import { DoseChangesPanel } from "@/components/DoseChangesPanel";
-import type { PillColor, PillShape } from "@/lib/pills";
+import type { PillShape } from "@/lib/pills";
+import { ATC_UNKNOWN, ATC_UNKNOWN_VALUE } from "@/lib/atc";
 
 export const metadata: Metadata = { title: "Modifica medicinale" };
 
@@ -26,13 +27,16 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
       settings={b.settings}
       today={b.today}
       nextPrep={b.forecast.nextPrep}
+      currentColor={m.color}
       initial={{
         name: m.name,
         strength: m.strength,
         description: m.description,
         pills_per_pack: m.pillsPerPack,
         requires_prescription: m.requiresPrescription,
-        color: m.color as PillColor,
+        aic: m.aic,
+        // medicinali di prima (senza gruppo): il modulo chiede a cosa servono; grigio = "Non so"
+        atc_code: m.atcCode ?? (m.color === ATC_UNKNOWN.color ? ATC_UNKNOWN_VALUE : ""),
         shape: m.shape as PillShape,
         dose_morning: now.doseMorning,
         dose_noon: now.doseNoon,

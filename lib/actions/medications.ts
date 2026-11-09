@@ -8,9 +8,24 @@ import { currentStock, dosesPhrase, totalPerDose } from "@/lib/forecast";
 import { formatShort } from "@/lib/dates";
 import { doseChangeSchema, medicationSchema, type DoseChangeInput, type MedicationInput } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
+import { atcColor, ATC_UNKNOWN_VALUE } from "@/lib/atc";
 import { dbError, fail, flash, zodFail, type ActionResult } from "./common";
 
-function medFields(m: ReturnType<typeof medicationSchema.parse>) {
+type ParsedMedication = ReturnType<typeof medicationSchema.parse>;
+
+/**
+ * Codice ATC da salvare: quello dell'anagrafica AIFA se l'AIC è noto (vale più del modulo),
+ * altrimenti quello scelto; "Non so" diventa null.
+ */
+async function resolveAtc(supabase: Awaited<ReturnType<typeof createClient>>, m: ParsedMedication): Promise<string | null> {
+  if (m.aic) {
+    const { data } = await supabase.from("aifa_packs").select("atc_code").eq("aic", m.aic).maybeSingle();
+    if (data?.atc_code) return data.atc_code;
+  }
+  return m.atc_code === ATC_UNKNOWN_VALUE ? null : m.atc_code;
+}
+
+function medFields(m: ParsedMedication, atcCode: string | null) {
   const f = m.frequency_type;
   return {
     name: m.name,
@@ -18,7 +33,10 @@ function medFields(m: ReturnType<typeof medicationSchema.parse>) {
     description: m.description,
     pills_per_pack: m.pills_per_pack,
     requires_prescription: m.requires_prescription,
-    color: m.color,
+    aic: m.aic,
+    atc_code: atcCode,
+    // il colore dipende dal gruppo ATC: grigio per "Non so"
+    color: atcColor(atcCode),
     shape: m.shape,
     dose_morning: m.dose_morning,
     dose_noon: m.dose_noon,
@@ -40,9 +58,10 @@ export async function createMedication(planId: string, input: MedicationInput, a
   if (!parsed.success) return zodFail(parsed.error);
   const m = parsed.data;
   const supabase = await createClient();
+  const atc = await resolveAtc(supabase, m);
   const { data, error } = await supabase
     .from("medications")
-    .insert({ ...medFields(m), plan_id: planId, stock_qty: m.stock_qty, stock_as_of: bundle.today })
+    .insert({ ...medFields(m, atc), plan_id: planId, stock_qty: m.stock_qty, stock_as_of: bundle.today })
     .select("id")
     .single();
   if (error || !data) return fail(dbError(error, "Non riesco a salvare il medicinale. Riprova."));
@@ -72,9 +91,10 @@ export async function updateMedication(planId: string, medicationId: string, inp
   // Il consumo fino a ieri segue il vecchio schema: si "ribasa" il riferimento a oggi
   // prima di salvare il nuovo schema.
   const now = currentStock(med, bundle.settings.stockMode, bundle.today);
+  const atc = await resolveAtc(supabase, m);
   const { data: updated, error } = await supabase
     .from("medications")
-    .update({ ...medFields(m), stock_qty: now, stock_as_of: bundle.today })
+    .update({ ...medFields(m, atc), stock_qty: now, stock_as_of: bundle.today })
     .eq("id", medicationId)
     .eq("stock_qty", med.stockQty)
     .eq("stock_as_of", med.stockAsOf)

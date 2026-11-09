@@ -108,3 +108,14 @@ Principio attivo;Confezione di riferimento;ATC;AIC;Farmaco;Confezione;Ditta;Prez
   `aifa_finish_import` cancella quelle con `import_id` diverso, nel database, senza limite di
   tempo dell'API. Se l'import si interrompe a metà restano anche le righe vecchie: nessun dato
   manca, il giro successivo pulisce.
+- **Le tabelle vecchie restano finché il file nuovo non è buono.** File non trovato, colonne
+  cambiate, troppe righe senza AIC o file con meno della metà delle righe dell'ultimo import
+  (`checkShrink`): l'import si registra come `failed` e non tocca le tabelle. `--force` salta il
+  controllo della lunghezza.
+- **Avviso dopo 7 giorni.** Il controllo del mattino (`app/api/cron/alerts`) chiama
+  `findStaleAifa` (`lib/ops.ts`, regole in `lib/aifa-freshness.ts`): ogni sorgente senza un import
+  `ok` o `skipped` da più di 7 giorni finisce nell'email tecnica a `OPS_ALERT_EMAIL`, con l'ultimo
+  errore. Parte ogni mattina finché il problema resta.
+- Test: `tests/aifa-parse.test.ts` (parser), `tests/aifa-freshness.test.ts` (avviso),
+  `tests/db/aifa-import.db.test.ts` (pipeline completa sul Supabase locale: primo import, secondo
+  giro saltato, file mancante, colonne cambiate, file troppo corto, confezione tolta).

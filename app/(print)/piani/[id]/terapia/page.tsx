@@ -90,7 +90,7 @@ export default async function TerapiaPage({ params }: PageProps<"/piani/[id]/ter
                             <span>
                               <strong style={{ font: "650 17px/1.25 var(--px-font)" }}>{m.name}</strong> {m.strength}
                               <br />
-                              <span style={{ color: "#44505C", fontSize: 14 }}>{pillLook(m.color, m.shape)}</span>
+                              <span style={{ color: "#44505C", fontSize: 14 }}>{pillLook(m.atcCode, m.shape)}</span>
                             </span>
                           </div>
                         </td>

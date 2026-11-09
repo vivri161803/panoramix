@@ -49,6 +49,13 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 - Cambi di dose programmati da una certa data, per terapie a scalare o sospensioni. Scorte, calendario e avvisi seguono la nuova dose dal giorno in cui parte.
 - Calendario settimanale per fasce e foglio A4 da stampare o salvare in PDF.
 
+### Medicinali dall'anagrafica AIFA
+
+- Nel modulo del medicinale si inquadra il codice sulla scatola (DataMatrix o bollino con la A) oppure si scrivono le 9 cifre del codice AIC. Nome, dosaggio per principio attivo, compresse per confezione, ricetta e forma si compilano dall'anagrafica AIFA e restano modificabili.
+- Il colore della compressa dice a cosa serve il farmaco: dipende dal gruppo anatomico del codice ATC (14 gruppi in parole semplici, più «Non so» in grigio). Medicine dello stesso gruppo hanno lo stesso colore; sotto il dispenser c'è la legenda.
+- Scheda «Disponibilità»: per ogni medicina, se è nell'elenco AIFA dei farmaci carenti (con date, motivo e indicazioni) e le confezioni equivalenti della lista di trasparenza, con prezzo al pubblico e differenza dal prezzo di riferimento SSN.
+- Dati AIFA aperti, licenza [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.it), importati ogni notte (vedi [`scripts/aifa/README.md`](scripts/aifa/README.md)).
+
 ### Scorte
 
 - Due modi di contare: giorno per giorno, oppure con il portapillole settimanale, dove le compresse escono solo quando si segna «Portapillole preparato» (e l'operazione si può annullare).
@@ -82,6 +89,8 @@ flowchart LR
   N --> DB[("Supabase Postgres<br/>RLS, Londra")]
   N --> AU["Supabase Auth<br/>link magico"]
   CR["Vercel Cron<br/>07:00 e 17:00 UTC"] --> N
+  GA["GitHub Actions<br/>03:30 UTC"] --> AIFA["Open data AIFA"]
+  GA --> DB
   N --> EM["Email<br/>SMTP Gmail o Resend"]
   EM --> F["Famiglia e destinatari"]
 
@@ -91,7 +100,8 @@ flowchart LR
   classDef mail fill:#fceae7,stroke:#e2463a,color:#0e1620
   class U,N app
   class DB,AU data
-  class CR job
+  class CR,GA job
+  class AIFA data
   class EM,F mail
 ```
 
@@ -99,6 +109,8 @@ flowchart LR
 - Supabase: Postgres, Auth con link magico e Row Level Security.
 - Email con Nodemailer via SMTP Gmail, dietro l'interfaccia `EmailProvider` (`lib/email/provider.ts`). Con `EMAIL_PROVIDER=resend` si passa a Resend.
 - Due Vercel Cron protetti da `CRON_SECRET`: avvisi alle 07:00 UTC su `/api/cron/alerts`, promemoria alle 17:00 UTC su `/api/cron/reminders`.
+- Import notturno dei dati AIFA con `scripts/import-aifa.mjs`, lanciato da una GitHub Action (`.github/workflows/aifa-import.yml`) e non da una funzione Vercel: i file sono grandi e il limite di tempo è stretto. Le tabelle `aifa_*` si leggono da chi ha fatto l'accesso e si scrivono solo con la service role.
+- Scanner nel browser con `BarcodeDetector` nativo o, dove manca (Safari), il polyfill `barcode-detector` (zxing-wasm). Il WebAssembly è servito da `public/zxing/`, senza CDN.
 - Test con Vitest per la logica e le Server Actions, test sul database locale per le regole RLS, Playwright per il percorso nel browser.
 
 ### Dove gira cosa
@@ -107,6 +119,7 @@ flowchart LR
 | --- | --- | --- |
 | Pagine, Server Actions e route dei cron | Vercel Functions, piano Hobby | `fra1`, Francoforte (scelta in [`vercel.json`](vercel.json)) |
 | Avvio dei controlli automatici | Vercel Cron, due volte al giorno | chiama le route qui sopra, quindi Francoforte |
+| Import dei dati AIFA | GitHub Actions, ogni notte alle 03:30 UTC | runner di GitHub, scrive su Supabase con la service role |
 | Database Postgres, Auth e link magico | Supabase, piano Free, progetto "Panoramix" | `eu-west-2`, Londra |
 | Invio delle email (avvisi, inviti, link di accesso) | Gmail SMTP (`smtp.gmail.com`) | server di Google |
 | Indirizzo pubblico | dominio predefinito di Vercel | [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) |
@@ -121,7 +134,8 @@ Funzioni e database sono in due regioni diverse, quindi ogni lettura o scrittura
 - I permessi sono controllati due volte: le Server Actions verificano il ruolo e le regole RLS del database bloccano comunque ogni scrittura non permessa.
 - I cron sono idempotenti: se girano due volte nello stesso giorno non partono email doppie (`alert_runs`, `notification_runs`).
 - I cron leggono ogni tabella a pagine da 1000 righe, il massimo che Supabase restituisce per richiesta, senza mettere elenchi di identificativi nell'indirizzo. Controllano 5 piani alla volta e mandano le email su 3 connessioni SMTP riaperte una sola volta (`lib/batch.ts`, `lib/email/provider.ts`).
-- Se un controllo automatico fallisce, o quello del giorno prima non è partito, arriva un'email tecnica a `OPS_ALERT_EMAIL`.
+- Se un controllo automatico fallisce, o quello del giorno prima non è partito, arriva un'email tecnica a `OPS_ALERT_EMAIL`. Lo stesso se una sorgente AIFA non ha un import riuscito da più di 7 giorni: intanto restano le tabelle dell'ultimo import buono.
+- Il colore del medicinale lo calcola il server dal gruppo ATC (`lib/atc.ts`) e resta salvato in `medications.color`, che usano dispenser, email e stampa. Se il medicinale ha l'AIC vale il codice ATC dell'anagrafica.
 
 Il comportamento segue la specifica funzionale. L'aspetto viene dall'export di Claude Design in [`UI_mobile_pc/`](UI_mobile_pc): token, componenti, schermate per telefono e desktop, email e foglio A4.
 
@@ -134,7 +148,11 @@ Il comportamento segue la specifica funzionale. L'aspetto viene dall'export di C
 | `lib/actions/` | Server Actions con validazione zod (accesso, piani, medicinali, scorte, email di prova) |
 | `lib/alerts.ts` | Controllo giornaliero: episodi, un'email al giorno per piano, idempotenza |
 | `lib/notify.ts` | Promemoria del portapillole e riepilogo settimanale (un invio al giorno per piano e tipo) |
-| `lib/ops.ts` | Controllo saltato ed email tecnica a chi gestisce l'app |
+| `lib/ops.ts` | Controllo saltato, dati AIFA fermi ed email tecnica a chi gestisce l'app |
+| `lib/aic.ts` · `lib/atc.ts` | Lettura del codice AIC da DataMatrix (AI 716) e bollino, dati AIFA per il modulo; gruppi ATC, etichette e colori |
+| `lib/availability.ts` · `lib/aifa-freshness.ts` | Carenze ed equivalenti per la scheda Disponibilità; quando i dati AIFA sono troppo vecchi |
+| `scripts/import-aifa.mjs` · `scripts/aifa/` | Import dei dati AIFA, parser dei file e formati verificati |
+| `components/BarcodeScanner.tsx` | Fotocamera, torcia e foto di ripiego per leggere il codice sulla scatola |
 | `lib/cron-data.ts` | Dati per i controlli automatici e destinatari di ogni piano |
 | `lib/roles.ts` | Ruoli sul piano (proprietario, modifica, sola lettura) |
 | `lib/pharmacy.ts` · `lib/digest.ts` | Lista per la farmacia, contenuto di promemoria e riepiloghi (funzioni pure) |
@@ -147,9 +165,9 @@ Il comportamento segue la specifica funzionale. L'aspetto viene dall'export di C
 
 ### Pagine
 
-`/accesso` · `/benvenuto` (nome e cognome al primo accesso) · `/piani` (con gli inviti ricevuti) · `/piani/nuovo` · `/piani/[id]` (dispenser) · `/piani/[id]/calendario` · `/piani/[id]/stampa` (A4) · `/piani/[id]/terapia` (scheda terapia A4) · `/piani/[id]/farmacia` · `/piani/[id]/modifica` (solo proprietario, con persone con accesso) · `/piani/[id]/medicinali/nuovo` · `/piani/[id]/medicinali/[medId]` (con cambi di dose) · `/piani/[id]/medicinali/[medId]/storico` · `/account` (con eliminazione dei dati).
+`/accesso` · `/benvenuto` (nome e cognome al primo accesso) · `/piani` (con gli inviti ricevuti) · `/piani/nuovo` · `/piani/[id]` (dispenser) · `/piani/[id]/calendario` · `/piani/[id]/disponibilita` (carenze ed equivalenti) · `/piani/[id]/stampa` (A4) · `/piani/[id]/terapia` (scheda terapia A4) · `/piani/[id]/farmacia` · `/piani/[id]/modifica` (solo proprietario, con persone con accesso) · `/piani/[id]/medicinali/nuovo` · `/piani/[id]/medicinali/[medId]` (con cambi di dose) · `/piani/[id]/medicinali/[medId]/storico` · `/account` (con eliminazione dei dati).
 
-Chi ha la sola lettura vede dispenser, calendario, storico, lista farmacia e scheda terapia; se apre una pagina di modifica torna al piano.
+Chi ha la sola lettura vede dispenser, calendario, disponibilità, storico, lista farmacia e scheda terapia; se apre una pagina di modifica torna al piano.
 
 ## Avvio in locale
 
@@ -339,8 +357,12 @@ npm run lint
 
 - `npm test` copre mezze compresse, giorni della settimana, ogni N giorni, cicli, data di fine, al bisogno, preparazione e annullamento, ora legale, i criteri dal 2 al 5 della specifica, cambi di dose, lista farmacia, promemoria e riepiloghi, email e le Server Actions (permessi per ruolo, presa al bisogno e annullamento, cambi di dose, inviti) con Supabase simulato.
 - `npm run test:db` usa utenti veri dell'Auth locale e verifica che chi non è invitato non veda nulla, che solo l'invitato possa accettare l'invito, che la sola lettura non scriva in nessuna tabella né funzione, che il permesso di modifica non tocchi impostazioni e persone, il limite di 10 persone e l'uscita dal piano. Poi prova avvisi, promemoria (inviati una volta sola), riepilogo e controllo saltato, un database con più di 1000 medicine e 260 piani, lo stop quando il tempo finisce, i conteggi del riepilogo di utilizzo e 25 email mandate in parallelo al Mailpit locale su poche connessioni SMTP. Gira solo su un indirizzo `localhost`.
-- `npm run test:e2e` rifà il percorso nel browser: accesso con il link da Mailpit, nuovo piano, medicinale al bisogno e presa, lista per la farmacia, invito, accettazione e verifica della sola lettura. La prima volta serve `npx playwright install chromium`; prima di lanciarlo ferma gli altri `npm run dev` del progetto.
+- `npm test` copre anche i parser dei file AIFA sulle fixture vere (`tests/fixtures/aifa/`), la lettura di DataMatrix e bollino, il dosaggio per principio attivo, i colori ATC, la scheda Disponibilità e l'avviso dopo 7 giorni senza dati.
+- `npm run test:db` prova anche le regole delle tabelle AIFA e la pipeline di import completa: primo import, secondo giro saltato, file non trovato, colonne cambiate e file troppo corto (le tabelle restano quelle di prima), confezione tolta dal file.
+- `npm run test:e2e` rifà il percorso nel browser: accesso con il link da Mailpit, nuovo piano, medicinale al bisogno e presa, lista per la farmacia, invito, accettazione e verifica della sola lettura. Un secondo percorso compila i medicinali dal codice AIC, controlla colore, legenda e scheda Disponibilità, anche a 320 px. La prima volta serve `npx playwright install chromium`; prima di lanciarlo ferma gli altri `npm run dev` del progetto.
 
 ## Deploy
 
 Il progetto Vercel è collegato al repository, con il dominio predefinito [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) e le funzioni nella regione `fra1` (vedi [Dove gira cosa](#dove-gira-cosa)). I due cron sono dichiarati in [`vercel.json`](vercel.json). Prima di pubblicare codice che usa tabelle nuove applica le migrazioni al progetto Supabase con `npx supabase db push`. Le variabili si impostano in Vercel → Project → Settings → Environment Variables.
+
+Per i dati AIFA: in GitHub → Settings → Secrets and variables → Actions servono `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`. Il primo import si lancia a mano da Actions → «Import dati AIFA» → Run workflow; l'esito di ogni sorgente è nella tabella `aifa_imports`. Lo scanner usa la fotocamera: se un giorno si aggiunge un header `Permissions-Policy`, deve includere `camera=(self)`. Dopo un aggiornamento di `barcode-detector` copia il nuovo WebAssembly: `cp node_modules/zxing-wasm/dist/reader/zxing_reader.wasm public/zxing/` (un test controlla che siano uguali).

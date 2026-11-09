@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useState, useTransition } from "react";
 import { createMedication, deleteMedication, updateMedication } from "@/lib/actions/medications";
+import { lookupAic } from "@/lib/actions/aifa";
+import type { AicLookup } from "@/lib/aic";
+import { ATC_GROUPS, ATC_UNKNOWN, ATC_UNKNOWN_VALUE, atcColor, atcGroup } from "@/lib/atc";
 import { WEEKDAYS_LETTER, WEEKDAYS_LONG, type ISODate } from "@/lib/dates";
 import { daysWord, forecastMedication, formatQty, scheduleSummary, type FrequencyType, type PlanSettings } from "@/lib/forecast";
-import { colorName, PILL_COLORS, PILL_SHAPES } from "@/lib/pills";
+import { PILL_SHAPES } from "@/lib/pills";
 import type { MedicationInput } from "@/lib/schemas";
 import { dispenserView } from "@/lib/view";
 import { Dispenser } from "@/components/Dispenser";
@@ -13,6 +17,9 @@ import { FieldError } from "@/components/ui/FieldError";
 import { Pill } from "@/components/ui/Pill";
 import { Switch } from "@/components/ui/Switch";
 import { IconBack } from "@/components/ui/icons";
+
+// lo scanner (fotocamera e WebAssembly) si scarica solo quando si apre
+const BarcodeScanner = dynamic(() => import("@/components/BarcodeScanner"), { ssr: false });
 
 interface Props {
   planId: string;
@@ -24,7 +31,11 @@ interface Props {
   nextPrep: ISODate | null;
   /** contenuto sotto il modulo (es. cambi di dose programmati) */
   extra?: React.ReactNode;
+  /** colore salvato: per i medicinali di prima, finché non si sceglie il gruppo */
+  currentColor?: string;
 }
+
+type Filled = "name" | "strength" | "pills_per_pack" | "requires_prescription" | "shape";
 
 const FREQS: { id: FrequencyType; label: string }[] = [
   { id: "daily", label: "Tutti i giorni" },
@@ -47,7 +58,7 @@ const num = (s: string) => {
   return s.trim() === "" || !Number.isFinite(n) ? NaN : n;
 };
 
-export function MedicationForm({ planId, planName, medicationId, initial, settings, today, nextPrep, extra }: Props) {
+export function MedicationForm({ planId, planName, medicationId, initial, settings, today, nextPrep, extra, currentColor }: Props) {
   const isNew = !medicationId;
   const [f, setF] = useState(initial);
   const [txt, setTxt] = useState<Record<NumKey, string>>({
@@ -60,11 +71,68 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
   const [error, setError] = useState<string | null>(null);
   const [fe, setFe] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [aicText, setAicText] = useState(initial.aic ?? "");
+  const [aifa, setAifa] = useState<AicLookup | null>(null);
+  const [filled, setFilled] = useState<Set<Filled>>(new Set());
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [looking, startLookup] = useTransition();
   const [pending, start] = useTransition();
   const set = (patch: Partial<MedicationInput>) => setF((x) => ({ ...x, ...patch }));
   const setNum = (k: NumKey, v: string) => setTxt((t) => ({ ...t, [k]: v }));
   const weekly = settings.stockMode === "weekly";
+  // il gruppo arriva da AIFA (codice completo con AIC): si mostra e basta
+  const groupFromAifa = !!f.aic && (f.atc_code?.length ?? 0) > 1 && !!atcGroup(f.atc_code);
+  const pillColor = f.atc_code === ATC_UNKNOWN_VALUE ? ATC_UNKNOWN.color : f.atc_code ? atcColor(f.atc_code) : (currentColor ?? ATC_UNKNOWN.color);
+  const hl = (k: Filled) => (filled.has(k) ? { boxShadow: "0 0 0 2px var(--px-primary)" } : undefined);
 
+  const applyLookup = useCallback((d: AicLookup) => {
+    const got = new Set<Filled>(["name"]);
+    const patch: Partial<MedicationInput> = { aic: d.aic, name: d.name };
+    if (d.atc_code) patch.atc_code = d.atc_code;
+    if (d.strength) {
+      patch.strength = d.strength;
+      got.add("strength");
+    }
+    if (d.shape) {
+      patch.shape = d.shape;
+      got.add("shape");
+    }
+    if (d.requires_prescription !== null) {
+      patch.requires_prescription = d.requires_prescription;
+      got.add("requires_prescription");
+    }
+    setF((x) => ({ ...x, ...patch }));
+    if (d.pills_per_pack) {
+      setTxt((t) => ({ ...t, pills_per_pack: String(d.pills_per_pack) }));
+      got.add("pills_per_pack");
+    }
+    setAicText(d.aic);
+    setFilled(got);
+    setAifa(d);
+    setLookupError(null);
+  }, []);
+
+  const search = useCallback(
+    (raw: string, format = "manual") => {
+      setLookupError(null);
+      startLookup(async () => {
+        const res = await lookupAic(raw, format);
+        if (res.ok && res.data) applyLookup(res.data);
+        else if (!res.ok) setLookupError(res.error);
+      });
+    },
+    [applyLookup],
+  );
+
+  const onScanned = useCallback(
+    (raw: string, format: string) => {
+      setScanOpen(false);
+      search(raw, format);
+    },
+    [search],
+  );
+  const closeScanner = useCallback(() => setScanOpen(false), []);
   const input: MedicationInput = {
     ...f,
     pills_per_pack: num(txt.pills_per_pack),
@@ -85,10 +153,10 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       strength: input.strength.trim(),
       description: input.description,
       requiresPrescription: input.requires_prescription,
-      color: input.color,
+      color: pillColor,
       shape: input.shape,
-      aic: null,
-      atcCode: null,
+      aic: input.aic,
+      atcCode: input.atc_code && input.atc_code !== ATC_UNKNOWN_VALUE ? input.atc_code : null,
       pillsPerPack: ok(input.pills_per_pack, 1) ?? 1,
       doseMorning: input.dose_morning,
       doseNoon: input.dose_noon,
@@ -162,15 +230,71 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
         >
           <section className={section}>
             <h2 className={h2}>Medicinale</h2>
+            <div className="flex flex-col gap-3 rounded-[14px] bg-px-surface-2 p-4">
+              <button type="button" onClick={() => setScanOpen(true)} disabled={looking} className="px-btn px-btn-primary self-start">
+                Inquadra il codice sulla scatola
+              </button>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="px-aic" className="px-label">oppure scrivi il codice AIC</label>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    id="px-aic"
+                    value={aicText}
+                    onChange={(e) => setAicText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (aicText.trim()) search(aicText);
+                      }
+                    }}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="9 cifre, es. 027161064"
+                    aria-describedby="px-aic-help"
+                    aria-invalid={lookupError ? true : undefined}
+                    className="px-input min-w-0 flex-[1_1_180px]"
+                  />
+                  <button type="button" onClick={() => search(aicText)} disabled={looking || !aicText.trim()} className="px-btn px-btn-secondary flex-[0_0_auto]">
+                    {looking ? "Cerco…" : "Cerca"}
+                  </button>
+                </div>
+                <span id="px-aic-help" className="text-[14px] leading-[1.35] text-px-ink-2">
+                  Lo trovi sulla scatola, sotto il codice a barre del bollino (dopo la A) o vicino al quadratino.
+                </span>
+                <FieldError message={lookupError ?? fe.aic} />
+              </div>
+              {aifa && (
+                <div role="status" className="flex flex-col gap-1 rounded-[12px] border border-px-line bg-px-surface px-3.5 py-3">
+                  <strong className="text-[15px] font-[650] leading-[1.35]">Dati presi da AIFA: controllali prima di salvare</strong>
+                  <span className="text-[14px] leading-[1.4] text-px-ink-2">
+                    {aifa.name} · {aifa.pack_description} · AIC {aifa.aic}. I campi compilati sono evidenziati e restano modificabili.
+                  </span>
+                </div>
+              )}
+              {f.aic && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    set({ aic: null, atc_code: atcGroup(f.atc_code)?.letter ?? "" });
+                    setAicText("");
+                    setAifa(null);
+                    setFilled(new Set());
+                  }}
+                  className="self-start text-[15px] font-semibold text-px-ink-2 underline"
+                >
+                  Togli il codice AIC {f.aic}
+                </button>
+              )}
+            </div>
             <div className={grid2}>
               <div className="flex flex-col gap-2">
                 <label htmlFor="px-mn" className="px-label">Nome</label>
-                <input id="px-mn" value={f.name} onChange={(e) => set({ name: e.target.value })} maxLength={80} required autoComplete="off" aria-invalid={fe.name ? true : undefined} className="px-input" />
+                <input id="px-mn" value={f.name} onChange={(e) => set({ name: e.target.value })} maxLength={80} required autoComplete="off" aria-invalid={fe.name ? true : undefined} className="px-input" style={hl("name")} />
                 <FieldError message={fe.name} />
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="px-md" className="px-label">Dosaggio <span className="font-normal text-px-ink-3">facoltativo</span></label>
-                <input id="px-md" value={f.strength} onChange={(e) => set({ strength: e.target.value })} maxLength={40} placeholder="Es. 5 mg" autoComplete="off" className="px-input" />
+                <input id="px-md" value={f.strength} onChange={(e) => set({ strength: e.target.value })} maxLength={40} placeholder="Es. 5 mg" autoComplete="off" className="px-input" style={hl("strength")} />
               </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -184,7 +308,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
             <div className={grid2}>
               <div className="flex flex-col gap-2">
                 <label htmlFor="px-pp" className="px-label">Compresse per confezione</label>
-                <input id="px-pp" type="number" inputMode="numeric" min={1} step={1} value={txt.pills_per_pack} onChange={(e) => setNum("pills_per_pack", e.target.value)} aria-invalid={fe.pills_per_pack ? true : undefined} className="px-input" />
+                <input id="px-pp" type="number" inputMode="numeric" min={1} step={1} value={txt.pills_per_pack} onChange={(e) => setNum("pills_per_pack", e.target.value)} aria-invalid={fe.pills_per_pack ? true : undefined} className="px-input" style={hl("pills_per_pack")} />
                 <FieldError message={fe.pills_per_pack} />
               </div>
               <div className="flex flex-col gap-2">
@@ -196,39 +320,51 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
                 <FieldError message={fe.stock_qty} />
               </div>
             </div>
-            <Switch checked={f.requires_prescription} onChange={(v) => set({ requires_prescription: v })} label="Serve la ricetta" sub="Negli avvisi trovi il testo pronto per il medico." />
+            <div className="-m-2 rounded-[12px] p-2" style={hl("requires_prescription")}>
+              <Switch checked={f.requires_prescription} onChange={(v) => set({ requires_prescription: v })} label="Serve la ricetta" sub="Negli avvisi trovi il testo pronto per il medico." />
+            </div>
           </section>
 
           <section className={section}>
             <h2 className={h2}>Aspetto nel dispenser</h2>
             <div className="flex flex-wrap items-center gap-5">
-              <div role="img" aria-label={`Anteprima: compressa ${f.shape}, ${colorName(f.color).toLowerCase()}`} className="grid h-28 w-28 flex-none place-items-center rounded-[18px] bg-px-surface-2">
-                <Pill color={f.color} shape={f.shape} size={76} rotate={-14} />
+              <div role="img" aria-label={`Anteprima: compressa ${f.shape}`} className="grid h-28 w-28 flex-none place-items-center rounded-[18px] bg-px-surface-2">
+                <Pill color={pillColor} shape={f.shape} size={76} rotate={-14} />
               </div>
-              <div className="flex flex-[1_1_200px] flex-col gap-2.5">
-                <span className="px-label">
-                  Colore · <span className="font-normal text-px-ink-2">{colorName(f.color)}</span>
-                </span>
-                <div role="radiogroup" aria-label="Colore" className="flex flex-wrap gap-2">
-                  {PILL_COLORS.map((c) => {
-                    const sel = c.hex === f.color;
-                    return (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        role="radio"
-                        aria-checked={sel}
-                        aria-label={c.name}
-                        onClick={() => set({ color: c.hex })}
-                        className="h-11 w-11 rounded-full border-none p-0"
-                        style={{
-                          background: `radial-gradient(ellipse 60% 50% at 32% 26%, rgba(255,255,255,.8), rgba(255,255,255,0) 62%), linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.22)), ${c.hex}`,
-                          boxShadow: sel ? "0 0 0 3px var(--px-surface), 0 0 0 5px var(--px-ink)" : "inset 0 -2px 3px rgba(0,0,0,.15)",
-                        }}
-                      />
-                    );
-                  })}
-                </div>
+              <div className="flex flex-[1_1_220px] flex-col gap-2">
+                {groupFromAifa ? (
+                  <>
+                    <span className="px-label">A cosa serve</span>
+                    <span className="text-[17px] font-[650] leading-[1.3]">{atcGroup(f.atc_code)!.label}</span>
+                    <span className="text-[14px] leading-[1.35] text-px-ink-2">Dal codice ATC {f.atc_code} dell&apos;anagrafica AIFA. Il colore della compressa dipende da questo.</span>
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor="px-atc" className="px-label">A cosa serve</label>
+                    <select
+                      id="px-atc"
+                      value={f.atc_code === ATC_UNKNOWN_VALUE ? ATC_UNKNOWN_VALUE : (atcGroup(f.atc_code)?.letter ?? "")}
+                      onChange={(e) => set({ atc_code: e.target.value })}
+                      aria-invalid={fe.atc_code ? true : undefined}
+                      aria-describedby="px-atc-help"
+                      className="px-input"
+                    >
+                      <option value="" disabled>
+                        Scegli…
+                      </option>
+                      {ATC_GROUPS.map((g) => (
+                        <option key={g.letter} value={g.letter}>
+                          {g.label}
+                        </option>
+                      ))}
+                      <option value={ATC_UNKNOWN_VALUE}>{ATC_UNKNOWN.label}</option>
+                    </select>
+                    <span id="px-atc-help" className="text-[14px] leading-[1.35] text-px-ink-2">
+                      Il colore della compressa dipende da questo: medicine dello stesso gruppo hanno lo stesso colore.
+                    </span>
+                    <FieldError message={fe.atc_code} />
+                  </>
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-2.5">
@@ -237,9 +373,9 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
                 {PILL_SHAPES.map((s) => {
                   const sel = s.id === f.shape;
                   return (
-                    <button key={s.id} type="button" role="radio" aria-checked={sel} onClick={() => set({ shape: s.id })} className="flex flex-col items-center gap-2.5 rounded-[14px] px-2 py-3.5 text-px-ink" style={radioCard(sel)}>
+                    <button key={s.id} type="button" role="radio" aria-checked={sel} onClick={() => set({ shape: s.id })} className="flex flex-col items-center gap-2.5 rounded-[14px] px-2 py-3.5 text-px-ink" style={{ ...radioCard(sel), ...(sel ? hl("shape") : undefined) }}>
                       <span className="grid h-7 place-items-center">
-                        <Pill color={f.color} shape={s.id} size={40} />
+                        <Pill color={pillColor} shape={s.id} size={40} />
                       </span>
                       <span className="text-[15px] font-semibold leading-none">{s.label}</span>
                     </button>
@@ -402,6 +538,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
         {extra}
         </div>
 
+        {scanOpen && <BarcodeScanner onDetected={onScanned} onClose={closeScanner} />}
         <aside aria-label="Anteprima" className="sticky top-6 hidden min-w-[260px] flex-[0_1_300px] flex-col gap-2.5 min-[900px]:flex">
           <span className="t-mono uppercase tracking-[0.04em] text-px-ink-3">Anteprima dal vivo</span>
           <Dispenser med={preview.view} size="l" />

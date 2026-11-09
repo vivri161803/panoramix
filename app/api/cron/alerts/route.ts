@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyAlerts } from "@/lib/alerts";
 import { isSummaryDay, runWeeklySummaries } from "@/lib/notify";
-import { findMissedRun, notifyOps } from "@/lib/ops";
+import { findMissedRun, findStaleAifa, notifyOps } from "@/lib/ops";
 import { sendUsageReport, type UsageReportResult } from "@/lib/usage";
 import { todayInRome } from "@/lib/dates";
 import { CRON_TIME_BUDGET_MS } from "@/lib/batch";
@@ -15,7 +15,8 @@ export const maxDuration = 60;
 // Il lunedì manda anche il riepilogo di utilizzo a OPS_ALERT_EMAIL (persone attive, piani, email inviate).
 // ?dry=1 calcola senza scrivere né inviare; ?riepilogo=1 manda il riepilogo anche se non è lunedì;
 // ?utilizzo=1 manda il riepilogo di utilizzo anche se non è lunedì o se è già partito oggi.
-// Se qualcosa va storto parte un'email tecnica a OPS_ALERT_EMAIL.
+// Se qualcosa va storto parte un'email tecnica a OPS_ALERT_EMAIL, anche quando i dati AIFA
+// non si aggiornano da più di 7 giorni.
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
   // dopo questo istante non si iniziano altri piani: resta il tempo per salvare l'esito e avvisare
@@ -31,6 +32,8 @@ export async function GET(req: NextRequest) {
       const missed = await findMissedRun(admin, "alerts", today);
       if (missed) problems.push(missed);
     }
+    // dati AIFA fermi da più di 7 giorni (file non trovato o non leggibile): le tabelle restano le vecchie
+    problems.push(...(await findStaleAifa(admin)));
     const result = await runDailyAlerts(admin, today, dry, { deadline });
     problems.push(...result.errors);
     const summary = isSummaryDay(today) || forceSummary ? await runWeeklySummaries(admin, today, dry, { deadline }) : null;

@@ -5,10 +5,10 @@ import { canEdit, isOwner, ROLE_LABEL, type PlanRole } from "@/lib/roles";
 import { IconBack, IconPlus } from "@/components/ui/icons";
 import { LeavePlanButton } from "@/components/LeavePlanButton";
 
-export function PlanHeader({ plan, tab, role, ownerName }: { plan: PlanRow; tab: "dispenser" | "calendario"; role: PlanRole; ownerName: string }) {
+export function PlanHeader({ plan, tab, role, ownerName }: { plan: PlanRow; tab: "dispenser" | "calendario" | "disponibilita"; role: PlanRole; ownerName: string }) {
   const mode = plan.stock_mode === "weekly" ? `Portapillole settimanale · preparazione ${plan.prep_weekday === 7 ? "la" : "il"} ${WEEKDAYS_LONG[plan.prep_weekday - 1]}` : "Scorte giorno per giorno";
   const tabCls = (sel: boolean) =>
-    `flex h-11 flex-1 items-center justify-center rounded-[10px] text-[15px] font-semibold leading-none no-underline ${sel ? "bg-px-surface text-px-ink shadow-[0_1px_2px_rgba(14,22,32,.12)]" : "bg-transparent text-px-ink-2"} hover:text-px-ink`;
+    `flex h-11 min-w-0 flex-1 items-center justify-center rounded-[10px] px-1 text-[14px] font-semibold min-[400px]:text-[15px] leading-none no-underline ${sel ? "bg-px-surface text-px-ink shadow-[0_1px_2px_rgba(14,22,32,.12)]" : "bg-transparent text-px-ink-2"} hover:text-px-ink`;
   return (
     <div className="flex flex-col gap-3.5">
       <Link href="/piani" className="px-back">
@@ -48,12 +48,15 @@ export function PlanHeader({ plan, tab, role, ownerName }: { plan: PlanRow; tab:
           )}
         </div>
       </div>
-      <nav aria-label="Viste del piano" className="flex w-[min(100%,360px)] gap-1 rounded-[14px] bg-px-surface-2 p-1">
+      <nav aria-label="Viste del piano" className="flex w-[min(100%,480px)] gap-1 rounded-[14px] bg-px-surface-2 p-1">
         <Link href={`/piani/${plan.id}`} aria-current={tab === "dispenser" ? "page" : undefined} className={tabCls(tab === "dispenser")}>
           Dispenser
         </Link>
         <Link href={`/piani/${plan.id}/calendario`} aria-current={tab === "calendario" ? "page" : undefined} className={tabCls(tab === "calendario")}>
           Calendario
+        </Link>
+        <Link href={`/piani/${plan.id}/disponibilita`} aria-current={tab === "disponibilita" ? "page" : undefined} className={tabCls(tab === "disponibilita")}>
+          Disponibilità
         </Link>
       </nav>
     </div>

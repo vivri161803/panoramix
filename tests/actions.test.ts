@@ -122,7 +122,8 @@ const validMed = {
   description: "",
   pills_per_pack: 30,
   requires_prescription: false,
-  color: "#FF5E4D" as const,
+  aic: null,
+  atc_code: "C",
   shape: "tonda" as const,
   dose_morning: 1,
   dose_noon: 0,
@@ -274,6 +275,35 @@ describe("cambi di dose", () => {
       ["delete", []],
       ["in", ["id", ["past"]]],
     ]);
+  });
+});
+
+describe("colore dal gruppo ATC", () => {
+  beforeEach(() => setBundle("owner", [daily]));
+  const inserted = () => db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;
+
+  it("il colore lo calcola il server dalla lettera scelta", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, atc_code: "n" })).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ atc_code: "N", aic: null, color: "#8D5BF5" });
+  });
+
+  it("“Non so”: grigio e atc_code vuoto", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, atc_code: "?" })).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ atc_code: null, color: "#9AA1A9" });
+  });
+
+  it("con l'AIC vale il codice ATC dell'anagrafica AIFA", async () => {
+    db.results.aifa_packs = [{ data: { atc_code: "B01AC06" } }];
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, aic: "024840074", atc_code: "C" })).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ aic: "024840074", atc_code: "B01AC06", color: "#12C2B0" });
+  });
+
+  it("senza gruppo il modulo non si salva", async () => {
+    expect(await createMedication(PLAN.id, { ...validMed, atc_code: "" })).toMatchObject({ ok: false, fieldErrors: { atc_code: "Scegli a cosa serve il medicinale." } });
+    expect(await createMedication(PLAN.id, { ...validMed, aic: "12345" })).toMatchObject({ ok: false, fieldErrors: { aic: "Il codice AIC ha 9 cifre." } });
   });
 });
 

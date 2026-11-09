@@ -9,6 +9,8 @@ import { PlanHeader } from "@/components/PlanHeader";
 import { DispenserGrid } from "@/components/DispenserGrid";
 import { PrepPanel } from "@/components/PrepPanel";
 import { IconAlertCircle, IconCheckCircle, IconXCircle } from "@/components/ui/icons";
+import { Pill } from "@/components/ui/Pill";
+import { groupsPresent } from "@/lib/atc";
 
 export async function generateMetadata({ params }: PageProps<"/piani/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -133,6 +135,28 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
         <p className="m-0 text-[15px] text-px-ink-2">Livello = giorni di copertura, stessa scala per tutti: 0–60 giorni. Tacche a 7 e 14.</p>
       </div>
       <DispenserGrid planId={plan.id} meds={views} readOnly={!editable} />
+      <Legend codes={b.medications.map((m) => m.atcCode)} colors={b.medications.map((m) => m.color)} />
     </>
+  );
+}
+
+/** Legenda dei colori: i gruppi ATC presenti nel piano (il colore dice a cosa serve la medicina). */
+function Legend({ codes, colors }: { codes: (string | null)[]; colors: string[] }) {
+  const groups = groupsPresent(codes, colors);
+  if (!groups.length) return null;
+  return (
+    <section aria-labelledby="px-legend" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <h2 id="px-legend" className="t-label m-0 text-px-ink-3">
+        Colori
+      </h2>
+      <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-2 p-0">
+        {groups.map((g) => (
+          <li key={g.label} className="flex items-center gap-2 text-[15px] text-px-ink-2">
+            <Pill color={g.color} shape="tonda" size={18} />
+            {g.label}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

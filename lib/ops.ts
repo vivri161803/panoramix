@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { addDays, formatDayMonthYear, type ISODate } from "@/lib/dates";
 import { getEmailProvider } from "@/lib/email/provider";
 import { renderOpsEmail } from "@/lib/email/templates";
+import { staleAifaProblems, type AifaImportRow } from "@/lib/aifa-freshness";
 
 export type CronKind = "alerts" | "reminders";
 
@@ -37,6 +38,24 @@ export async function findMissedRun(admin: SupabaseClient, kind: CronKind, today
     .limit(1);
   if (!older?.length) return null;
   return `Ieri (${formatDayMonthYear(yesterday)}) il ${CRON_LABEL[kind]} non è partito o non è arrivato alla fine.`;
+}
+
+/** Sorgenti AIFA senza import riuscito da più di 7 giorni (vedi lib/aifa-freshness.ts). */
+export async function findStaleAifa(admin: SupabaseClient, now = new Date()): Promise<string[]> {
+  const since = new Date(now.getTime() - 60 * 86_400_000).toISOString();
+  const { data, error } = await admin
+    .from("aifa_imports")
+    .select("source, status, finished_at, error")
+    .gte("started_at", since)
+    .order("started_at", { ascending: false })
+    .limit(1000);
+  if (error) return [`Non riesco a leggere aifa_imports: ${error.message}`];
+  if (!data?.length) {
+    // niente negli ultimi 60 giorni: c'è mai stato un import?
+    const { count } = await admin.from("aifa_imports").select("id", { count: "exact", head: true });
+    if (count) return staleAifaProblems([{ source: "", status: "failed", finished_at: null, error: null }], now);
+  }
+  return staleAifaProblems((data ?? []) as AifaImportRow[], now);
 }
 
 /** Segna in cron_runs l'esecuzione di un controllo (per accorgersi il giorno dopo se è saltato). */

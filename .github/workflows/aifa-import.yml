@@ -1,0 +1,47 @@
+# Import notturno dei dati AIFA (scripts/import-aifa.mjs, formati in scripts/aifa/README.md).
+# Se fallisce GitHub manda l'email al proprietario del repository; le tabelle restano quelle
+# dell'ultimo import riuscito. Dopo 7 giorni senza import riuscito anche il controllo del mattino
+# dell'app lo segnala a OPS_ALERT_EMAIL.
+# Secret richiesti: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+name: Import dati AIFA
+
+on:
+  schedule:
+    # AIFA rigenera i file verso le 00:00 UTC
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: "Sorgenti separate da spazio (vuoto = tutte): confezioni principi_attivi atc carenze trasparenza"
+        required: false
+        default: ""
+      force:
+        description: "Importa anche se il file è invariato o molto più corto"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aifa-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Import
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SOURCES: ${{ inputs.sources }}
+          FORCE: ${{ inputs.force && '--force' || '' }}
+        run: node scripts/import-aifa.mjs $SOURCES $FORCE
