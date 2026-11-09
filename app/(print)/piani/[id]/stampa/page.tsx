@@ -40,10 +40,10 @@ export default async function StampaPage({ params, searchParams }: PageProps<"/p
           <IconBack />
           Torna al calendario
         </Link>
-        <PrintButton />
+        <PrintButton fileName={`Medicine ${b.plan.patient_name} ${week.start}.pdf`} />
       </div>
       <div className="px-sheet-wrap">
-        <article className="px-sheet" aria-label={`Foglio settimanale per ${b.plan.patient_name}`}>
+        <article id="px-sheet" className="px-sheet" aria-label={`Foglio settimanale per ${b.plan.patient_name}`}>
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20, borderBottom: "3px solid #0E1620", paddingBottom: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
               <span style={{ font: "600 20px/1.2 var(--px-font)", color: "#44505C" }}>Le medicine di</span>
@@ -70,7 +70,7 @@ export default async function StampaPage({ params, searchParams }: PageProps<"/p
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "150px repeat(3, 1fr)", border: "2px solid #0E1620", borderRadius: 10, overflow: "hidden" }}>
+          <div data-fit style={{ display: "grid", gridTemplateColumns: "150px repeat(3, 1fr)", border: "2px solid #0E1620", borderRadius: 10, overflow: "hidden" }}>
             <div style={{ padding: "12px 14px", background: "#0E1620", color: "#fff", font: "600 18px/1.2 var(--px-font)" }}>Giorno</div>
             {SLOTS.map((s) => (
               <div key={s} style={{ padding: "12px 14px", background: "#0E1620", color: "#fff", font: "600 18px/1.2 var(--px-font)", borderLeft: "1px solid #44505C" }}>
