@@ -56,13 +56,14 @@ CODICE_AIC;PRINCIPIO_ATTIVO;QUANTITA;UNITA_MISURA
 
 ## Anagrafica ATC · `atc.csv`
 
-`https://drive.aifa.gov.it/farmaci/atc.csv`, 92 righe. ASCII.
+`https://drive.aifa.gov.it/farmaci/atc.csv`, ASCII. La lunghezza cambia: 92 righe il 9 novembre 2026
+in un download, 7.219 nel primo import di produzione dello stesso giorno.
 
 ```
 CODICE_ATC;DESCRIZIONE
 ```
 
-Contiene solo una piccola parte dei codici (livelli misti). Le etichette dei 14 gruppi mostrate
+Livelli misti (gruppo, sottogruppo, principio attivo). Le etichette dei 14 gruppi mostrate
 nell'app sono in `lib/atc.ts`; questa tabella serve solo come riferimento.
 
 ## Farmaci carenti · `elenco_medicinali_carenti.csv`
@@ -104,6 +105,8 @@ Principio attivo;Confezione di riferimento;ATC;AIC;Farmaco;Confezione;Ditta;Prez
 - Lo SHA-256 del file scaricato si confronta con l'ultimo import riuscito della stessa sorgente:
   se è uguale l'import si registra come `skipped` (vale come controllo riuscito per l'avviso di
   freschezza) e non tocca le tabelle.
+- Il download si riprova fino a 3 volte (dopo 15 e 30 secondi) se il sito risponde 5xx, 408, 429 o
+  chiude la connessione: il primo import di produzione ha preso un 502 momentaneo sulle carenze.
 - Le righe nuove si scrivono con un `import_id` nuovo, a blocchi di 1000, poi la funzione
   `aifa_finish_import` cancella quelle con `import_id` diverso, nel database, senza limite di
   tempo dell'API. Se l'import si interrompe a metà restano anche le righe vecchie: nessun dato

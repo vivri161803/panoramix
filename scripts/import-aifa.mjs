@@ -41,14 +41,29 @@ const db = createClient(url, key, { auth: { persistSession: false, autoRefreshTo
 
 /** Scarica (o legge) il file e ne calcola lo SHA-256 mentre arriva. */
 async function fetchSource(spec) {
-  const hash = createHash("sha256");
   if (dir) {
     const bytes = await readFile(join(dir, basename(new URL(spec.url).pathname)));
-    hash.update(bytes);
-    return { bytes, sha: hash.digest("hex") };
+    return { bytes, sha: createHash("sha256").update(bytes).digest("hex") };
   }
-  const res = await fetch(spec.url, { headers: { "User-Agent": "Panoramix-import/1.0 (+https://github.com/vivri161803/panoramix)" }, signal: AbortSignal.timeout(10 * 60_000) });
-  if (!res.ok || !res.body) throw new Error(`Download non riuscito (${res.status} ${res.statusText}) da ${spec.url}`);
+  // il sito AIFA a volte risponde 502 o chiude la connessione: tre tentativi prima di arrendersi
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await download(spec.url);
+    } catch (e) {
+      if (attempt >= 3 || e?.permanent) throw e;
+      await new Promise((r) => setTimeout(r, 15_000 * attempt));
+    }
+  }
+}
+
+async function download(url) {
+  const hash = createHash("sha256");
+  const res = await fetch(url, { headers: { "User-Agent": "Panoramix-import/1.0 (+https://github.com/vivri161803/panoramix)" }, signal: AbortSignal.timeout(10 * 60_000) });
+  if (!res.ok || !res.body) {
+    // 404 e simili non passano riprovando; 5xx, 408 e 429 sì
+    const permanent = res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429;
+    throw Object.assign(new Error(`Download non riuscito (${res.status} ${res.statusText}) da ${url}`), { permanent });
+  }
   const chunks = [];
   for await (const chunk of res.body) {
     hash.update(chunk);
