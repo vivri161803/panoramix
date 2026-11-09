@@ -20,6 +20,7 @@ vi.mock("@/lib/email/provider", () => ({
 
 import { runDailyAlerts } from "@/lib/alerts";
 import { loadCronData } from "@/lib/cron-data";
+import { collectUsage, sendUsageReport } from "@/lib/usage";
 import { runPrepReminders, runWeeklySummaries } from "@/lib/notify";
 import { findMissedRun } from "@/lib/ops";
 import { addDays, onOrAfterWeekday } from "@/lib/dates";
@@ -161,5 +162,71 @@ describe.skipIf(!enabled)("controlli automatici con molti dati", () => {
     expect(r.errors[0]).toMatch(/^Tempo esaurito: \d+ piani su \d+ non sono stati controllati \(avvisi\)/);
     const p = await runPrepReminders(admin, DAY, true, { deadline: Date.now() - 1 });
     expect(p.plansChecked).toBe(0);
+  });
+});
+
+describe.skipIf(!enabled)("riepilogo di utilizzo", () => {
+  let admin: SupabaseClient;
+  const DAY = "2034-05-08";
+
+  beforeAll(() => {
+    admin = adminClient();
+  });
+
+  afterAll(async () => {
+    await admin.from("cron_runs").delete().eq("run_date", DAY);
+    await cleanup();
+  });
+
+  it("conta persone, piani, movimenti e invii degli ultimi 7 giorni", async () => {
+    const before = await collectUsage(admin);
+    const [a, b] = await Promise.all([makeUser("UsoA"), makeUser("UsoB")]);
+    const { data: plan } = await admin.from("plans").insert({ owner_id: a.id, patient_name: "Nonna Uso" }).select("id").single();
+    await admin.from("plan_members").insert({ plan_id: plan!.id, user_id: b.id, role: "editor" });
+    await admin.from("plan_invites").insert({ plan_id: plan!.id, email: "nuova@test.localhost", role: "viewer" });
+    const { data: med } = await admin
+      .from("medications")
+      .insert({ plan_id: plan!.id, name: "Uso", pills_per_pack: 20, color: "#FF5E4D", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: DAY, stock_qty: 10, stock_as_of: DAY })
+      .select("id")
+      .single();
+    await admin.from("stock_events").insert({ medication_id: med!.id, type: "count", delta: 0, qty_after: 10, effective_date: DAY, created_by: b.id });
+    await admin.from("alert_runs").insert({ plan_id: plan!.id, run_date: DAY, status: "sent", recipients: ["x@test.localhost", "y@test.localhost", "z@test.localhost"] });
+    await admin.from("notification_runs").insert({ plan_id: plan!.id, kind: "prep_reminder", run_date: DAY, status: "failed", recipients: ["x@test.localhost"] });
+
+    const after = await collectUsage(admin);
+    expect(after.accounts.total - before.accounts.total).toBe(2);
+    expect(after.accounts.created - before.accounts.created).toBe(2);
+    expect(after.accounts.signedIn - before.accounts.signedIn).toBe(2);
+    expect(after.active - before.active).toBe(2);
+    expect(after.recorded - before.recorded).toBe(1);
+    expect(after.plans.total - before.plans.total).toBe(1);
+    expect(after.plans.shared - before.plans.shared).toBe(1);
+    expect(after.members - before.members).toBe(1);
+    expect(after.pendingInvites - before.pendingInvites).toBe(1);
+    expect(after.activeMeds - before.activeMeds).toBe(1);
+    expect(after.movements - before.movements).toBe(1);
+    expect(after.emails.alerts - before.emails.alerts).toBe(1);
+    expect(after.emails.recipients - before.emails.recipients).toBe(3);
+    expect(after.emails.failed - before.emails.failed).toBe(1);
+  });
+
+  it("parte una volta al giorno, salvo quando lo si chiede a mano", async () => {
+    sent.length = 0;
+    // il controllo di questo giorno appena iniziato
+    await admin.from("cron_runs").insert({ run_date: DAY, kind: "alerts" });
+    const first = await sendUsageReport(admin, DAY);
+    expect(first.sent).toBe(true);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toMatch(/^\[Panoramix\] Utilizzo: \d+ person/);
+    expect(sent[0].to).toEqual(["bianchicarlo2002@icloud.com"]);
+
+    // un secondo controllo nello stesso giorno non lo rimanda
+    await admin.from("cron_runs").insert({ run_date: DAY, kind: "alerts" });
+    expect(await sendUsageReport(admin, DAY)).toMatchObject({ sent: false, skipped: "già mandato oggi" });
+    expect((await sendUsageReport(admin, DAY, { dryRun: true })).sent).toBe(false);
+    expect(sent).toHaveLength(1);
+
+    expect((await sendUsageReport(admin, DAY, { force: true })).sent).toBe(true);
+    expect(sent).toHaveLength(2);
   });
 });

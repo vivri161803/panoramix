@@ -1,7 +1,8 @@
 // Email di invito, promemoria del portapillole, riepilogo settimanale e avviso tecnico.
 // Funzioni pure: HTML + versione solo testo.
 
-import { capitalize, formatLong, formatRelative, type ISODate } from "@/lib/dates";
+import { capitalize, formatDayMonth, formatDayMonthYear, formatLong, formatRelative, type ISODate } from "@/lib/dates";
+import { GMAIL_DAILY_LIMIT, type UsageStats } from "@/lib/usage-stats";
 import { daysWord, formatQty, pillsWord, type MedStatus } from "@/lib/forecast";
 import { ROLE_LABEL, ROLE_SUB, type MemberRole } from "@/lib/roles";
 import { EMAIL_DISCLAIMER } from "./alert-template";
@@ -229,5 +230,55 @@ export function renderOpsEmail(d: { title: string; problems: string[]; appUrl: s
   const hint = "Dettagli nei log di Vercel e nelle tabelle cron_runs, alert_runs e notification_runs su Supabase.";
   const html = renderLayout({ subject, preheader: d.problems[0] ?? d.title, title: d.title, intro, body: list + noteBox(hint), footer: ["Email tecnica di Panoramix: arriva solo all’indirizzo impostato in OPS_ALERT_EMAIL."], appUrl: d.appUrl });
   const text = lines([d.title, "", intro, "", ...d.problems.map((p) => `• ${p}`), "", hint]);
+  return { subject, html, text };
+}
+
+// ——— Riepilogo di utilizzo per chi gestisce l'app ———
+
+const num = (n: number) => String(n).replace(".", ",");
+
+export function renderUsageEmail(u: UsageStats, d: { from: ISODate; to: ISODate; appUrl: string }): RenderedEmail {
+  const subject = `[Panoramix] Utilizzo: ${u.active} ${u.active === 1 ? "persona attiva" : "persone attive"} negli ultimi ${u.days} giorni`;
+  const title = "Utilizzo della settimana";
+  const intro = `Dal ${formatDayMonth(d.from)} al ${formatDayMonthYear(d.to)}.`;
+  const people: [string, string][] = [
+    ["Attive (accesso o movimenti)", num(u.active)],
+    ["Hanno fatto l'accesso", num(u.accounts.signedIn)],
+    ["Hanno registrato movimenti", num(u.recorded)],
+    ["Account in tutto", num(u.accounts.total)],
+    ["Nuovi account", num(u.accounts.created)],
+  ];
+  const plans: [string, string][] = [
+    ["Piani in tutto", num(u.plans.total)],
+    ["Nuovi piani", num(u.plans.created)],
+    ["Piani condivisi", num(u.plans.shared)],
+    ["Persone invitate con accesso", num(u.members)],
+    ["Inviti in attesa", num(u.pendingInvites)],
+    ["Medicinali attivi", num(u.activeMeds)],
+    ["Movimenti registrati", num(u.movements)],
+  ];
+  const emails: [string, string][] = [
+    ["Avvisi inviati", num(u.emails.alerts)],
+    ["Promemoria e riepiloghi", num(u.emails.notifications)],
+    ["Invii non riusciti", num(u.emails.failed)],
+    ["Destinatari in tutto", num(u.emails.recipients)],
+    ["Destinatari al giorno, in media", num(u.emails.recipientsPerDay)],
+  ];
+  const nearLimit = u.emails.recipientsPerDay >= GMAIL_DAILY_LIMIT * 0.8;
+  const limitNote = nearLimit
+    ? `In media ${num(u.emails.recipientsPerDay)} destinatari al giorno: Gmail ne accetta circa ${GMAIL_DAILY_LIMIT}. Conviene passare a Resend (EMAIL_PROVIDER=resend).`
+    : null;
+  const note =
+    "Chi resta collegato senza rifare l'accesso conta tra le persone attive solo se ha registrato un movimento. Inviti e link di accesso passano anche loro da Gmail, ma non sono contati qui.";
+  const body =
+    infoCard({ title: "Persone", rows: people }) +
+    infoCard({ title: "Piani", rows: plans }) +
+    infoCard({ title: "Email ai familiari", rows: emails, tone: nearLimit ? "order" : "ok" }) +
+    (limitNote ? noteBox(limitNote, "warn") : "") +
+    noteBox(note);
+  const footer = ["Email tecnica di Panoramix: arriva ogni lunedì solo all’indirizzo impostato in OPS_ALERT_EMAIL."];
+  const html = renderLayout({ subject, preheader: `${u.active} attive, ${u.accounts.total} account, ${u.plans.total} piani`, title, intro, body, footer, appUrl: d.appUrl });
+  const section = (name: string, rows: [string, string][]) => [name, ...rows.map(([k, v]) => `• ${k}: ${v}`), ""];
+  const text = lines([title, intro, "", ...section("Persone", people), ...section("Piani", plans), ...section("Email ai familiari", emails), limitNote, note, "", ...footer]);
   return { subject, html, text };
 }

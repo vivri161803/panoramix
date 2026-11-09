@@ -281,7 +281,49 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/cron/a
 curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/cron/reminders
 ```
 
-Con `?dry=1` calcola cosa manderebbe senza scrivere nulla né inviare. Su `/api/cron/alerts`, `?riepilogo=1` manda il riepilogo anche se non è lunedì.
+Con `?dry=1` calcola cosa manderebbe senza scrivere nulla né inviare. Su `/api/cron/alerts`, `?riepilogo=1` manda il riepilogo anche se non è lunedì e `?utilizzo=1` manda il riepilogo di utilizzo (vedi sotto).
+
+</details>
+
+<details>
+<summary><b>Quante persone usano l'app</b></summary>
+
+### Riepilogo del lunedì
+
+Ogni lunedì il controllo del mattino manda a `OPS_ALERT_EMAIL` un riepilogo degli ultimi 7 giorni (`lib/usage.ts`):
+
+- persone attive, cioè chi ha fatto l'accesso o registrato un movimento, account in tutto e nuovi account;
+- piani in tutto, nuovi e condivisi, persone invitate, inviti in attesa, medicinali attivi e movimenti registrati;
+- avvisi, promemoria e riepiloghi mandati ai familiari, invii non riusciti e destinatari al giorno in media. Se si avvicinano ai circa 500 al giorno accettati da Gmail, l'email lo segnala.
+
+Il riepilogo fa solo letture: tabelle a pagine e account dall'API admin di Supabase. Parte una volta al giorno. Se non riesce, l'errore arriva con l'email tecnica e gli avvisi partono lo stesso.
+
+Per vederlo subito senza mandarlo, i numeri tornano nel campo `usage` della risposta:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" "https://<app>.vercel.app/api/cron/alerts?dry=1&utilizzo=1"
+```
+
+Senza `dry=1` lo manda anche se non è lunedì. Attenzione: senza `dry=1` la stessa chiamata esegue anche il controllo degli avvisi, che resta comunque idempotente.
+
+### A mano dall'SQL Editor
+
+Su Supabase apri il progetto, poi SQL Editor → New query, incolla e premi Run. Con Save la query resta nell'elenco a sinistra. La query fa solo letture.
+
+```sql
+select
+  (select count(*) from auth.users) as account_totali,
+  (select count(distinct user_id) from auth.sessions
+     where coalesce(refreshed_at, updated_at) > now() - interval '1 day')  as attivi_24h,
+  (select count(distinct user_id) from auth.sessions
+     where coalesce(refreshed_at, updated_at) > now() - interval '7 days') as attivi_7g,
+  (select count(*) from public.plans) as piani,
+  (select count(*) from public.plan_members) as persone_con_accesso,
+  (select count(distinct created_by) from public.stock_events
+     where created_at > now() - interval '7 days') as chi_registra_movimenti_7g;
+```
+
+Questa query guarda anche le sessioni dell'Auth, che si rinnovano mentre una persona usa l'app, quindi conta anche chi resta collegato senza rifare l'accesso. Il riepilogo del lunedì non può farlo senza aggiungere una funzione SQL al database.
 
 </details>
 
@@ -296,7 +338,7 @@ npm run lint
 ```
 
 - `npm test` copre mezze compresse, giorni della settimana, ogni N giorni, cicli, data di fine, al bisogno, preparazione e annullamento, ora legale, i criteri dal 2 al 5 della specifica, cambi di dose, lista farmacia, promemoria e riepiloghi, email e le Server Actions (permessi per ruolo, presa al bisogno e annullamento, cambi di dose, inviti) con Supabase simulato.
-- `npm run test:db` usa utenti veri dell'Auth locale e verifica che chi non è invitato non veda nulla, che solo l'invitato possa accettare l'invito, che la sola lettura non scriva in nessuna tabella né funzione, che il permesso di modifica non tocchi impostazioni e persone, il limite di 10 persone e l'uscita dal piano. Poi prova avvisi, promemoria (inviati una volta sola), riepilogo e controllo saltato, un database con più di 1000 medicine e 260 piani, lo stop quando il tempo finisce e 25 email mandate in parallelo al Mailpit locale su poche connessioni SMTP. Gira solo su un indirizzo `localhost`.
+- `npm run test:db` usa utenti veri dell'Auth locale e verifica che chi non è invitato non veda nulla, che solo l'invitato possa accettare l'invito, che la sola lettura non scriva in nessuna tabella né funzione, che il permesso di modifica non tocchi impostazioni e persone, il limite di 10 persone e l'uscita dal piano. Poi prova avvisi, promemoria (inviati una volta sola), riepilogo e controllo saltato, un database con più di 1000 medicine e 260 piani, lo stop quando il tempo finisce, i conteggi del riepilogo di utilizzo e 25 email mandate in parallelo al Mailpit locale su poche connessioni SMTP. Gira solo su un indirizzo `localhost`.
 - `npm run test:e2e` rifà il percorso nel browser: accesso con il link da Mailpit, nuovo piano, medicinale al bisogno e presa, lista per la farmacia, invito, accettazione e verifica della sola lettura. La prima volta serve `npx playwright install chromium`; prima di lanciarlo ferma gli altri `npm run dev` del progetto.
 
 ## Deploy
