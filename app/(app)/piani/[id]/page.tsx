@@ -4,6 +4,7 @@ import { getPlanBundle } from "@/lib/data";
 import { addDays, dateOfTimestampRome, diffDays, formatRange, formatRelative, formatShort, formatTimeRome } from "@/lib/dates";
 import { daysWord, formatQty } from "@/lib/forecast";
 import { dispenserView } from "@/lib/view";
+import { canEdit } from "@/lib/roles";
 import { PlanHeader } from "@/components/PlanHeader";
 import { DispenserGrid } from "@/components/DispenserGrid";
 import { PrepPanel } from "@/components/PrepPanel";
@@ -20,21 +21,26 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
   const b = await getPlanBundle(id);
   const { plan, forecast: fc, today } = b;
   const weekly = plan.stock_mode === "weekly";
-  const views = fc.items.map((i) => dispenserView(i.med, i.forecast, b.settings.stockMode));
+  const views = fc.items.map((i) => dispenserView(i.med, i.forecast, b.settings.stockMode, today));
+  const editable = canEdit(b.role);
   const nameOf = (medId: string) => b.medications.find((m) => m.id === medId)?.name ?? "";
 
   if (fc.items.length === 0) {
     return (
       <>
-        <PlanHeader plan={plan} tab="dispenser" />
+        <PlanHeader plan={plan} tab="dispenser" role={b.role} ownerName={b.ownerName} />
         <div className="flex flex-col items-center gap-4 rounded-[18px] border-[1.5px] border-dashed border-px-line-strong bg-px-surface px-5 py-12 text-center">
           <h2 className="m-0 text-[22px] font-[650] leading-[1.25]">Ancora nessun medicinale</h2>
           <p className="m-0 max-w-[460px] text-px-ink-2 [text-wrap:pretty]">
-            Aggiungi le medicine di {plan.patient_name} una alla volta: dose, orari e quante compresse ci sono in casa. Panoramix calcola per quanti giorni bastano.
+            {editable
+              ? `Aggiungi le medicine di ${plan.patient_name} una alla volta: dose, orari e quante compresse ci sono in casa. Panoramix calcola per quanti giorni bastano.`
+              : `Chi gestisce il piano non ha ancora aggiunto le medicine di ${plan.patient_name}.`}
           </p>
-          <Link href={`/piani/${plan.id}/medicinali/nuovo`} className="px-btn px-btn-primary">
-            Aggiungi il primo medicinale
-          </Link>
+          {editable && (
+            <Link href={`/piani/${plan.id}/medicinali/nuovo`} className="px-btn px-btn-primary">
+              Aggiungi il primo medicinale
+            </Link>
+          )}
         </div>
       </>
     );
@@ -97,7 +103,7 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
 
   return (
     <>
-      <PlanHeader plan={plan} tab="dispenser" />
+      <PlanHeader plan={plan} tab="dispenser" role={b.role} ownerName={b.ownerName} />
       <section aria-label="Riepilogo del piano" className="grid gap-px overflow-hidden rounded-[18px] border border-px-line bg-px-line [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]">
         <div className="flex flex-col gap-1.5 bg-px-surface px-5 py-[18px]">{first}</div>
         <div className="flex flex-col gap-1.5 bg-px-surface px-5 py-[18px]">
@@ -107,8 +113,11 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
             <span className="t-body-strong">{toOrder.length === 1 ? "medicina" : "medicine"}</span>
           </div>
           <span className="text-[15px] text-px-ink-2">{toOrder.map((m) => m.name).join(", ") || "Niente da ordinare"}</span>
+          <Link href={`/piani/${plan.id}/farmacia`} className="self-start text-[15px] font-semibold">
+            Lista per la farmacia →
+          </Link>
         </div>
-        {weekly && fc.prepWeek && (
+        {weekly && fc.prepWeek && editable && (
           <div className="flex flex-col justify-center gap-2.5 bg-px-surface px-5 py-[18px]">
             <PrepPanel
               planId={plan.id}
@@ -123,7 +132,7 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
         <h2 className="t-heading m-0">Scorte in casa</h2>
         <p className="m-0 text-[15px] text-px-ink-2">Livello = giorni di copertura, stessa scala per tutti: 0–60 giorni. Tacche a 7 e 14.</p>
       </div>
-      <DispenserGrid planId={plan.id} meds={views} />
+      <DispenserGrid planId={plan.id} meds={views} readOnly={!editable} />
     </>
   );
 }

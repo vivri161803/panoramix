@@ -22,6 +22,8 @@ export const planSchema = z
     alert_under_14: z.boolean(),
     alert_under_7: z.boolean(),
     alert_last_pack: z.boolean(),
+    prep_reminder: z.boolean().default(true),
+    weekly_summary: z.boolean().default(false),
     recipients: z.array(emailField).max(5, "Al massimo 5 destinatari aggiuntivi."),
     /** obbligatori se cambia la modalità: nuovo conteggio di ogni medicinale */
     counts: z
@@ -76,4 +78,23 @@ export const medicationSchema = z
 export type MedicationInput = z.input<typeof medicationSchema>;
 
 export const qtySchema = halfStep("Quantità", 100000);
+export const doseSchema = halfStep("Dose", 20);
+
+export const doseChangeSchema = z
+  .object({
+    effective_date: isoDate("Indica da che giorno vale la nuova dose."),
+    dose_morning: halfStep("Mattina", 20),
+    dose_noon: halfStep("Pranzo", 20),
+    dose_evening: halfStep("Sera", 20),
+  });
+
+export type DoseChangeInput = z.input<typeof doseChangeSchema>;
+
+export const ROLES = ["viewer", "editor"] as const;
+export const inviteSchema = z.object({
+  email: emailField,
+  role: z.enum(ROLES, "Scegli cosa può fare."),
+});
+
+export type InviteInput = z.input<typeof inviteSchema>;
 export const packsSchema = z.number().int("Usa un numero intero di confezioni.").min(1, "Almeno 1 confezione.").max(100, "Al massimo 100 confezioni.");

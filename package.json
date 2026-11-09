@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:db": "node scripts/test-db.mjs",
+    "test:e2e": "node scripts/test-e2e.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -22,6 +24,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
     "@types/nodemailer": "^8.0.2",

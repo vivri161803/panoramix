@@ -15,4 +15,6 @@ export const env = {
   cronSecret: () => required("CRON_SECRET"),
   emailProvider: () => (process.env.EMAIL_PROVIDER || "smtp") as "smtp" | "resend",
   mailFromName: () => process.env.MAIL_FROM_NAME || "Panoramix",
+  /** chi riceve le email tecniche quando un controllo automatico fallisce */
+  opsEmail: () => process.env.OPS_ALERT_EMAIL || "bianchicarlo2002@icloud.com",
 };

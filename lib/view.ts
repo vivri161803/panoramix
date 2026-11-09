@@ -1,8 +1,9 @@
 // Dati già pronti per l'interfaccia (serializzabili verso i componenti client).
 
-import { formatShort } from "./dates";
+import { formatShort, type ISODate } from "./dates";
+import { changeLabel } from "./digest";
 import type { Medication } from "./db-types";
-import { daysWord, formatQty, pillsWord, statusReason, type Forecast, type MedStatus, type StockMode } from "./forecast";
+import { daysWord, formatQty, pillsWord, statusReason, upcomingChanges, type Forecast, type MedStatus, type StockMode } from "./forecast";
 
 export interface DispenserView {
   id: string;
@@ -24,9 +25,12 @@ export interface DispenserView {
   reason: string;
   ordered: boolean;
   asNeeded: boolean;
+  /** prossimo cambio di dose programmato, es. "Dal mer 18 nov: ½ al mattino" */
+  nextChange: string;
 }
 
-export function dispenserView(med: Medication, f: Forecast, mode: StockMode): DispenserView {
+export function dispenserView(med: Medication, f: Forecast, mode: StockMode, today: ISODate): DispenserView {
+  const next = f.asNeeded || f.ended ? undefined : upcomingChanges(med, today)[0];
   let daysText = "";
   let dWord = "";
   let endLabel: string;
@@ -66,6 +70,7 @@ export function dispenserView(med: Medication, f: Forecast, mode: StockMode): Di
     reason,
     ordered: !!med.orderedAt,
     asNeeded: f.asNeeded,
+    nextChange: next ? changeLabel(next) : "",
   };
 }
 

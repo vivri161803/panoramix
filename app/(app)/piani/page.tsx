@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listPlans } from "@/lib/data";
+import { listMyInvites, listPlans } from "@/lib/data";
+import { ROLE_LABEL } from "@/lib/roles";
+import { InvitesList } from "@/components/InvitesList";
 import { formatRelative } from "@/lib/dates";
 import { daysWord } from "@/lib/forecast";
 import { Pill } from "@/components/ui/Pill";
@@ -19,13 +21,14 @@ function summary(entry: Awaited<ReturnType<typeof listPlans>>[number]) {
 }
 
 export default async function PianiPage() {
-  const plans = await listPlans();
+  const [plans, invites] = await Promise.all([listPlans(), listMyInvites()]);
   return (
     <>
+      <InvitesList invites={invites} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <h1 className="t-display m-0">I miei piani</h1>
-          <p className="m-0 text-px-ink-2">Un piano per ogni persona di cui segui le medicine.</p>
+          <p className="m-0 text-px-ink-2">Un piano per ogni persona di cui segui le medicine, anche insieme ad altri.</p>
         </div>
         {plans.length > 0 && (
           <Link href="/piani/nuovo" className="px-btn px-btn-primary">
@@ -50,7 +53,7 @@ export default async function PianiPage() {
       ) : (
         <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))]">
           {plans.map((entry) => {
-            const { plan, forecast } = entry;
+            const { plan, forecast, role, ownerName } = entry;
             const active = forecast.items.filter((i) => !i.forecast.ended && !i.forecast.asNeeded);
             const minCov = active.reduce<number | null>((min, i) => {
               const c = i.forecast.coverageDays;
@@ -71,7 +74,7 @@ export default async function PianiPage() {
               <Link
                 key={plan.id}
                 href={`/piani/${plan.id}`}
-                aria-label={`${plan.patient_name}, ${count}, ${sum}. ${nextLabel}: ${next}`}
+                aria-label={`${plan.patient_name}${role !== "owner" ? `, condiviso, ${ROLE_LABEL[role].toLowerCase()}` : ""}, ${count}, ${sum}. ${nextLabel}: ${next}`}
                 className="flex flex-col gap-4 rounded-[18px] border border-px-line bg-px-surface p-5 text-left text-px-ink no-underline shadow-px hover:border-px-line-strong hover:text-px-ink"
               >
                 <div className="flex w-full items-start justify-between gap-3">
@@ -80,6 +83,11 @@ export default async function PianiPage() {
                     <span className="text-px-ink-2">
                       {count} · {mode}
                     </span>
+                    {role !== "owner" && (
+                      <span className="self-start rounded-[8px] border border-px-line-strong px-2 py-1 text-[13px] font-semibold leading-none text-px-ink-2">
+                        Condiviso{ownerName ? ` da ${ownerName}` : ""} · {ROLE_LABEL[role]}
+                      </span>
+                    )}
                   </div>
                   {forecast.items.length > 0 && <StatusChip status={forecast.worst} />}
                 </div>

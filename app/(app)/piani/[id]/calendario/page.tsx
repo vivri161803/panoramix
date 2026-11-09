@@ -22,7 +22,7 @@ export default async function CalendarioPage({ params, searchParams }: PageProps
 
   return (
     <>
-      <PlanHeader plan={b.plan} tab="calendario" />
+      <PlanHeader plan={b.plan} tab="calendario" role={b.role} ownerName={b.ownerName} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <Link href={`${base}?settimana=${week.prev}`} aria-label="Settimana precedente" className={navBtn}>

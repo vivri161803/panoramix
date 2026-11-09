@@ -224,30 +224,47 @@ export interface DispenserActions {
   onArrive: (packs: number) => void;
   onOrdered: () => void;
   onRecount: (qty: number) => void;
+  /** solo medicinali al bisogno: registra una presa */
+  onTake: (qty: number) => void;
   historyHref: string;
   editHref: string;
   busy?: boolean;
 }
 
-type Panel = null | "menu" | "arrive" | "recount";
+type Panel = null | "menu" | "arrive" | "recount" | "take";
 
 const menuBtn =
   "min-h-11 rounded-[8px] border-none bg-transparent px-2.5 py-1.5 text-left text-[15px] font-medium leading-[1.25] text-px-ink no-underline hover:bg-px-surface-2 hover:text-px-ink";
 const stepBtn = "h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none";
 
-export function Dispenser({ med, size, scaleMax = 60, actions }: { med: DispenserView; size?: Size; scaleMax?: number; actions?: DispenserActions }) {
+export function Dispenser({
+  med,
+  size,
+  scaleMax = 60,
+  actions,
+  historyHref,
+}: {
+  med: DispenserView;
+  size?: Size;
+  scaleMax?: number;
+  actions?: DispenserActions;
+  /** link allo storico quando non ci sono azioni (sola lettura) */
+  historyHref?: string;
+}) {
   const [panel, setPanel] = useState<Panel>(null);
   const [n, setN] = useState(0);
   const meta = META[med.status];
   const recount = panel === "recount";
+  const take = panel === "take";
 
   const open = (p: Panel) => {
     setPanel(p);
     if (p === "arrive") setN(1);
     if (p === "recount") setN(med.qty);
+    if (p === "take") setN(1);
   };
 
-  const step = 1;
+  const step = take ? 0.5 : 1;
   const aria = `${med.name} ${med.strength}, ${med.qtyText} ${med.qty === 1 ? "compressa" : "compresse"}, ${med.daysText ? `${med.daysText} ${med.daysWord}` : med.daysWord}, ${STATUS_LABEL[med.status].toLowerCase()}`;
 
   return (
@@ -296,8 +313,27 @@ export function Dispenser({ med, size, scaleMax = 60, actions }: { med: Dispense
           {med.reason}
         </div>
       )}
+      {med.nextChange && (
+        <div className="rounded-[10px] bg-px-surface-2 px-2.5 py-2 text-[14px] font-semibold leading-[1.35] text-px-ink-2 [text-wrap:pretty]">{med.nextChange}</div>
+      )}
+      {!actions && historyHref && (
+        <Link href={historyHref} className="mt-auto flex min-h-11 items-center justify-center rounded-[12px] border border-px-line-strong bg-px-surface px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-ink no-underline hover:text-px-ink">
+          Storico
+        </Link>
+      )}
       {actions && (
         <div className="mt-auto flex flex-col gap-2">
+          {med.asNeeded && (
+            <button
+              type="button"
+              disabled={actions.busy || med.qty <= 0}
+              onClick={() => actions.onTake(1)}
+              aria-label={`Presa una compressa di ${med.name}: togli 1 compressa dalle scorte`}
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-px-ink bg-px-surface px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-ink"
+            >
+              − Presa 1
+            </button>
+          )}
           <button
             type="button"
             disabled={actions.busy}
@@ -317,6 +353,11 @@ export function Dispenser({ med, size, scaleMax = 60, actions }: { med: Dispense
           </button>
           {panel === "menu" && (
             <div className="flex flex-col rounded-[12px] border border-px-line bg-px-surface p-1">
+              {med.asNeeded && (
+                <button type="button" className={menuBtn} onClick={() => open("take")}>
+                  Registra una presa
+                </button>
+              )}
               <button type="button" className={menuBtn} onClick={() => open("arrive")}>
                 Arrivate più confezioni
               </button>
@@ -334,45 +375,47 @@ export function Dispenser({ med, size, scaleMax = 60, actions }: { med: Dispense
               </Link>
             </div>
           )}
-          {(panel === "arrive" || panel === "recount") && (
+          {(panel === "arrive" || panel === "recount" || panel === "take") && (
             <form
               className="flex flex-col gap-2 rounded-[12px] border border-px-line bg-px-surface-2 p-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (recount) actions.onRecount(n);
+                else if (take) actions.onTake(n);
                 else actions.onArrive(n);
                 setPanel(null);
               }}
             >
               <label htmlFor={`px-n-${med.id}`} className="text-[15px] font-semibold leading-[1.3]">
-                {recount ? "Quante ne conti adesso?" : "Confezioni arrivate"}
+                {recount ? "Quante ne conti adesso?" : take ? "Quante compresse sono state prese?" : "Confezioni arrivate"}
               </label>
               <div className="flex gap-1">
-                <button type="button" aria-label={recount ? "Una in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : 1, x - step))} className={stepBtn}>
+                <button type="button" aria-label={recount ? "Una in meno" : take ? "Mezza in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : take ? 0.5 : 1, x - step))} className={stepBtn}>
                   −
                 </button>
                 <input
                   id={`px-n-${med.id}`}
                   type="number"
                   inputMode="decimal"
-                  min={recount ? 0 : 1}
-                  step={recount ? 0.5 : 1}
+                  min={recount ? 0 : take ? 0.5 : 1}
+                  step={recount || take ? 0.5 : 1}
                   value={Number.isFinite(n) ? n : 0}
                   onChange={(e) => setN(Math.max(0, Number(e.target.value.replace(",", ".")) || 0))}
                   className="h-11 min-w-0 flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[18px] font-[650] leading-none text-px-ink"
                 />
-                <button type="button" aria-label={recount ? "Una in più" : "Una confezione in più"} onClick={() => setN((x) => x + step)} className={stepBtn}>
+                <button type="button" aria-label={recount ? "Una in più" : take ? "Mezza in più" : "Una confezione in più"} onClick={() => setN((x) => x + step)} className={stepBtn}>
                   +
                 </button>
               </div>
-              {!recount && (
+              {!recount && !take && (
                 <span className="text-[14px] leading-[1.3] text-px-ink-2">
                   = {n * med.perPack} compresse ({med.perPack} per confezione)
                 </span>
               )}
+              {take && <span className="text-[14px] leading-[1.3] text-px-ink-2">Escono dalle scorte di oggi. Ne restano {med.qtyText} prima della presa.</span>}
               <div className="flex flex-wrap gap-1.5">
                 <button type="submit" disabled={actions.busy} className="min-h-11 flex-[1_1_90px] rounded-[10px] border-none bg-px-primary text-[15px] font-semibold leading-none text-px-on-primary">
-                  {recount ? "Salva" : "Aggiungi"}
+                  {recount ? "Salva" : take ? "Registra" : "Aggiungi"}
                 </button>
                 <button type="button" onClick={() => setPanel(null)} className="min-h-11 flex-[1_1_90px] rounded-[10px] border border-px-line-strong bg-px-surface text-[15px] font-semibold leading-none">
                   Annulla

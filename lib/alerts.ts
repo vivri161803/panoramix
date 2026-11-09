@@ -1,24 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
-import {
-  MEDICATION_COLUMNS,
-  PLAN_COLUMNS,
-  toMedication,
-  toPlanSettings,
-  toPrepRun,
-  type Medication,
-  type MedicationRow,
-  type PlanRow,
-  type PrepRunRow,
-  type ProfileRow,
-} from "@/lib/db-types";
-import { dosesPhrase, evaluateAlerts, forecastPlan, type AlertType, type Forecast, type PlanForecast } from "@/lib/forecast";
+import { toPlanSettings, toPrepRun, type Medication, type PlanRow, type ProfileRow } from "@/lib/db-types";
+import { loadCronData, planAudience } from "@/lib/cron-data";
+import { dosesAt, dosesPhrase, evaluateAlerts, forecastPlan, type AlertType, type Forecast, type PlanForecast } from "@/lib/forecast";
 import { getEmailProvider } from "@/lib/email/provider";
 import { renderAlertEmail, type AlertEmailMed } from "@/lib/email/alert-template";
 import type { ISODate } from "@/lib/dates";
 
-export function toEmailMed(med: Medication, f: Forecast): AlertEmailMed {
+export function toEmailMed(med: Medication, f: Forecast, today: ISODate): AlertEmailMed {
   return {
     name: med.name,
     strength: med.strength,
@@ -29,7 +19,7 @@ export function toEmailMed(med: Medication, f: Forecast): AlertEmailMed {
     runOutDate: f.runOutDate,
     requiresPrescription: med.requiresPrescription,
     pillsPerPack: med.pillsPerPack,
-    dosesPhrase: dosesPhrase(med),
+    dosesPhrase: dosesPhrase(dosesAt(med, today)),
     asNeeded: f.asNeeded,
   };
 }
@@ -53,7 +43,7 @@ export function buildPlanEmail(opts: {
     nextPrep: forecast.nextPrep,
     today,
     test: opts.test,
-    meds: meds.map((m) => toEmailMed(m, byId.get(m.id)!)),
+    meds: meds.map((m) => toEmailMed(m, byId.get(m.id)!, today)),
   });
 }
 
@@ -87,24 +77,8 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
   }
 
   // Lettura di tutti i dati (anche la query quotidiana che tiene sveglio il progetto Supabase).
-  const { data: plans, error: pErr } = await admin.from("plans").select(PLAN_COLUMNS);
-  if (pErr) throw new Error(`Lettura piani non riuscita: ${pErr.message}`);
-  const planRows = (plans ?? []) as PlanRow[];
-  const planIds = planRows.map((p) => p.id);
-  const ownerIds = [...new Set(planRows.map((p) => p.owner_id))];
-
-  const [profilesRes, recRes, medsRes, runsRes] = await Promise.all([
-    ownerIds.length ? admin.from("profiles").select("id, email, first_name, last_name").in("id", ownerIds) : Promise.resolve({ data: [] }),
-    planIds.length ? admin.from("plan_recipients").select("plan_id, email").in("plan_id", planIds) : Promise.resolve({ data: [] }),
-    planIds.length ? admin.from("medications").select(MEDICATION_COLUMNS).in("plan_id", planIds).eq("archived", false) : Promise.resolve({ data: [] }),
-    planIds.length
-      ? admin.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").in("plan_id", planIds).is("undone_at", null)
-      : Promise.resolve({ data: [] }),
-  ]);
-  const profiles = (profilesRes.data ?? []) as ProfileRow[];
-  const recipients = (recRes.data ?? []) as { plan_id: string; email: string }[];
-  const meds = ((medsRes.data ?? []) as MedicationRow[]).map(toMedication);
-  const runs = (runsRes.data ?? []) as PrepRunRow[];
+  const data = await loadCronData(admin);
+  const { plans: planRows, meds, runs } = data;
   const medIds = meds.map((m) => m.id);
   const { data: openRows } = medIds.length
     ? await admin.from("alert_log").select("id, medication_id, alert_type, sent_at").in("medication_id", medIds).is("closed_at", null)
@@ -116,7 +90,7 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
   for (const plan of planRows) {
     result.plansChecked++;
     try {
-      const owner = profiles.find((p) => p.id === plan.owner_id);
+      const owner = data.profiles.get(plan.owner_id);
       if (!owner?.email) continue;
       const planMeds = meds.filter((m) => m.planId === plan.id);
       const fc = forecastPlan(
@@ -163,7 +137,7 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
         continue;
       }
 
-      const to = [owner.email, ...recipients.filter((r) => r.plan_id === plan.id).map((r) => r.email)];
+      const to = planAudience(data, plan);
       const names = toSend.map((s) => s.med.name);
       if (dryRun) {
         result.plans.push({ planId: plan.id, outcome: "would_send", medications: names });

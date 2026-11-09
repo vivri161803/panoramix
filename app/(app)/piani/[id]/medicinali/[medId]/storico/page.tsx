@@ -16,6 +16,7 @@ const FILTERS = [
   { id: "arrivi", label: "Arrivi" },
   { id: "prep", label: "Preparazioni" },
   { id: "conteggi", label: "Conteggi" },
+  { id: "prese", label: "Prese" },
 ] as const;
 
 function describe(e: StockEventRow): { icon: string; title: string; note: string } {
@@ -38,6 +39,8 @@ function describe(e: StockEventRow): { icon: string; title: string; note: string
       return { icon: "↺", title: "Preparazione annullata", note: "" };
     case "adjust":
       return { icon: "↺", title: meta.undo_of ? "Movimento annullato" : "Correzione", note: "" };
+    case "use":
+      return { icon: "−", title: "Presa al bisogno", note: "" };
   }
 }
 
@@ -45,6 +48,7 @@ function matches(filter: string, e: StockEventRow) {
   if (filter === "arrivi") return e.type === "arrival";
   if (filter === "prep") return e.type === "prep" || e.type === "prep_undo";
   if (filter === "conteggi") return e.type === "count";
+  if (filter === "prese") return e.type === "use";
   return true;
 }
 
@@ -56,7 +60,9 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
   const item = b.forecast.items.find((i) => i.med.id === medId);
   if (!item) notFound();
   const { med, forecast: f } = item;
-  const events = (await getStockEvents(med.id)).filter((e) => matches(filter, e));
+  const { events: all, authors } = await getStockEvents(med.id);
+  const events = all.filter((e) => matches(filter, e));
+  const by = (e: { created_by: string | null }) => (e.created_by === b.profile.id ? "da te" : e.created_by && authors.get(e.created_by) ? `da ${authors.get(e.created_by)}` : "");
   const summary = [
     `${formatQty(f.stock)} compresse`,
     f.coverageDays !== null ? `${f.coverageDays} giorni di copertura` : f.asNeeded ? "al bisogno" : "basta fino alla fine",
@@ -118,7 +124,8 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
                   <span className="t-body-strong">{d.title}</span>
                   <span className="text-[15px] leading-[1.35] text-px-ink-2">
                     {date}, {formatTimeRome(e.created_at)}
-                    {d.note} · da te
+                    {d.note}
+                    {by(e) ? ` · ${by(e)}` : ""}
                   </span>
                 </div>
                 <div className="flex flex-col items-end gap-0.5">

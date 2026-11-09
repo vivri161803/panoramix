@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getPlanBundle } from "@/lib/data";
+import { dosesAt, upcomingChanges } from "@/lib/forecast";
+import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
+import { DoseChangesPanel } from "@/components/DoseChangesPanel";
 import type { PillColor, PillShape } from "@/lib/pills";
 
 export const metadata: Metadata = { title: "Modifica medicinale" };
@@ -9,9 +12,12 @@ export const metadata: Metadata = { title: "Modifica medicinale" };
 export default async function ModificaMedicinalePage({ params }: PageProps<"/piani/[id]/medicinali/[medId]">) {
   const { id, medId } = await params;
   const b = await getPlanBundle(id);
+  if (!canEdit(b.role)) redirect(`/piani/${id}`);
   const item = b.forecast.items.find((i) => i.med.id === medId);
   if (!item) notFound();
   const m = item.med;
+  // il modulo mostra le dosi in vigore oggi (i cambi già iniziati confluiscono lì al salvataggio)
+  const now = dosesAt(m, b.today);
   return (
     <MedicationForm
       planId={b.plan.id}
@@ -28,9 +34,9 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         requires_prescription: m.requiresPrescription,
         color: m.color as PillColor,
         shape: m.shape as PillShape,
-        dose_morning: m.doseMorning,
-        dose_noon: m.doseNoon,
-        dose_evening: m.doseEvening,
+        dose_morning: now.doseMorning,
+        dose_noon: now.doseNoon,
+        dose_evening: now.doseEvening,
         frequency_type: m.frequencyType,
         weekdays: m.weekdays,
         interval_days: m.intervalDays,
@@ -40,6 +46,18 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         end_date: m.endDate,
         stock_qty: item.forecast.stock,
       }}
+      extra={
+        m.frequencyType === "as_needed" ? null : (
+          <DoseChangesPanel
+            planId={b.plan.id}
+            medicationId={m.id}
+            today={b.today}
+            endDate={m.endDate}
+            current={now}
+            changes={upcomingChanges(m, b.today).map((c) => ({ id: c.id!, from: c.from, doseMorning: c.doseMorning, doseNoon: c.doseNoon, doseEvening: c.doseEvening }))}
+          />
+        )
+      }
     />
   );
 }

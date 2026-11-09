@@ -19,6 +19,8 @@ export default async function NuovoPianoPage() {
         alert_under_14: true,
         alert_under_7: false,
         alert_last_pack: true,
+        prep_reminder: true,
+        weekly_summary: false,
         recipients: [],
       }}
     />

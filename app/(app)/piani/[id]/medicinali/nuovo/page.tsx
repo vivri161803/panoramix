@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getPlanBundle } from "@/lib/data";
+import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
 import { PILL_COLORS } from "@/lib/pills";
 
@@ -8,6 +10,7 @@ export const metadata: Metadata = { title: "Nuovo medicinale" };
 export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/[id]/medicinali/nuovo">) {
   const { id } = await params;
   const b = await getPlanBundle(id);
+  if (!canEdit(b.role)) redirect(`/piani/${id}`);
   // colore non ancora usato nel piano, per distinguerle a colpo d'occhio
   const used = new Set(b.medications.map((m) => m.color));
   const color = PILL_COLORS.find((c) => !used.has(c.hex))?.hex ?? PILL_COLORS[0].hex;

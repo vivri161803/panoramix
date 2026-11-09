@@ -227,6 +227,25 @@ export function PlanForm({ planId, initial, managerEmail, meds, medCount, extra 
           <p className="m-0 border-t border-px-line pt-3 text-[15px] text-px-ink-2">Un controllo al giorno verso le 8:00. Al massimo un’email al giorno per piano.</p>
         </fieldset>
 
+        <fieldset className="px-card m-0 flex flex-col gap-1 p-5">
+          <legend className={`${legend} pb-2`}>Promemoria e riepiloghi</legend>
+          {f.stock_mode === "weekly" && (
+            <Switch
+              checked={f.prep_reminder ?? true}
+              onChange={(v) => set({ prep_reminder: v })}
+              label="Promemoria del portapillole"
+              sub="La sera prima del giorno di preparazione, con cosa mettere e cosa manca."
+            />
+          )}
+          <Switch
+            checked={f.weekly_summary ?? false}
+            onChange={(v) => set({ weekly_summary: v })}
+            label="Riepilogo del lunedì"
+            sub="Ogni lunedì mattina lo stato delle scorte, anche quando va tutto bene."
+          />
+          <p className="m-0 border-t border-px-line pt-3 text-[15px] text-px-ink-2">Arrivano a te, ai destinatari qui sotto e alle persone con accesso al piano.</p>
+        </fieldset>
+
         <fieldset className={card}>
           <legend className={legend}>Chi riceve gli avvisi</legend>
           <div className="flex flex-wrap gap-2">

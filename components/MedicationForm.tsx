@@ -22,6 +22,8 @@ interface Props {
   settings: PlanSettings;
   today: ISODate;
   nextPrep: ISODate | null;
+  /** contenuto sotto il modulo (es. cambi di dose programmati) */
+  extra?: React.ReactNode;
 }
 
 const FREQS: { id: FrequencyType; label: string }[] = [
@@ -45,7 +47,7 @@ const num = (s: string) => {
   return s.trim() === "" || !Number.isFinite(n) ? NaN : n;
 };
 
-export function MedicationForm({ planId, planName, medicationId, initial, settings, today, nextPrep }: Props) {
+export function MedicationForm({ planId, planName, medicationId, initial, settings, today, nextPrep, extra }: Props) {
   const isNew = !medicationId;
   const [f, setF] = useState(initial);
   const [txt, setTxt] = useState<Record<NumKey, string>>({
@@ -101,7 +103,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       orderedAt: null,
     };
     const fc = forecastMedication(med, { plan: settings, today, nextPrep: nextPrep ?? undefined });
-    return { med, fc, view: dispenserView(med, fc, settings.stockMode) };
+    return { med, fc, view: dispenserView(med, fc, settings.stockMode, today) };
   })();
 
   const sum1 = scheduleSummary(preview.med);
@@ -147,9 +149,10 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
         <h1 className="t-display m-0">{isNew ? "Nuovo medicinale" : "Modifica medicinale"}</h1>
       </div>
       <div className="flex flex-wrap items-start gap-6">
+        <div className="flex min-w-0 flex-[1_1_520px] flex-col gap-4">
         <form
           noValidate
-          className="flex min-w-0 flex-[1_1_520px] flex-col gap-4"
+          className="flex min-w-0 flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             save(false);
@@ -394,6 +397,8 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
               </button>
             ))}
         </form>
+        {extra}
+        </div>
 
         <aside aria-label="Anteprima" className="sticky top-6 hidden min-w-[260px] flex-[0_1_300px] flex-col gap-2.5 min-[900px]:flex">
           <span className="t-mono uppercase tracking-[0.04em] text-px-ink-3">Anteprima dal vivo</span>

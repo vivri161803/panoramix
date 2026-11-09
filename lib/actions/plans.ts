@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlanBundle, requireProfile } from "@/lib/data";
 import { currentStock } from "@/lib/forecast";
 import { planSchema, type PlanInput } from "@/lib/schemas";
+import { isOwner, OWNER_ONLY_MESSAGE } from "@/lib/roles";
 import { dbError, fail, flash, zodFail, type ActionResult } from "./common";
 
 function planFields(p: ReturnType<typeof planSchema.parse>) {
@@ -16,6 +17,8 @@ function planFields(p: ReturnType<typeof planSchema.parse>) {
     alert_under_14: p.alert_under_14,
     alert_under_7: p.alert_under_7,
     alert_last_pack: p.alert_last_pack,
+    prep_reminder: p.prep_reminder,
+    weekly_summary: p.weekly_summary,
   };
 }
 
@@ -44,6 +47,7 @@ export async function createPlan(input: PlanInput): Promise<ActionResult> {
 
 export async function updatePlan(planId: string, input: PlanInput): Promise<ActionResult> {
   const bundle = await getPlanBundle(planId);
+  if (!isOwner(bundle.role)) return fail(OWNER_ONLY_MESSAGE);
   const parsed = planSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   const p = parsed.data;
@@ -96,6 +100,7 @@ export async function updatePlan(planId: string, input: PlanInput): Promise<Acti
 
 export async function deletePlan(planId: string): Promise<ActionResult> {
   const bundle = await getPlanBundle(planId);
+  if (!isOwner(bundle.role)) return fail(OWNER_ONLY_MESSAGE);
   const supabase = await createClient();
   const { error } = await supabase.from("plans").delete().eq("id", planId);
   if (error) return fail(dbError(error, "Non riesco a eliminare il piano. Riprova."));

@@ -1,13 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { arrivePacks, recountStock, toggleOrdered, undoStockEvent } from "@/lib/actions/stock";
+import { arrivePacks, recountStock, takeAsNeeded, toggleOrdered, undoStockEvent } from "@/lib/actions/stock";
 import type { ActionResult } from "@/lib/actions/common";
 import type { DispenserView } from "@/lib/view";
 import { Dispenser } from "@/components/Dispenser";
 import { useToast } from "@/components/Toast";
 
-export function DispenserGrid({ planId, meds }: { planId: string; meds: DispenserView[] }) {
+export function DispenserGrid({ planId, meds, readOnly = false }: { planId: string; meds: DispenserView[]; readOnly?: boolean }) {
   const toast = useToast();
   const [pending, start] = useTransition();
 
@@ -31,12 +31,14 @@ export function DispenserGrid({ planId, meds }: { planId: string; meds: Dispense
         <Dispenser
           key={m.id}
           med={m}
-          actions={{
+          historyHref={`/piani/${planId}/medicinali/${m.id}/storico`}
+          actions={readOnly ? undefined : {
             busy: pending,
             historyHref: `/piani/${planId}/medicinali/${m.id}/storico`,
             editHref: `/piani/${planId}/medicinali/${m.id}`,
             onArrive: (packs) => run(() => arrivePacks(planId, m.id, packs), undoEvent(m.id)),
             onRecount: (qty) => run(() => recountStock(planId, m.id, qty), undoEvent(m.id)),
+            onTake: (qty) => run(() => takeAsNeeded(planId, m.id, qty), undoEvent(m.id)),
             onOrdered: () =>
               run(
                 () => toggleOrdered(planId, m.id),

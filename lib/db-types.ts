@@ -1,6 +1,7 @@
 // Righe delle tabelle (vedi supabase/migrations) e conversione verso i tipi di dominio.
 
 import type { FrequencyType, MedicationData, PlanSettings, PrepRunData, StockMode } from "./forecast";
+import type { MemberRole } from "./roles";
 
 export interface ProfileRow {
   id: string;
@@ -20,7 +21,43 @@ export interface PlanRow {
   alert_under_14: boolean;
   alert_under_7: boolean;
   alert_last_pack: boolean;
+  prep_reminder: boolean;
+  weekly_summary: boolean;
   created_at: string;
+}
+
+export interface MemberRow {
+  plan_id: string;
+  user_id: string;
+  role: MemberRole;
+  created_at: string;
+  profile: { first_name: string; last_name: string; email: string } | null;
+}
+
+export interface InviteRow {
+  id: string;
+  plan_id: string;
+  email: string;
+  role: MemberRole;
+  created_at: string;
+}
+
+/** Invito ricevuto (da my_plan_invites) */
+export interface MyInviteRow {
+  id: string;
+  plan_id: string;
+  patient_name: string;
+  role: MemberRole;
+  owner_name: string;
+  created_at: string;
+}
+
+export interface DoseChangeRow {
+  id: string;
+  effective_date: string;
+  dose_morning: number | string;
+  dose_noon: number | string;
+  dose_evening: number | string;
 }
 
 export interface RecipientRow {
@@ -54,9 +91,10 @@ export interface MedicationRow {
   ordered_at: string | null;
   archived: boolean;
   created_at: string;
+  dose_changes?: DoseChangeRow[] | null;
 }
 
-export type StockEventType = "count" | "arrival" | "prep" | "prep_undo" | "adjust";
+export type StockEventType = "count" | "arrival" | "prep" | "prep_undo" | "adjust" | "use";
 
 export interface StockEventRow {
   id: string;
@@ -80,10 +118,10 @@ export interface PrepRunRow {
 }
 
 export const MEDICATION_COLUMNS =
-  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, shape, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at";
+  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, shape, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
 
 export const PLAN_COLUMNS =
-  "id, owner_id, patient_name, notes, stock_mode, mode_since, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, created_at";
+  "id, owner_id, patient_name, notes, stock_mode, mode_since, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
 
 /** Medicinale pronto per la logica di dominio e per l'interfaccia. */
 export interface Medication extends MedicationData {
@@ -97,6 +135,15 @@ export interface Medication extends MedicationData {
 }
 
 export function toMedication(r: MedicationRow): Medication {
+  const changes = (r.dose_changes ?? [])
+    .map((c) => ({
+      id: c.id,
+      from: c.effective_date,
+      doseMorning: Number(c.dose_morning),
+      doseNoon: Number(c.dose_noon),
+      doseEvening: Number(c.dose_evening),
+    }))
+    .sort((a, b) => (a.from < b.from ? -1 : 1));
   return {
     id: r.id,
     planId: r.plan_id,
@@ -120,6 +167,7 @@ export function toMedication(r: MedicationRow): Medication {
     stockQty: Number(r.stock_qty),
     stockAsOf: r.stock_as_of,
     orderedAt: r.ordered_at,
+    doseChanges: changes,
   };
 }
 

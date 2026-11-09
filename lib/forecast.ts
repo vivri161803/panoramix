@@ -25,10 +25,20 @@ export const SLOTS: Slot[] = ["morning", "noon", "evening"];
 export const ALERT_TYPES: AlertType[] = ["under_14", "under_7", "last_pack"];
 export const STATUS_RANK: Record<MedStatus, number> = { out: 0, order: 1, ordered: 2, ok: 3 };
 
-export interface Schedule {
+export interface Doses {
   doseMorning: number;
   doseNoon: number;
   doseEvening: number;
+}
+
+/** Cambio di dose programmato: dal giorno `from` valgono queste dosi. */
+export interface DoseChange extends Doses {
+  from: ISODate;
+  /** riga del database, se salvato */
+  id?: string;
+}
+
+export interface Schedule extends Doses {
   frequencyType: FrequencyType;
   /** giorni ISO, 1 = lunedì … 7 = domenica */
   weekdays: number[];
@@ -37,6 +47,8 @@ export interface Schedule {
   cycleOff: number | null;
   startDate: ISODate;
   endDate: ISODate | null;
+  /** cambi di dose programmati, in qualsiasi ordine */
+  doseChanges?: DoseChange[];
 }
 
 export interface MedicationData extends Schedule {
@@ -76,8 +88,26 @@ export function totalPerDose(s: Pick<Schedule, "doseMorning" | "doseNoon" | "dos
   return s.doseMorning + s.doseNoon + s.doseEvening;
 }
 
-export function slotDose(s: Schedule, slot: Slot): number {
+export function slotDose(s: Doses, slot: Slot): number {
   return slot === "morning" ? s.doseMorning : slot === "noon" ? s.doseNoon : s.doseEvening;
+}
+
+/** Dosi in vigore in un giorno: quelle del medicinale o dell'ultimo cambio già iniziato. */
+export function dosesAt(s: Schedule, date: ISODate): Doses {
+  let best: DoseChange | null = null;
+  for (const c of s.doseChanges ?? []) if (c.from <= date && (!best || c.from > best.from)) best = c;
+  const d = best ?? s;
+  return { doseMorning: d.doseMorning, doseNoon: d.doseNoon, doseEvening: d.doseEvening };
+}
+
+/** Lo schema con le dosi in vigore in quel giorno (per riepiloghi e frasi). */
+export function scheduleAt<S extends Schedule>(s: S, date: ISODate): S {
+  return { ...s, ...dosesAt(s, date) };
+}
+
+/** Cambi di dose ancora da iniziare dopo `today`, in ordine di data. */
+export function upcomingChanges(s: Schedule, today: ISODate): DoseChange[] {
+  return (s.doseChanges ?? []).filter((c) => c.from > today).sort((a, b) => (a.from < b.from ? -1 : 1));
 }
 
 /** La frequenza prevede l'assunzione in questo giorno? (Rispetta inizio e fine.) */
@@ -105,11 +135,11 @@ export function isScheduledOn(s: Schedule, date: ISODate): boolean {
 
 /** Dosi di un giorno = somma delle fasce, se quel giorno la frequenza la prevede. */
 export function dosesOn(s: Schedule, date: ISODate): number {
-  return isScheduledOn(s, date) ? totalPerDose(s) : 0;
+  return isScheduledOn(s, date) ? totalPerDose(dosesAt(s, date)) : 0;
 }
 
 export function slotDoseOn(s: Schedule, date: ISODate, slot: Slot): number {
-  return isScheduledOn(s, date) ? slotDose(s, slot) : 0;
+  return isScheduledOn(s, date) ? slotDose(dosesAt(s, date), slot) : 0;
 }
 
 /** Somma delle dosi previste da `from` a `to` compresi. */
@@ -170,7 +200,7 @@ function joinList(items: string[]): string {
 }
 
 /** "1 al mattino e ½ alla sera" */
-export function dosesPhrase(s: Schedule): string {
+export function dosesPhrase(s: Doses): string {
   return joinList(SLOTS.filter((k) => slotDose(s, k) > 0).map((k) => `${formatQty(slotDose(s, k))} ${SLOT_PHRASE[k]}`));
 }
 
