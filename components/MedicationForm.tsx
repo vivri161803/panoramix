@@ -87,6 +87,8 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       requiresPrescription: input.requires_prescription,
       color: input.color,
       shape: input.shape,
+      aic: null,
+      atcCode: null,
       pillsPerPack: ok(input.pills_per_pack, 1) ?? 1,
       doseMorning: input.dose_morning,
       doseNoon: input.dose_noon,

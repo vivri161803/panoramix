@@ -76,6 +76,8 @@ export interface MedicationRow {
   requires_prescription: boolean;
   color: string;
   shape: string;
+  aic: string | null;
+  atc_code: string | null;
   dose_morning: number | string;
   dose_noon: number | string;
   dose_evening: number | string;
@@ -118,7 +120,7 @@ export interface PrepRunRow {
 }
 
 export const MEDICATION_COLUMNS =
-  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, shape, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
+  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, shape, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
 
 export const PLAN_COLUMNS =
   "id, owner_id, patient_name, notes, stock_mode, mode_since, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
@@ -132,6 +134,10 @@ export interface Medication extends MedicationData {
   requiresPrescription: boolean;
   color: string;
   shape: string;
+  /** codice AIC della confezione (9 cifre), se noto */
+  aic: string | null;
+  /** codice ATC completo o solo la lettera del gruppo, se noto */
+  atcCode: string | null;
 }
 
 export function toMedication(r: MedicationRow): Medication {
@@ -153,6 +159,8 @@ export function toMedication(r: MedicationRow): Medication {
     requiresPrescription: r.requires_prescription,
     color: r.color,
     shape: r.shape,
+    aic: r.aic ?? null,
+    atcCode: r.atc_code ?? null,
     pillsPerPack: Number(r.pills_per_pack),
     doseMorning: Number(r.dose_morning),
     doseNoon: Number(r.dose_noon),
