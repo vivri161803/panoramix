@@ -8,9 +8,9 @@ Un'app web per chi gestisce le medicine di un familiare.<br>
 Dice quando va presa ogni compressa, tiene il conto delle scorte in casa<br>
 e manda un'email quando una medicina va riordinata.
 
-[![Apri l'app](https://img.shields.io/badge/Apri_l%27app-panoramix--rust.vercel.app-2e9a63?style=for-the-badge&logo=vercel&logoColor=white)](https://panoramix-rust.vercel.app)
+[![Apri l'app](https://img.shields.io/badge/Apri_l%27app-appoteca.bid-2e9a63?style=for-the-badge&logo=vercel&logoColor=white)](https://appoteca.bid)
 
-[Accedi](https://panoramix-rust.vercel.app/accesso) · [Funzionalità](#funzionalità) · [Architettura](#architettura) · [Avvio in locale](#avvio-in-locale) · [Test](#test)
+[Accedi](https://appoteca.bid/accesso) · [Funzionalità](#funzionalità) · [Architettura](#architettura) · [Avvio in locale](#avvio-in-locale) · [Test](#test)
 
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
@@ -122,7 +122,7 @@ flowchart LR
 | Import dei dati AIFA | GitHub Actions, ogni notte alle 03:30 UTC | runner di GitHub, scrive su Supabase con la service role |
 | Database Postgres, Auth e link magico | Supabase, piano Free, progetto "Panoramix" | `eu-west-2`, Londra |
 | Invio delle email (avvisi, inviti, link di accesso) | Gmail SMTP (`smtp.gmail.com`) | server di Google |
-| Indirizzo pubblico | dominio predefinito di Vercel | [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) |
+| Indirizzo pubblico | dominio personale su Vercel | [appoteca.bid](https://appoteca.bid) |
 
 Funzioni e database sono in due regioni diverse, quindi ogni lettura o scrittura va da Francoforte a Londra e torna. Londra non è nell'Unione Europea. Per ora resta così; per avvicinarli si possono spostare le funzioni in `lhr1` (Londra) da `vercel.json`, oppure creare un nuovo progetto Supabase a Francoforte e migrarci i dati.
 
@@ -179,7 +179,7 @@ cp .env.example .env.local   # poi compila i valori
 npm run dev                  # http://localhost:3000
 ```
 
-Per accedere in locale aggiungi `http://localhost:3000/**` tra i Redirect URLs di Supabase, oppure usa direttamente l'[app pubblicata](https://panoramix-rust.vercel.app).
+Per accedere in locale aggiungi `http://localhost:3000/**` tra i Redirect URLs di Supabase, oppure usa direttamente l'[app pubblicata](https://appoteca.bid).
 
 ### Supabase locale
 
@@ -209,7 +209,7 @@ Sono tutte in [`.env.example`](.env.example). Nel repository non ci sono mai val
 | `MAIL_FROM_NAME` | | `Appoteca` |
 | `RESEND_API_KEY`, `MAIL_FROM_ADDRESS` | resend.com | solo con `EMAIL_PROVIDER=resend` |
 | `CRON_SECRET` | `openssl rand -hex 32` | Vercel lo manda come `Authorization: Bearer …` |
-| `APP_URL` | l'indirizzo dell'app | es. `https://panoramix.vercel.app`, senza barra finale |
+| `APP_URL` | l'indirizzo dell'app | es. `https://appoteca.bid`, senza barra finale |
 | `OPS_ALERT_EMAIL` | | chi riceve le email tecniche se un controllo automatico fallisce (default `bianchicarlo2002@icloud.com`) |
 
 </details>
@@ -363,6 +363,6 @@ npm run lint
 
 ## Deploy
 
-Il progetto Vercel è collegato al repository, con il dominio predefinito [panoramix-rust.vercel.app](https://panoramix-rust.vercel.app) e le funzioni nella regione `fra1` (vedi [Dove gira cosa](#dove-gira-cosa)). I due cron sono dichiarati in [`vercel.json`](vercel.json). Prima di pubblicare codice che usa tabelle nuove applica le migrazioni al progetto Supabase con `npx supabase db push`. Le variabili si impostano in Vercel → Project → Settings → Environment Variables.
+Il progetto Vercel è collegato al repository, con il dominio personale [appoteca.bid](https://appoteca.bid) e le funzioni nella regione `fra1` (vedi [Dove gira cosa](#dove-gira-cosa)). I due cron sono dichiarati in [`vercel.json`](vercel.json). Prima di pubblicare codice che usa tabelle nuove applica le migrazioni al progetto Supabase con `npx supabase db push`. Le variabili si impostano in Vercel → Project → Settings → Environment Variables.
 
 Per i dati AIFA: in GitHub → Settings → Secrets and variables → Actions servono `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`. Il primo import si lancia a mano da Actions → «Import dati AIFA» → Run workflow; l'esito di ogni sorgente è nella tabella `aifa_imports`. Lo scanner usa la fotocamera: se un giorno si aggiunge un header `Permissions-Policy`, deve includere `camera=(self)`. Dopo un aggiornamento di `barcode-detector` copia il nuovo WebAssembly: `cp node_modules/zxing-wasm/dist/reader/zxing_reader.wasm public/zxing/` (un test controlla che siano uguali).
