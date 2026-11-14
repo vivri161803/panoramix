@@ -35,7 +35,7 @@ export default async function PianoPage({ params }: PageProps<"/piani/[id]">) {
           <h2 className="m-0 text-[22px] font-[650] leading-[1.25]">Ancora nessun medicinale</h2>
           <p className="m-0 max-w-[460px] text-px-ink-2 [text-wrap:pretty]">
             {editable
-              ? `Aggiungi le medicine di ${plan.patient_name} una alla volta: dose, orari e quante compresse ci sono in casa. Panoramix calcola per quanti giorni bastano.`
+              ? `Aggiungi le medicine di ${plan.patient_name} una alla volta: dose, orari e quante compresse ci sono in casa. Appoteca calcola per quanti giorni bastano.`
               : `Chi gestisce il piano non ha ancora aggiunto le medicine di ${plan.patient_name}.`}
           </p>
           {editable && (

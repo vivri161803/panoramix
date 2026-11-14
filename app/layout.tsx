@@ -8,7 +8,7 @@ const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "sw
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], weight: ["500", "600"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Panoramix", template: "%s · Panoramix" },
+  title: { default: "Appoteca", template: "%s · Appoteca" },
   description: "Le medicine di chi assisti: calendario delle dosi, scorte in casa e avvisi per riordinare.",
   robots: { index: false, follow: false },
 };

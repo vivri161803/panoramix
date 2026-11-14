@@ -36,7 +36,7 @@ export function renderLayout(d: LayoutData): string {
   <tr><td style="padding:22px 28px;border-bottom:1px solid #DAE0E6;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
       <td valign="middle" style="padding-right:10px;"><img src="${esc(logo)}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border:1px solid #DAE0E6;border-radius:8px;background:#F4F3EE;"></td>
-      <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Panoramix</td>
+      <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Appoteca</td>
     </tr></table>
   </td></tr>
   <tr><td style="padding:28px;">

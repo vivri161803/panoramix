@@ -14,7 +14,7 @@ export const env = {
   appUrl: () => (process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, ""),
   cronSecret: () => required("CRON_SECRET"),
   emailProvider: () => (process.env.EMAIL_PROVIDER || "smtp") as "smtp" | "resend",
-  mailFromName: () => process.env.MAIL_FROM_NAME || "Panoramix",
+  mailFromName: () => process.env.MAIL_FROM_NAME || "Appoteca",
   /** chi riceve le email tecniche quando un controllo automatico fallisce */
   opsEmail: () => process.env.OPS_ALERT_EMAIL || "bianchicarlo2002@icloud.com",
 };

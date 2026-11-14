@@ -45,7 +45,7 @@ export async function inviteMember(planId: string, input: InviteInput): Promise<
     await getEmailProvider().send({ to: [email], replyTo: b.profile.email, ...mail });
   } catch (e) {
     console.error("Email di invito non inviata:", e);
-    return { ok: true, message: `Invito salvato, ma l’email non è partita: avvisa tu ${email} di entrare in Panoramix.` };
+    return { ok: true, message: `Invito salvato, ma l’email non è partita: avvisa tu ${email} di entrare in Appoteca.` };
   }
   return { ok: true, message: `Invito inviato a ${email}` };
 }

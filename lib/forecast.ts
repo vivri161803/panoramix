@@ -1,4 +1,4 @@
-// Logica di dominio di Panoramix, senza dipendenze dal database.
+// Logica di dominio di Appoteca, senza dipendenze dal database.
 // Riferimento: specifica funzionale §4–§8.
 
 import {

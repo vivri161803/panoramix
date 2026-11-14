@@ -1,7 +1,7 @@
 // Icona "Vischio di pillole" (variante 1b). Stesso disegno di app/icon.svg e public/email-logo.png.
 // Gli id dei gradienti sono fissi: più icone nella stessa pagina hanno definizioni identiche.
 
-export function AppIcon({ size = 32, label = "Panoramix" }: { size?: number; label?: string | null }) {
+export function AppIcon({ size = 32, label = "Appoteca" }: { size?: number; label?: string | null }) {
   return (
     <svg
       viewBox="0 0 100 100"

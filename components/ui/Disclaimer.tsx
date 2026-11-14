@@ -1,5 +1,5 @@
 export const DISCLAIMER =
-  "Panoramix è un promemoria: i conti si basano sui dati inseriti nel piano. Non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie. Per dosi e terapie segui sempre le indicazioni del medico o del farmacista.";
+  "Appoteca è un promemoria: i conti si basano sui dati inseriti nel piano. Non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie. Per dosi e terapie segui sempre le indicazioni del medico o del farmacista.";
 
 export function Disclaimer() {
   return (

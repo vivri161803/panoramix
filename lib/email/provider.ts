@@ -58,7 +58,7 @@ class SmtpProvider implements EmailProvider {
 
   async send(m: EmailMessage) {
     const info = await this.transport.sendMail({
-      // con Gmail il mittente deve essere la casella stessa; il nome mostrato è "Panoramix"
+      // con Gmail il mittente deve essere la casella stessa; il nome mostrato è "Appoteca"
       from: { name: env.mailFromName(), address: process.env.MAIL_FROM_ADDRESS || required("SMTP_USER") },
       to: m.to,
       replyTo: m.replyTo,

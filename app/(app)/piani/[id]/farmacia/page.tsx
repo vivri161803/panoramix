@@ -21,7 +21,7 @@ export default async function FarmaciaPage({ params }: PageProps<"/piani/[id]/fa
       <div className="flex flex-col gap-1.5">
         <h1 className="t-display m-0">Lista per la farmacia</h1>
         <p className="m-0 text-px-ink-2 [text-wrap:pretty]">
-          Sono già scelte le medicine da ordinare. Le confezioni proposte coprono circa {ORDER_TARGET_DAYS} giorni di terapia oltre a quelle in casa: cambiale se serve, poi copia o condividi il testo. Panoramix non lo manda a nessuno.
+          Sono già scelte le medicine da ordinare. Le confezioni proposte coprono circa {ORDER_TARGET_DAYS} giorni di terapia oltre a quelle in casa: cambiale se serve, poi copia o condividi il testo. Appoteca non lo manda a nessuno.
         </p>
       </div>
       {items.length === 0 ? (

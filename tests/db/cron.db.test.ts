@@ -62,7 +62,7 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     const r = await runPrepReminders(admin, SAT);
     expect(r.plans.find((p) => p.planId === planId)?.outcome).toBe("sent");
     const mail = sent.find((m) => mine(m.to))!;
-    expect(mail.subject).toBe("Panoramix · Nonno Cron: domani si prepara il portapillole");
+    expect(mail.subject).toBe("Appoteca · Nonno Cron: domani si prepara il portapillole");
     expect(mail.to.sort()).toEqual([owner.email, member.email, "badante@test.localhost"].sort());
     const again = await runPrepReminders(admin, SAT);
     expect(again.plans.find((p) => p.planId === planId)?.outcome).toBe("already_sent_today");
@@ -76,7 +76,7 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     const r = await runDailyAlerts(admin, SAT);
     expect(r.plans.find((p) => p.planId === planId)?.outcome).toBe("sent");
     const mail = sent.find((m) => mine(m.to))!;
-    expect(mail.subject).toBe("Panoramix · Nonno Cron: 1 medicina da ordinare");
+    expect(mail.subject).toBe("Appoteca · Nonno Cron: 1 medicina da ordinare");
     expect(mail.to).toContain(member.email);
   });
 
@@ -84,7 +84,7 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     sent.length = 0;
     const r = await runWeeklySummaries(admin, MON);
     expect(r.plans.find((p) => p.planId === planId)?.outcome).toBe("sent");
-    expect(sent.find((m) => mine(m.to))!.subject).toBe("Panoramix · Nonno Cron: riepilogo della settimana");
+    expect(sent.find((m) => mine(m.to))!.subject).toBe("Appoteca · Nonno Cron: riepilogo della settimana");
     await admin.from("plans").update({ weekly_summary: false }).eq("id", planId);
     const off = await runWeeklySummaries(admin, addDays(MON, 7));
     expect(off.plans.find((p) => p.planId === planId)).toBeUndefined();
@@ -217,7 +217,7 @@ describe.skipIf(!enabled)("riepilogo di utilizzo", () => {
     const first = await sendUsageReport(admin, DAY);
     expect(first.sent).toBe(true);
     expect(sent).toHaveLength(1);
-    expect(sent[0].subject).toMatch(/^\[Panoramix\] Utilizzo: \d+ person/);
+    expect(sent[0].subject).toMatch(/^\[Appoteca\] Utilizzo: \d+ person/);
     expect(sent[0].to).toEqual(["bianchicarlo2002@icloud.com"]);
 
     // un secondo controllo nello stesso giorno non lo rimanda

@@ -78,7 +78,7 @@ export function MembersPanel({ planId, ownerEmail, members, invites }: { planId:
           Persone con accesso
         </h2>
         <p className="m-0 text-[15px] text-px-ink-2">
-          Chi ha un account Panoramix può seguire il piano con te. Ricevono anche le email del piano (avvisi, promemoria, riepiloghi).
+          Chi ha un account Appoteca può seguire il piano con te. Ricevono anche le email del piano (avvisi, promemoria, riepiloghi).
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export function MembersPanel({ planId, ownerEmail, members, invites }: { planId:
           <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-px-line py-3">
             <span className="flex min-w-0 flex-col">
               <span className="t-body-strong [overflow-wrap:anywhere]">{i.email}</span>
-              <span className="text-[15px] text-px-ink-2">Invito in attesa: lo accetta entrando in Panoramix con questo indirizzo</span>
+              <span className="text-[15px] text-px-ink-2">Invito in attesa: lo accetta entrando in Appoteca con questo indirizzo</span>
             </span>
             <span className="flex flex-wrap items-center gap-2">
               <RoleSelect id={`px-irole-${i.id}`} label={`Permesso per ${i.email}`} value={i.role} disabled={pending} onChange={(r) => run(() => changeAccess(planId, { inviteId: i.id }, r))} />

@@ -30,8 +30,8 @@ export interface InviteEmailData {
 export function renderInviteEmail(d: InviteEmailData): RenderedEmail {
   const subject = `${d.inviterName} ti invita a seguire le medicine di ${d.patientName}`;
   const title = `Ti hanno dato accesso al piano di ${d.patientName}`;
-  const intro = `${d.inviterName} usa Panoramix per tenere il conto delle medicine di ${d.patientName} e ti ha invitato con il permesso «${ROLE_LABEL[d.role]}».`;
-  const how = `Entra in Panoramix con questo indirizzo (${d.inviteeEmail}): troverai l’invito in cima a «I miei piani» e potrai accettarlo o rifiutarlo.`;
+  const intro = `${d.inviterName} usa Appoteca per tenere il conto delle medicine di ${d.patientName} e ti ha invitato con il permesso «${ROLE_LABEL[d.role]}».`;
+  const how = `Entra in Appoteca con questo indirizzo (${d.inviteeEmail}): troverai l’invito in cima a «I miei piani» e potrai accettarlo o rifiutarlo.`;
   const url = `${d.appUrl}/piani`;
   const footer = [EMAIL_DISCLAIMER, `Non conosci ${d.inviterName}? Ignora questa email: senza accettare non succede nulla. Rispondendo scrivi a ${d.inviterEmail}.`];
   const html = renderLayout({
@@ -40,11 +40,11 @@ export function renderInviteEmail(d: InviteEmailData): RenderedEmail {
     title,
     intro,
     body: `${noteBox(ROLE_SUB[d.role])}<p style="margin:0 0 20px;font:400 17px/1.5 ${FONT};color:#44505C;">${esc(how)}</p>`,
-    cta: { url, label: "Apri Panoramix" },
+    cta: { url, label: "Apri Appoteca" },
     footer,
     appUrl: d.appUrl,
   });
-  const text = lines([title, "", intro, "", ROLE_SUB[d.role], "", how, "", `Apri Panoramix: ${url}`, "", "—", ...footer]);
+  const text = lines([title, "", intro, "", ROLE_SUB[d.role], "", how, "", `Apri Appoteca: ${url}`, "", "—", ...footer]);
   return { subject, html, text };
 }
 
@@ -79,7 +79,7 @@ export function renderPrepReminderEmail(d: ReminderEmailData): RenderedEmail {
   const when = formatRelative(d.prepDate, d.today).toLowerCase();
   const day = formatLong(d.prepDate);
   const missing = d.items.filter((i) => i.missing > 0);
-  const subject = `Panoramix · ${d.patientName}: ${when} si prepara il portapillole`;
+  const subject = `Appoteca · ${d.patientName}: ${when} si prepara il portapillole`;
   const title = `${capitalize(when)} si prepara il portapillole di ${d.patientName}`;
   const intro = `${capitalize(day)} è il giorno di preparazione. Ecco cosa serve per i 7 giorni: quando hai finito premi «Portapillole preparato» nell’app, così le scorte si aggiornano.`;
   const total = d.items.reduce((s, i) => s + i.need, 0);
@@ -173,7 +173,7 @@ export function summaryHeadline(meds: SummaryMed[]): { text: string; tone: "ok" 
 
 export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
   const head = summaryHeadline(d.meds);
-  const subject = `Panoramix · ${d.patientName}: riepilogo della settimana`;
+  const subject = `Appoteca · ${d.patientName}: riepilogo della settimana`;
   const title = `Le scorte di ${d.patientName} questa settimana`;
   const intro = `${head.text}${d.nextPrep ? ` Prossima preparazione del portapillole: ${formatLong(d.nextPrep)}.` : ""}`;
   const tone = (s: MedStatus) => (s === "out" ? "out" : s === "order" ? "order" : "ok");
@@ -224,7 +224,7 @@ export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
 // ——— Avviso tecnico per chi gestisce l'app ———
 
 export function renderOpsEmail(d: { title: string; problems: string[]; appUrl: string; when: string }): RenderedEmail {
-  const subject = `[Panoramix] ${d.title}`;
+  const subject = `[Appoteca] ${d.title}`;
   // solo dati AIFA fermi: avvisi e promemoria sono partiti normalmente
   const onlyAifa = d.problems.length > 0 && d.problems.every((p) => p.startsWith("Dati AIFA"));
   const intro = onlyAifa
@@ -232,7 +232,7 @@ export function renderOpsEmail(d: { title: string; problems: string[]; appUrl: s
     : `Controllo automatico del ${d.when}. Gli utenti potrebbero non aver ricevuto avvisi o promemoria.`;
   const list = `<ul style="margin:0 0 20px;padding-left:20px;font:400 16px/1.5 ${FONT};color:#0E1620;">${d.problems.map((p) => `<li style="margin:0 0 6px;">${esc(p)}</li>`).join("")}</ul>`;
   const hint = "Dettagli nei log di Vercel e nelle tabelle cron_runs, alert_runs e notification_runs su Supabase; per i dati AIFA in aifa_imports e nelle esecuzioni di «Import dati AIFA» su GitHub Actions.";
-  const html = renderLayout({ subject, preheader: d.problems[0] ?? d.title, title: d.title, intro, body: list + noteBox(hint), footer: ["Email tecnica di Panoramix: arriva solo all’indirizzo impostato in OPS_ALERT_EMAIL."], appUrl: d.appUrl });
+  const html = renderLayout({ subject, preheader: d.problems[0] ?? d.title, title: d.title, intro, body: list + noteBox(hint), footer: ["Email tecnica di Appoteca: arriva solo all’indirizzo impostato in OPS_ALERT_EMAIL."], appUrl: d.appUrl });
   const text = lines([d.title, "", intro, "", ...d.problems.map((p) => `• ${p}`), "", hint]);
   return { subject, html, text };
 }
@@ -242,7 +242,7 @@ export function renderOpsEmail(d: { title: string; problems: string[]; appUrl: s
 const num = (n: number) => String(n).replace(".", ",");
 
 export function renderUsageEmail(u: UsageStats, d: { from: ISODate; to: ISODate; appUrl: string }): RenderedEmail {
-  const subject = `[Panoramix] Utilizzo: ${u.active} ${u.active === 1 ? "persona attiva" : "persone attive"} negli ultimi ${u.days} giorni`;
+  const subject = `[Appoteca] Utilizzo: ${u.active} ${u.active === 1 ? "persona attiva" : "persone attive"} negli ultimi ${u.days} giorni`;
   const title = "Utilizzo della settimana";
   const intro = `Dal ${formatDayMonth(d.from)} al ${formatDayMonthYear(d.to)}.`;
   const people: [string, string][] = [
@@ -280,7 +280,7 @@ export function renderUsageEmail(u: UsageStats, d: { from: ISODate; to: ISODate;
     infoCard({ title: "Email ai familiari", rows: emails, tone: nearLimit ? "order" : "ok" }) +
     (limitNote ? noteBox(limitNote, "warn") : "") +
     noteBox(note);
-  const footer = ["Email tecnica di Panoramix: arriva ogni lunedì solo all’indirizzo impostato in OPS_ALERT_EMAIL."];
+  const footer = ["Email tecnica di Appoteca: arriva ogni lunedì solo all’indirizzo impostato in OPS_ALERT_EMAIL."];
   const html = renderLayout({ subject, preheader: `${u.active} attive, ${u.accounts.total} account, ${u.plans.total} piani`, title, intro, body, footer, appUrl: d.appUrl });
   const section = (name: string, rows: [string, string][]) => [name, ...rows.map(([k, v]) => `• ${k}: ${v}`), ""];
   const text = lines([title, intro, "", ...section("Persone", people), ...section("Piani", plans), ...section("Email ai familiari", emails), limitNote, note, "", ...footer]);

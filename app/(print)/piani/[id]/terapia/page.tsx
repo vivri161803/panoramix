@@ -135,7 +135,7 @@ export default async function TerapiaPage({ params }: PageProps<"/piani/[id]/ter
           </div>
 
           <p style={{ margin: "auto 0 0", font: "400 13px/1.45 var(--px-font)", color: "#44505C" }}>
-            Le dosi riportano quanto inserito in Panoramix. {EMAIL_DISCLAIMER.replace("Panoramix è un promemoria: i conti si basano sui dati inseriti nel piano. ", "")}
+            Le dosi riportano quanto inserito in Appoteca. {EMAIL_DISCLAIMER.replace("Appoteca è un promemoria: i conti si basano sui dati inseriti nel piano. ", "")}
           </p>
         </article>
       </div>

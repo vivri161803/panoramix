@@ -13,9 +13,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         Vai al contenuto
       </a>
       <header className="print:hidden flex h-16 items-center justify-between gap-3 border-b border-px-line bg-px-surface px-4 sm:px-6 lg:px-10">
-        <Link href="/piani" aria-label="Panoramix, vai a I miei piani" className="flex h-11 items-center gap-2.5 text-px-ink no-underline hover:text-px-ink">
+        <Link href="/piani" aria-label="Appoteca, vai a I miei piani" className="flex h-11 items-center gap-2.5 text-px-ink no-underline hover:text-px-ink">
           <AppIcon size={32} label={null} />
-          <span className="text-[19px] font-[650] leading-none tracking-[-0.02em]">Panoramix</span>
+          <span className="text-[19px] font-[650] leading-none tracking-[-0.02em]">Appoteca</span>
         </Link>
         <Link
           href="/account"

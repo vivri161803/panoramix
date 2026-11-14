@@ -37,7 +37,7 @@ export interface AlertEmailData {
 }
 
 export const EMAIL_DISCLAIMER =
-  "Panoramix è un promemoria: i conti si basano sui dati inseriti nel piano. Non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie. Per dosi e terapie segui sempre le indicazioni del medico o del farmacista.";
+  "Appoteca è un promemoria: i conti si basano sui dati inseriti nel piano. Non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie. Per dosi e terapie segui sempre le indicazioni del medico o del farmacista.";
 
 const FONT = "'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
@@ -47,7 +47,7 @@ function esc(s: string): string {
 
 export function alertSubject(d: AlertEmailData): string {
   const n = d.meds.length;
-  return `${d.test ? "[Prova] " : ""}Panoramix · ${d.patientName}: ${n} ${n === 1 ? "medicina" : "medicine"} da ordinare`;
+  return `${d.test ? "[Prova] " : ""}Appoteca · ${d.patientName}: ${n} ${n === 1 ? "medicina" : "medicine"} da ordinare`;
 }
 
 function medLabel(m: AlertEmailMed) {
@@ -125,7 +125,7 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:14px;background:#EDF0F3;margin:6px 0 20px;">
   <tr><td style="padding:18px 20px;">
     <div style="font:600 16px/1.3 ${FONT};color:#0E1620;">Testo pronto per il medico</div>
-    <div style="font:400 15px/1.4 ${FONT};color:#44505C;margin:4px 0 10px;">Copialo e invialo tu per chiedere la ricetta: Panoramix non lo manda a nessuno.</div>
+    <div style="font:400 15px/1.4 ${FONT};color:#44505C;margin:4px 0 10px;">Copialo e invialo tu per chiedere la ricetta: Appoteca non lo manda a nessuno.</div>
     <div style="background:#FFFFFF;border:1px solid #DAE0E6;border-radius:10px;padding:14px 16px;font:400 16px/1.55 ${FONT};color:#0E1620;">${esc(doc).replace(/\n/g, "<br>")}</div>
   </td></tr>
 </table>`
@@ -140,7 +140,7 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
   <tr><td style="padding:22px 28px;border-bottom:1px solid #DAE0E6;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
       <td valign="middle" style="padding-right:10px;"><img src="${esc(logoUrl(d))}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border:1px solid #DAE0E6;border-radius:8px;background:#F4F3EE;"></td>
-      <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Panoramix</td>
+      <td valign="middle" style="font:600 19px/1 ${FONT};color:#0E1620;letter-spacing:-.02em;">Appoteca</td>
     </tr></table>
   </td></tr>
   <tr><td style="padding:28px;">

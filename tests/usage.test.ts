@@ -67,7 +67,7 @@ describe("renderUsageEmail", () => {
 
   it("oggetto, periodo e numeri in HTML e nel testo", () => {
     const e = renderUsageEmail(summarizeUsage(raw, since), dates);
-    expect(e.subject).toBe("[Panoramix] Utilizzo: 3 persone attive negli ultimi 7 giorni");
+    expect(e.subject).toBe("[Appoteca] Utilizzo: 3 persone attive negli ultimi 7 giorni");
     expect(e.text).toContain("Dal 2 novembre al 9 novembre 2026.");
     expect(e.text).toContain("• Piani condivisi: 2");
     expect(e.text).toContain("• Destinatari al giorno, in media: 0,7");
@@ -77,7 +77,7 @@ describe("renderUsageEmail", () => {
 
   it("singolare con una persona attiva", () => {
     const one = summarizeUsage({ ...raw, users: [raw.users[0]], stockEvents: [], preps: [] }, since);
-    expect(renderUsageEmail(one, dates).subject).toBe("[Panoramix] Utilizzo: 1 persona attiva negli ultimi 7 giorni");
+    expect(renderUsageEmail(one, dates).subject).toBe("[Appoteca] Utilizzo: 1 persona attiva negli ultimi 7 giorni");
   });
 
   it("avvisa quando gli invii si avvicinano al limite di Gmail", () => {

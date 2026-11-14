@@ -38,7 +38,7 @@ export default async function AccountPage() {
         <h2 id="acc-esci" className="m-0 text-[18px] font-[650]">Esci</h2>
         <p className="m-0 text-px-ink-2">Per rientrare ti basterà chiedere un nuovo link.</p>
         <form action={signOut}>
-          <button type="submit" className="px-btn px-btn-secondary">Esci da Panoramix</button>
+          <button type="submit" className="px-btn px-btn-secondary">Esci da Appoteca</button>
         </form>
       </section>
 

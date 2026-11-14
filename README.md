@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="app/icon.svg" width="120" height="120" alt="Icona di Panoramix: un rametto di vischio con tre pillole">
+<img src="app/icon.svg" width="120" height="120" alt="Icona di Appoteca: un rametto di vischio con tre pillole">
 
-# Panoramix
+# Appoteca
 
 Un'app web per chi gestisce le medicine di un familiare.<br>
 Dice quando va presa ogni compressa, tiene il conto delle scorte in casa<br>
@@ -25,7 +25,7 @@ e manda un'email quando una medicina va riordinata.
 
 ## Cosa fa
 
-Per ogni familiare si crea un piano con le sue medicine, le dosi e gli orari. Da lì Panoramix calcola quante compresse restano in casa giorno per giorno, quanti giorni coprono e quando finiranno. Quando una medicina scende sotto una soglia parte un'email a chi se ne occupa, con il tempo di chiedere la ricetta e passare in farmacia.
+Per ogni familiare si crea un piano con le sue medicine, le dosi e gli orari. Da lì Appoteca calcola quante compresse restano in casa giorno per giorno, quanti giorni coprono e quando finiranno. Quando una medicina scende sotto una soglia parte un'email a chi se ne occupa, con il tempo di chiedere la ricetta e passare in farmacia.
 
 Il piano si può condividere con altri familiari, ognuno con il proprio account. L'interfaccia è in italiano e funziona su telefono e computer, e si può aggiungere alla Home dell'iPhone.
 
@@ -38,7 +38,7 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 | ![Ordinata](https://img.shields.io/badge/Ordinata-1e4da6?style=flat-square) | è stata segnata come ordinata e si aspetta l'arrivo |
 | ![Esaurita](https://img.shields.io/badge/Esaurita-ae2418?style=flat-square) | la scorta è finita o non basta per oggi |
 
-> Panoramix è un promemoria: non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie.
+> Appoteca è un promemoria: non dà consigli medici, non controlla le interazioni tra farmaci e non contatta medici o farmacie.
 
 ## Funzionalità
 
@@ -206,7 +206,7 @@ Sono tutte in [`.env.example`](.env.example). Nel repository non ci sono mai val
 | `SMTP_HOST` / `SMTP_PORT` | | `smtp.gmail.com` / `465` |
 | `SMTP_USER` | la casella Gmail | è anche il mittente reale |
 | `SMTP_PASSWORD` | password per le app di Google | 16 caratteri, senza spazi |
-| `MAIL_FROM_NAME` | | `Panoramix` |
+| `MAIL_FROM_NAME` | | `Appoteca` |
 | `RESEND_API_KEY`, `MAIL_FROM_ADDRESS` | resend.com | solo con `EMAIL_PROVIDER=resend` |
 | `CRON_SECRET` | `openssl rand -hex 32` | Vercel lo manda come `Authorization: Bearer …` |
 | `APP_URL` | l'indirizzo dell'app | es. `https://panoramix.vercel.app`, senza barra finale |
@@ -264,7 +264,7 @@ Ogni movimento sposta il riferimento: calcola la scorta attuale, applica il movi
 
 1. Sul tuo account Google attiva la verifica in due passaggi (myaccount.google.com → Sicurezza).
 2. Apri <https://myaccount.google.com/apppasswords>.
-3. Scrivi un nome, per esempio "Panoramix", e premi Crea.
+3. Scrivi un nome, per esempio "Appoteca", e premi Crea.
 4. Copia la password di 16 caratteri, senza spazi: è il valore di `SMTP_PASSWORD`. Google non te la mostrerà più.
 
 Gmail invia al massimo circa 500 email al giorno, più che sufficienti per un uso familiare.

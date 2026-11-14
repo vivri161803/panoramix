@@ -98,7 +98,7 @@ export function pharmacyText(patientName: string, lines: PharmacyLine[], today: 
     .trim();
 }
 
-/** Richiesta della ricetta al medico (la manda l'utente, Panoramix non contatta nessuno). */
+/** Richiesta della ricetta al medico (la manda l'utente, Appoteca non contatta nessuno). */
 export function doctorRequestText(patientName: string, lines: PharmacyLine[], senderName: string): string | null {
   const rx = lines.filter((l) => l.rx);
   if (!rx.length) return null;

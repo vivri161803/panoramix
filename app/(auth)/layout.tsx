@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <div className="flex w-full max-w-[420px] flex-col gap-7">
           <div className="flex items-center gap-3">
             <AppIcon size={48} label={null} />
-            <span className="text-[26px] font-[650] leading-none tracking-[-0.02em]">Panoramix</span>
+            <span className="text-[26px] font-[650] leading-none tracking-[-0.02em]">Appoteca</span>
           </div>
           <div className="px-card flex flex-col gap-5 p-6 shadow-px">{children}</div>
         </div>
