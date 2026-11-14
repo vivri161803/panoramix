@@ -9,6 +9,7 @@ import { formatShort } from "@/lib/dates";
 import { doseChangeSchema, medicationSchema, type DoseChangeInput, type MedicationInput } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
 import { atcColor, ATC_UNKNOWN_VALUE } from "@/lib/atc";
+import { usesReorderDays } from "@/lib/presidi";
 import { dbError, fail, flash, zodFail, type ActionResult } from "./common";
 
 type ParsedMedication = ReturnType<typeof medicationSchema.parse>;
@@ -39,6 +40,7 @@ function medFields(m: ParsedMedication, atcCode: string | null) {
     color: atcColor(atcCode),
     form: m.form,
     shape: m.shape,
+    reorder_days: usesReorderDays(m.shape) ? (m.reorder_days ?? null) : null,
     dose_morning: m.dose_morning,
     dose_noon: m.dose_noon,
     dose_evening: m.dose_evening,

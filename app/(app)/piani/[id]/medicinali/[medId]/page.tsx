@@ -37,6 +37,7 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         // medicinali di prima (senza gruppo): il modulo chiede a cosa servono; grigio = "Non so"
         atc_code: m.atcCode ?? (m.color === ATC_UNKNOWN.color ? ATC_UNKNOWN_VALUE : ""),
         form: m.form,
+        reorder_days: m.reorderDays,
         shape: m.shape,
         dose_morning: now.doseMorning,
         dose_noon: now.doseNoon,

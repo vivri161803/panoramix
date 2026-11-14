@@ -56,3 +56,26 @@ export function leftWord(shape: string, n: number): string {
   const left = n === 1 ? (fem ? "rimasta" : "rimasto") : fem ? "rimaste" : "rimasti";
   return `${unitWord(shape, n)} ${left}${shape === "bustina" ? " (in bustina)" : ""}`;
 }
+
+/** Unità della dose: per il flacone di collirio è la goccia, per gli altri il pezzo stesso. */
+export function doseWord(shape: string, n: number): string {
+  if (shape === "flacone") return n === 1 ? "goccia" : "gocce";
+  return unitWord(shape, n);
+}
+
+/** «Quante compresse», «Quanti cerotti», «Quante gocce» */
+export function howMany(shape: string, pieces = false): string {
+  const word = pieces ? unitWord(shape, 2) : doseWord(shape, 2);
+  const masc = (pieces || shape !== "flacone") && WORDS[shape] && !WORDS[shape][2];
+  return `${masc ? "Quanti" : "Quante"} ${word}`;
+}
+
+/** Le compresse si spezzano a metà; siringhe, cerotti e gocce no. */
+export function doseStep(shape: string): number {
+  return isPresidio(shape) ? 1 : 0.5;
+}
+
+/** Il flacone di collirio non si conta a pezzi: promemoria di riordino dopo X giorni. */
+export function usesReorderDays(shape: string): boolean {
+  return shape === "flacone";
+}

@@ -358,3 +358,30 @@ describe("ora legale e fuso Europe/Rome", () => {
     expect(forecastMedication(m, daily("2026-03-26")).runOutDate).toBe("2026-04-05");
   });
 });
+
+describe("flacone di collirio: promemoria di riordino dopo X giorni", () => {
+  const drops = (over: Partial<MedicationData> = {}) => med({ doseMorning: 2, doseEvening: 2, pillsPerPack: 1, stockQty: 1, stockAsOf: SUN, reorderDays: 30, ...over });
+
+  it("le gocce non consumano la scorta, il livello sono i giorni al promemoria", () => {
+    const f = forecastMedication(drops(), daily(addDays(SUN, 10)));
+    expect(f.stock).toBe(1);
+    expect(f.coverageDays).toBe(20);
+    expect(f.runOutDate).toBe(addDays(SUN, 30));
+    expect(f.triggered).toEqual([]);
+    expect(f.status).toBe("ok");
+  });
+
+  it("dopo X giorni scatta il promemoria, anche con gli avvisi del piano spenti", () => {
+    const f = forecastMedication(drops(), daily(addDays(SUN, 31), { alertUnder14: false, alertLastPack: false }));
+    expect(f.coverageDays).toBe(0);
+    expect(f.triggered).toEqual(["under_14"]);
+    expect(f.status).toBe("order");
+    expect(statusReason(f, "daily", null)).toBe("È ora di riordinare il flacone");
+    expect(forecastMedication(drops({ orderedAt: "2026-12-08T08:00:00Z" }), daily(addDays(SUN, 31))).status).toBe("ordered");
+  });
+
+  it("un flacone nuovo fa ripartire il conto; nel portapillole non entra", () => {
+    expect(forecastMedication(drops({ stockAsOf: addDays(SUN, 31) }), daily(addDays(SUN, 31))).coverageDays).toBe(30);
+    expect(computePrep([drops()], MON)).toEqual([]);
+  });
+});

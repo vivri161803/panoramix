@@ -8,6 +8,7 @@ import { getEmailProvider } from "@/lib/email/provider";
 import { CRON_CONCURRENCY, groupBy, runPool, selectAll, timeoutMessage, type CronRunOptions } from "@/lib/batch";
 import { renderAlertEmail, type AlertEmailMed } from "@/lib/email/alert-template";
 import type { ISODate } from "@/lib/dates";
+import { unitWord } from "@/lib/presidi";
 
 export function toEmailMed(med: Medication, f: Forecast, today: ISODate): AlertEmailMed {
   return {
@@ -22,6 +23,8 @@ export function toEmailMed(med: Medication, f: Forecast, today: ISODate): AlertE
     pillsPerPack: med.pillsPerPack,
     dosesPhrase: dosesPhrase(dosesAt(med, today)),
     asNeeded: f.asNeeded,
+    reorder: f.reorder,
+    unit: unitWord(med.shape, med.pillsPerPack),
   };
 }
 

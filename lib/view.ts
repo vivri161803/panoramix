@@ -49,6 +49,10 @@ export function dispenserView(med: Medication, f: Forecast, mode: StockMode, tod
     daysText = String(f.coverageDays);
     dWord = f.coverageDays === 1 ? "giorno di copertura" : "giorni di copertura";
     endLabel = f.stock <= 0 && f.coverageDays === 0 ? "Finita" : `Finisce ${formatShort(f.runOutDate!)}`;
+    if (f.reorder) {
+      dWord = f.coverageDays === 1 ? "giorno al promemoria di riordino" : "giorni al promemoria di riordino";
+      endLabel = f.coverageDays === 0 ? "Promemoria di riordino: oggi" : `Promemoria di riordino ${formatShort(f.runOutDate!)}`;
+    }
   }
   let reason = statusReason(f, mode, med.endDate);
   if (f.status === "out" && med.orderedAt) reason = `${reason} · già ordinata`;

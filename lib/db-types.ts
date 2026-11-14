@@ -78,6 +78,7 @@ export interface MedicationRow {
   color: string;
   form: string;
   shape: string;
+  reorder_days: number | null;
   aic: string | null;
   atc_code: string | null;
   dose_morning: number | string;
@@ -122,7 +123,7 @@ export interface PrepRunRow {
 }
 
 export const MEDICATION_COLUMNS =
-  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, form, shape, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
+  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, form, shape, reorder_days, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
 
 export const PLAN_COLUMNS =
   "id, owner_id, patient_name, notes, stock_mode, mode_since, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
@@ -179,6 +180,7 @@ export function toMedication(r: MedicationRow): Medication {
     endDate: r.end_date,
     stockQty: Number(r.stock_qty),
     stockAsOf: r.stock_as_of,
+    reorderDays: r.reorder_days ?? null,
     orderedAt: r.ordered_at,
     doseChanges: changes,
   };

@@ -58,6 +58,8 @@ export interface MedicationData extends Schedule {
   stockQty: number;
   stockAsOf: ISODate;
   orderedAt: string | null;
+  /** flacone di collirio: non si conta a gocce, il promemoria arriva dopo questi giorni dal conteggio */
+  reorderDays?: number | null;
 }
 
 export interface PlanSettings {
@@ -247,7 +249,7 @@ export function hasEnded(s: Schedule, today: ISODate): boolean {
  * Portapillole settimanale: le compresse escono solo con la preparazione, quindi vale il riferimento.
  */
 export function currentStock(med: MedicationData, mode: StockMode, today: ISODate): number {
-  if (mode === "weekly" || med.frequencyType === "as_needed") return med.stockQty;
+  if (mode === "weekly" || med.frequencyType === "as_needed" || med.reorderDays) return med.stockQty;
   if (med.stockAsOf >= today) return med.stockQty;
   const used = dosesBetween(med, med.stockAsOf, addDays(today, -1));
   return Math.max(0, med.stockQty - used);
@@ -299,7 +301,7 @@ export interface PrepItem {
 export function computePrep(meds: MedicationData[], weekStart: ISODate): PrepItem[] {
   const weekEnd = addDays(weekStart, 6);
   return meds
-    .filter((m) => m.frequencyType !== "as_needed")
+    .filter((m) => m.frequencyType !== "as_needed" && !m.reorderDays)
     .map((m) => {
       const need = dosesBetween(m, weekStart, weekEnd);
       const take = Math.min(m.stockQty, need);
@@ -338,6 +340,8 @@ export interface Forecast {
   lastPack: boolean;
   ended: boolean;
   asNeeded: boolean;
+  /** flacone: coverageDays sono i giorni al promemoria di riordino */
+  reorder?: boolean;
   triggered: AlertType[];
   status: MedStatus;
 }
@@ -379,6 +383,19 @@ export function forecastMedication(med: MedicationData, ctx: ForecastContext): F
     const triggered: AlertType[] = plan.alertLastPack && lastPack ? ["last_pack"] : [];
     const status: MedStatus = stock <= EPS ? "out" : ordered ? "ordered" : triggered.length ? "order" : "ok";
     return { stock, coverageDays: null, runOutDate: null, homeDays: null, nextPrepNeed: null, lastPack, ended, asNeeded, triggered, status };
+  }
+
+  if (med.reorderDays) {
+    // flacone di collirio: si sa solo quando riordinare, X giorni dopo il conteggio (o l'arrivo)
+    const left = Math.max(0, med.reorderDays - diffDays(med.stockAsOf, today));
+    const reminderDate = addDays(today, left);
+    if (med.endDate && reminderDate > med.endDate) {
+      return { stock, coverageDays: null, runOutDate: null, homeDays: null, nextPrepNeed: null, lastPack: false, ended, asNeeded, reorder: true, triggered: [], status: "ok" };
+    }
+    // il promemoria l'ha chiesto chi ha inserito il collirio: vale anche se gli avvisi del piano sono spenti
+    const triggered: AlertType[] = left === 0 ? ["under_14"] : [];
+    const status: MedStatus = left > 0 ? "ok" : ordered ? "ordered" : "order";
+    return { stock, coverageDays: left, runOutDate: reminderDate, homeDays: null, nextPrepNeed: null, lastPack: false, ended, asNeeded, reorder: true, triggered, status };
   }
 
   let coverageDays: number | null;
@@ -424,6 +441,7 @@ export function statusReason(f: Forecast, mode: StockMode, endDate: ISODate | nu
   }
   if (f.status === "ordered") return "Ordinata, in arrivo";
   if (f.status === "order") {
+    if (f.reorder) return "È ora di riordinare il flacone";
     const onlyLastPack = f.triggered.length === 1 && f.triggered[0] === "last_pack";
     if (onlyLastPack || f.coverageDays === null) return "È rimasta l’ultima confezione";
     if (mode === "weekly" && f.homeDays !== null) {

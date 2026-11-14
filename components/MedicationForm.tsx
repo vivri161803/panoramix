@@ -10,7 +10,7 @@ import { ATC_GROUPS, ATC_UNKNOWN, ATC_UNKNOWN_VALUE, atcColor, atcGroup } from "
 import { WEEKDAYS_LETTER, WEEKDAYS_LONG, type ISODate } from "@/lib/dates";
 import { daysWord, forecastMedication, formatQty, scheduleSummary, type FrequencyType, type PlanSettings } from "@/lib/forecast";
 import { PILL_SHAPES } from "@/lib/pills";
-import { FORMS, PRESIDIO_SHAPES, unitWord, type MedForm } from "@/lib/presidi";
+import { doseStep, doseWord, FORMS, howMany, PRESIDIO_SHAPES, unitWord, usesReorderDays, type MedForm } from "@/lib/presidi";
 import type { MedicationInput } from "@/lib/schemas";
 import { dispenserView } from "@/lib/view";
 import { Dispenser } from "@/components/Dispenser";
@@ -53,7 +53,7 @@ const SLOTS = [
   { key: "dose_evening", label: "Sera", w: "alla sera" },
 ] as const;
 
-type NumKey = "pills_per_pack" | "stock_qty" | "interval_days" | "cycle_on" | "cycle_off";
+type NumKey = "pills_per_pack" | "stock_qty" | "interval_days" | "cycle_on" | "cycle_off" | "reorder_days";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -68,6 +68,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
   const [txt, setTxt] = useState<Record<NumKey, string>>({
     pills_per_pack: String(initial.pills_per_pack),
     stock_qty: String(initial.stock_qty),
+    reorder_days: String(initial.reorder_days ?? 30),
     interval_days: String(initial.interval_days ?? 2),
     cycle_on: String(initial.cycle_on ?? 21),
     cycle_off: String(initial.cycle_off ?? 7),
@@ -83,6 +84,13 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
   const [looking, startLookup] = useTransition();
   const [pending, start] = useTransition();
   const set = (patch: Partial<MedicationInput>) => setF((x) => ({ ...x, ...patch }));
+  const step = doseStep(f.shape);
+  // i presidi non si spezzano: le mezze dosi salgono all'intero
+  const setType = (form: MedForm) => {
+    const shape = FORMS.find((t) => t.id === form)!.shapes[0];
+    const up = (n: number) => (doseStep(shape) === 1 ? Math.ceil(n) : n);
+    setF((x) => ({ ...x, form, shape, dose_morning: up(x.dose_morning), dose_noon: up(x.dose_noon), dose_evening: up(x.dose_evening) }));
+  };
   const setNum = (k: NumKey, v: string) => setTxt((t) => ({ ...t, [k]: v }));
   const weekly = settings.stockMode === "weekly";
   // il gruppo arriva da AIFA (codice completo con AIC): si mostra e basta
@@ -98,16 +106,18 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       patch.strength = d.strength;
       got.add("strength");
     }
-    if (d.shape) {
-      patch.shape = d.shape;
-      patch.form = "compressa";
-      got.add("shape");
-    }
+    if (d.form) got.add("shape");
     if (d.requires_prescription !== null) {
       patch.requires_prescription = d.requires_prescription;
       got.add("requires_prescription");
     }
-    setF((x) => ({ ...x, ...patch }));
+    setF((x) => {
+      // tipo e forma da AIFA; se manca la forma si tiene quella scelta, purché sia del tipo giusto
+      const form = d.form ?? x.form;
+      const shapes = FORMS.find((t) => t.id === form)!.shapes as readonly string[];
+      const shape = d.shape ?? (shapes.includes(x.shape) ? x.shape : shapes[0]);
+      return { ...x, ...patch, form, shape };
+    });
     if (d.pills_per_pack) {
       setTxt((t) => ({ ...t, pills_per_pack: String(d.pills_per_pack) }));
       got.add("pills_per_pack");
@@ -142,6 +152,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
     ...f,
     pills_per_pack: num(txt.pills_per_pack),
     stock_qty: num(txt.stock_qty),
+    reorder_days: usesReorderDays(f.shape) ? num(txt.reorder_days) : null,
     interval_days: f.frequency_type === "every_n_days" ? num(txt.interval_days) : null,
     cycle_on: f.frequency_type === "cycle" ? num(txt.cycle_on) : null,
     cycle_off: f.frequency_type === "cycle" ? num(txt.cycle_off) : null,
@@ -176,6 +187,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       endDate: input.end_date || null,
       stockQty: ok(input.stock_qty) ?? 0,
       stockAsOf: today,
+      reorderDays: input.reorder_days,
       orderedAt: null,
     };
     const fc = forecastMedication(med, { plan: settings, today, nextPrep: nextPrep ?? undefined });
@@ -190,7 +202,9 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       ? `${qtyText} in casa: vale solo l’avviso dell’ultima confezione`
       : cov === null
         ? `${qtyText} in casa → bastano fino alla fine della terapia`
-        : `${qtyText} in casa → ${cov} ${daysWord(cov)} di copertura${weekly ? " (compreso il portapillole)" : ""}`;
+        : preview.fc.reorder
+          ? `${qtyText} in casa → promemoria di riordino tra ${cov} ${daysWord(cov)}`
+          : `${qtyText} in casa → ${cov} ${daysWord(cov)} di copertura${weekly ? " (compreso il portapillole)" : ""}`;
 
   function save(another = false) {
     setError(null);
@@ -321,11 +335,24 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
                 <label htmlFor="px-qty" className="px-label">{weekly && f.form === "compressa" ? "Compresse in casa, fuori dal portapillole" : `${cap(unitWord(f.shape, 2))} in casa`}</label>
                 <input id="px-qty" type="number" inputMode="decimal" min={0} step={0.5} value={txt.stock_qty} onChange={(e) => setNum("stock_qty", e.target.value)} aria-invalid={fe.stock_qty ? true : undefined} aria-describedby="px-qty-help" className="px-input" />
                 <span id="px-qty-help" className="text-[14px] leading-[1.35] text-px-ink-2">
-                  {isNew ? "Conta le compresse adesso. Le mezze valgono ½." : "Se cambi questo numero diventa un nuovo conteggio."}
+                  {isNew ? (f.form === "compressa" ? "Conta le compresse adesso. Le mezze valgono ½." : `${howMany(f.shape, true)} hai adesso?`) : "Se cambi questo numero diventa un nuovo conteggio."}
                 </span>
                 <FieldError message={fe.stock_qty} />
               </div>
             </div>
+            {usesReorderDays(f.shape) && (
+              <div className="flex flex-col gap-2">
+                <label htmlFor="px-reorder" className="px-label">Promemoria di riordino dopo</label>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <input id="px-reorder" type="number" inputMode="numeric" min={1} max={365} step={1} value={txt.reorder_days} onChange={(e) => setNum("reorder_days", e.target.value)} aria-invalid={fe.reorder_days ? true : undefined} aria-describedby="px-reorder-help" className={`${smallNum} w-[88px]`} />
+                  <span>giorni</span>
+                </div>
+                <span id="px-reorder-help" className="text-[14px] leading-[1.35] text-px-ink-2">
+                  Un flacone non si conta a gocce: il promemoria arriva dopo questi giorni da oggi, e riparte quando segni un flacone nuovo.
+                </span>
+                <FieldError message={fe.reorder_days} />
+              </div>
+            )}
             <div className="-m-2 rounded-[12px] p-2" style={hl("requires_prescription")}>
               <Switch checked={f.requires_prescription} onChange={(v) => set({ requires_prescription: v })} label="Serve la ricetta" sub="Negli avvisi trovi il testo pronto per il medico." />
             </div>
@@ -379,7 +406,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
                 {FORMS.map((t) => {
                   const sel = t.id === f.form;
                   return (
-                    <button key={t.id} type="button" role="radio" aria-checked={sel} onClick={() => !sel && set({ form: t.id as MedForm, shape: t.shapes[0] })} className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1.5 py-2.5 text-px-ink" style={radioCard(sel)}>
+                    <button key={t.id} type="button" role="radio" aria-checked={sel} onClick={() => !sel && setType(t.id as MedForm)} className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1.5 py-2.5 text-px-ink" style={radioCard(sel)}>
                       <FormGlyph form={t.id} size={24} />
                       <span className="text-[15px] font-semibold leading-[1.2]">{t.label}</span>
                     </button>
@@ -406,19 +433,19 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
           </section>
 
           <section className={section}>
-            <h2 className={h2}>Quante compresse e quando</h2>
+            <h2 className={h2}>{howMany(f.shape)} e quando</h2>
             <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))]">
               {SLOTS.map((s) => (
                 <div key={s.key} className="flex flex-col gap-2 rounded-[14px] bg-px-surface-2 p-3">
                   <span id={`px-slot-${s.key}`} className="px-label">{s.label}</span>
                   <div className="flex items-center justify-between gap-1">
-                    <button type="button" onClick={() => set({ [s.key]: Math.max(0, f[s.key] - 0.5) })} aria-label={`Mezza compressa in meno ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                    <button type="button" onClick={() => set({ [s.key]: Math.max(0, f[s.key] - step) })} aria-label={`${step === 1 ? `Una ${doseWord(f.shape, 1)}` : "Mezza compressa"} in meno ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
                       −
                     </button>
                     <output aria-live="polite" aria-labelledby={`px-slot-${s.key}`} className="text-[22px] font-[650] leading-none">
                       {formatQty(f[s.key])}
                     </output>
-                    <button type="button" onClick={() => set({ [s.key]: Math.min(20, f[s.key] + 0.5) })} aria-label={`Mezza compressa in più ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                    <button type="button" onClick={() => set({ [s.key]: Math.min(20, f[s.key] + step) })} aria-label={`${step === 1 ? `Una ${doseWord(f.shape, 1)}` : "Mezza compressa"} in più ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
                       +
                     </button>
                   </div>

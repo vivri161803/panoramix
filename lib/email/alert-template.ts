@@ -17,6 +17,10 @@ export interface AlertEmailMed {
   /** "1 al mattino" */
   dosesPhrase: string;
   asNeeded: boolean;
+  /** flacone di collirio: promemoria di riordino dopo X giorni, non un conteggio */
+  reorder?: boolean;
+  /** parola per i pezzi della confezione: "compresse", "siringhe", "flaconi"… */
+  unit?: string;
 }
 
 export interface AlertEmailData {
@@ -52,6 +56,7 @@ function medLabel(m: AlertEmailMed) {
 
 function coverageText(m: AlertEmailMed) {
   if (m.asNeeded) return "al bisogno";
+  if (m.reorder) return "promemoria di riordino";
   if (m.coverageDays === null) return "fino alla fine della terapia";
   return `${m.coverageDays} ${daysWord(m.coverageDays)}`;
 }
@@ -65,7 +70,7 @@ function runOutText(m: AlertEmailMed) {
 export function doctorText(d: AlertEmailData): string | null {
   const rx = d.meds.filter((m) => m.requiresPrescription);
   if (!rx.length) return null;
-  const lines = rx.map((m) => `– ${medLabel(m)}, 1 confezione da ${m.pillsPerPack} compresse${m.dosesPhrase && !m.asNeeded ? ` (${m.dosesPhrase})` : ""}`);
+  const lines = rx.map((m) => `– ${medLabel(m)}, 1 confezione da ${m.pillsPerPack} ${m.unit ?? "compresse"}${m.dosesPhrase && !m.asNeeded ? ` (${m.dosesPhrase})` : ""}`);
   return `Buongiorno dottore,\nper ${d.patientName} avrei bisogno della ricetta per:\n${lines.join("\n")}\nGrazie,\n${d.managerFullName}`;
 }
 

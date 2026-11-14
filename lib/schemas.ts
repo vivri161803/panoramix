@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isISODate } from "./dates";
-import { ALL_SHAPE_IDS, FORMS, FORM_IDS } from "./presidi";
+import { ALL_SHAPE_IDS, doseStep, FORMS, FORM_IDS, usesReorderDays } from "./presidi";
 import { ATC_CODE_RE, ATC_UNKNOWN_VALUE } from "./atc";
 
 const halfStep = (label: string, max: number) =>
@@ -65,10 +65,18 @@ export const medicationSchema = z
     start_date: isoDate("Indica la data di inizio."),
     end_date: isoDate("Data di fine non valida.").nullable(),
     stock_qty: halfStep("Scorta in casa", 100000),
+    /** solo flacone di collirio: promemoria di riordino dopo questi giorni */
+    reorder_days: z.number("Indica dopo quanti giorni.").int("Usa un numero intero.").min(1, "Almeno 1 giorno.").max(365, "Al massimo 365 giorni.").nullish(),
   })
   .superRefine((m, ctx) => {
     if (!(FORMS.find((f) => f.id === m.form)?.shapes as readonly string[] | undefined)?.includes(m.shape)) {
       ctx.addIssue({ code: "custom", path: ["shape"], message: "Scegli una forma." });
+    }
+    if (usesReorderDays(m.shape) && m.reorder_days == null) {
+      ctx.addIssue({ code: "custom", path: ["reorder_days"], message: "Indica dopo quanti giorni." });
+    }
+    if (doseStep(m.shape) === 1 && [m.dose_morning, m.dose_noon, m.dose_evening].some((d) => !Number.isInteger(d))) {
+      ctx.addIssue({ code: "custom", path: ["doses"], message: "Per questo tipo le dosi sono intere." });
     }
     if (m.dose_morning + m.dose_noon + m.dose_evening <= 0) {
       ctx.addIssue({ code: "custom", path: ["doses"], message: "Imposta almeno una fascia con una dose maggiore di zero." });
