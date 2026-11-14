@@ -5,6 +5,8 @@
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { pillStyle } from "@/lib/pills";
+import { isPresidio, unitWord } from "@/lib/presidi";
+import { PRESIDIO_GEO, PresidioSvg } from "@/components/ui/Presidio";
 import type { MedStatus } from "@/lib/forecast";
 import type { DispenserView } from "@/lib/view";
 import { StatusChip, STATUS_LABEL } from "@/components/ui/StatusChip";
@@ -25,6 +27,13 @@ const JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
 type Size = keyof typeof DIMS;
 
 function geo(shape: string, W: number) {
+  // presidi (design/Presidio.dc.html): i pezzi lunghi si coricano, cerotti e bustine si impilano a scaglie
+  const p = PRESIDIO_GEO[shape];
+  if (p) {
+    const scale = (W * p.len) / Math.max(p.w, p.h);
+    const ph = Math.min(p.w, p.h) * scale;
+    return { pw: Math.max(p.w, p.h) * scale, ph, step: ph * p.step, scale, p };
+  }
   const g = GEO[shape] ?? GEO.tonda;
   const pw = W * g[0];
   const ph = W * g[1];
@@ -96,7 +105,7 @@ function Tube({ med, size, max }: { med: DispenserView; size: Size; max: number 
   const over = med.days === null || days >= max;
   const fg = META[st].fg;
   const lvl = (Math.min(days, max) / max) * (H - 6);
-  const { pw, ph, step } = geo(med.shape, W);
+  const { pw, ph, step, scale, p: pg } = geo(med.shape, W);
   const pills = usePills(targetCount(med, size, max));
   const ticks = med.asNeeded ? [] : [7, 14];
 
@@ -120,7 +129,7 @@ function Tube({ med, size, max }: { med: DispenserView; size: Size; max: number 
         {pills.map((p) => {
           const j = p.id % 10;
           const x = (W - pw) / 2 + ((JX[j] * (W - pw)) / 2) * 0.9;
-          const r = med.shape === "tonda" ? JR[j] * 0.3 : JR[j];
+          const r = pg ? JR[j] * (pg.len > 0.8 ? 0.3 : 0.6) + (pg.h > pg.w ? 90 : 0) : med.shape === "tonda" ? JR[j] * 0.3 : JR[j];
           const style: CSSProperties & { "--from": string } = {
             position: "absolute",
             left: x,
@@ -138,7 +147,11 @@ function Tube({ med, size, max }: { med: DispenserView; size: Size; max: number 
           };
           return (
             <div key={p.id} style={style}>
-              <div style={{ ...pillStyle(med.color, med.shape, pw, ph), transform: `rotate(${r}deg)` }} />
+              {pg && scale ? (
+                <PresidioSvg shape={med.shape} color={med.color} scale={scale} style={{ position: "absolute", left: (pw - pg.w * scale) / 2, top: (ph - pg.h * scale) / 2, transform: `rotate(${r}deg)` }} />
+              ) : (
+                <div style={{ ...pillStyle(med.color, med.shape, pw, ph), transform: `rotate(${r}deg)` }} />
+              )}
             </div>
           );
         })}
@@ -265,7 +278,7 @@ export function Dispenser({
   };
 
   const step = take ? 0.5 : 1;
-  const aria = `${med.name} ${med.strength}, ${med.qtyText} ${med.qty === 1 ? "compressa" : "compresse"}, ${med.daysText ? `${med.daysText} ${med.daysWord}` : med.daysWord}, ${STATUS_LABEL[med.status].toLowerCase()}`;
+  const aria = `${med.name} ${med.strength}, ${med.qtyText} ${unitWord(med.shape, med.qty)}, ${med.daysText ? `${med.daysText} ${med.daysWord}` : med.daysWord}, ${STATUS_LABEL[med.status].toLowerCase()}`;
 
   return (
     <div
@@ -328,7 +341,7 @@ export function Dispenser({
               type="button"
               disabled={actions.busy || med.qty <= 0}
               onClick={() => actions.onTake(1)}
-              aria-label={`Presa una compressa di ${med.name}: togli 1 compressa dalle scorte`}
+              aria-label={`Presa una ${unitWord(med.shape, 1)} di ${med.name}: togli 1 ${unitWord(med.shape, 1)} dalle scorte`}
               className="flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-px-ink bg-px-surface px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-ink"
             >
               − Presa 1
@@ -338,7 +351,7 @@ export function Dispenser({
             type="button"
             disabled={actions.busy}
             onClick={() => actions.onArrive(1)}
-            aria-label={`Arrivata confezione di ${med.name}: aggiungi ${med.perPack} compresse`}
+            aria-label={`Arrivata confezione di ${med.name}: aggiungi ${med.perPack} ${unitWord(med.shape, med.perPack)}`}
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border-none bg-px-primary px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-on-primary"
           >
             <IconPlus /> +1 confezione
@@ -387,7 +400,7 @@ export function Dispenser({
               }}
             >
               <label htmlFor={`px-n-${med.id}`} className="text-[15px] font-semibold leading-[1.3]">
-                {recount ? "Quante ne conti adesso?" : take ? "Quante compresse sono state prese?" : "Confezioni arrivate"}
+                {recount ? "Quante ne conti adesso?" : take ? (isPresidio(med.shape) ? `Quante prese? (${unitWord(med.shape, 2)})` : "Quante compresse sono state prese?") : "Confezioni arrivate"}
               </label>
               <div className="flex gap-1">
                 <button type="button" aria-label={recount ? "Una in meno" : take ? "Mezza in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : take ? 0.5 : 1, x - step))} className={stepBtn}>
@@ -409,7 +422,7 @@ export function Dispenser({
               </div>
               {!recount && !take && (
                 <span className="text-[14px] leading-[1.3] text-px-ink-2">
-                  = {n * med.perPack} compresse ({med.perPack} per confezione)
+                  = {n * med.perPack} {unitWord(med.shape, n * med.perPack)} ({med.perPack} per confezione)
                 </span>
               )}
               {take && <span className="text-[14px] leading-[1.3] text-px-ink-2">Escono dalle scorte di oggi. Ne restano {med.qtyText} prima della presa.</span>}

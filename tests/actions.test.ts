@@ -124,6 +124,7 @@ const validMed = {
   requires_prescription: false,
   aic: null,
   atc_code: "C",
+  form: "compressa" as const,
   shape: "tonda" as const,
   dose_morning: 1,
   dose_noon: 0,

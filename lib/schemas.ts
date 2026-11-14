@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isISODate } from "./dates";
-import { PILL_SHAPE_IDS } from "./pills";
+import { ALL_SHAPE_IDS, FORMS, FORM_IDS } from "./presidi";
 import { ATC_CODE_RE, ATC_UNKNOWN_VALUE } from "./atc";
 
 const halfStep = (label: string, max: number) =>
@@ -52,7 +52,8 @@ export const medicationSchema = z
       .trim()
       .toUpperCase()
       .refine((v) => v === ATC_UNKNOWN_VALUE || ATC_CODE_RE.test(v), "Scegli a cosa serve il medicinale."),
-    shape: z.enum(PILL_SHAPE_IDS, "Scegli una forma."),
+    form: z.enum(FORM_IDS, "Scegli il tipo di medicinale."),
+    shape: z.enum(ALL_SHAPE_IDS, "Scegli una forma."),
     dose_morning: halfStep("Mattina", 20),
     dose_noon: halfStep("Pranzo", 20),
     dose_evening: halfStep("Sera", 20),
@@ -66,6 +67,9 @@ export const medicationSchema = z
     stock_qty: halfStep("Scorta in casa", 100000),
   })
   .superRefine((m, ctx) => {
+    if (!(FORMS.find((f) => f.id === m.form)?.shapes as readonly string[] | undefined)?.includes(m.shape)) {
+      ctx.addIssue({ code: "custom", path: ["shape"], message: "Scegli una forma." });
+    }
     if (m.dose_morning + m.dose_noon + m.dose_evening <= 0) {
       ctx.addIssue({ code: "custom", path: ["doses"], message: "Imposta almeno una fascia con una dose maggiore di zero." });
     }

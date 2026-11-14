@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presidio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--px-bg:#F3F5F7;--px-surface:#FFFFFF;--px-surface-2:#EDF0F3;--px-surface-3:#E1E6EB;--px-line:#DAE0E6;--px-line-strong:#AEB8C2;--px-ink:#0E1620;--px-ink-2:#44505C;--px-ink-3:#5B6774;--px-primary:#132030;--px-on-primary:#FFFFFF;--px-link:#1C5CC8;--px-focus:#2E78F5;--px-ok-fg:#1A6B43;--px-ok-bg:#E4F2EA;--px-ok-line:#94CBAE;--px-order-fg:#8A4A00;--px-order-bg:#FFF0D9;--px-order-line:#E3A54A;--px-ordered-fg:#1E4DA6;--px-ordered-bg:#E5EDFB;--px-ordered-line:#94B3E8;--px-out-fg:#AE2418;--px-out-bg:#FCEAE7;--px-out-line:#E48C80;--px-tube-bg:#F1F4F7;--px-glass-hi:rgba(255,255,255,.75);--px-shadow:0 1px 2px rgba(14,22,32,.05),0 6px 20px rgba(14,22,32,.05);--px-font:"Geist",system-ui,sans-serif;--px-mono:"Geist Mono",ui-monospace,monospace}
+[data-theme="dark"]{color-scheme:dark;--px-bg:#0C1117;--px-surface:#141A22;--px-surface-2:#1B222C;--px-surface-3:#252E39;--px-line:#29333E;--px-line-strong:#46525F;--px-ink:#E9EEF3;--px-ink-2:#B3BDC7;--px-ink-3:#96A2AE;--px-primary:#E9EEF3;--px-on-primary:#0C1117;--px-link:#86B4FF;--px-ok-fg:#7DD3A4;--px-ok-bg:#11281C;--px-ok-line:#2D6A49;--px-order-fg:#F4C06A;--px-order-bg:#2D2110;--px-order-line:#7D5B22;--px-ordered-fg:#A2C1FF;--px-ordered-bg:#132139;--px-ordered-line:#36538D;--px-out-fg:#FF9C90;--px-out-bg:#331410;--px-out-line:#8C3B31;--px-tube-bg:#0F151C;--px-glass-hi:rgba(255,255,255,.12);--px-shadow:0 1px 2px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<span aria-hidden="true" style="display:inline-flex;vertical-align:middle">{{ art }}</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":120,"height":120},"shape":{"editor":"enum","options":["siringa","penna","fiala","cerotto","cerotto-tondo","bustina","flacone","monodose","goccia"],"default":"siringa","tsType":"string"},"color":{"editor":"color","options":["#FF5E4D","#FFC020","#12C2B0","#8D5BF5"],"default":"#12C2B0","tsType":"string"},"view":{"editor":"enum","options":["icona","tubo"],"default":"icona","tsType":"string"},"size":{"editor":null,"default":96,"tsType":"number|\"s\"|\"l\""},"rotate":{"editor":null,"tsType":"number"},"days":{"editor":"int","default":21,"min":0,"max":120,"tsType":"number"},"scaleMax":{"editor":"int","default":60,"tsType":"number"}}'>
+class Component extends DCLogic {
+  static SEQ = 0;
+  /* w,h: disegno · rot: inclinazione predefinita dell'icona · len,step: ingombro nel tubo (frazioni) */
+  static SHAPES = {
+    siringa: { w: 72, h: 22, rot: -45, len: .94, step: .86 },
+    penna: { w: 72, h: 18, rot: -45, len: .94, step: .9 },
+    fiala: { w: 30, h: 44, rot: 0, len: .8, step: .84 },
+    cerotto: { w: 40, h: 40, rot: 0, len: .6, step: .36 },
+    'cerotto-tondo': { w: 40, h: 40, rot: 0, len: .6, step: .36 },
+    bustina: { w: 36, h: 44, rot: 0, len: .74, step: .34 },
+    flacone: { w: 28, h: 48, rot: 0, len: .88, step: .84 },
+    monodose: { w: 20, h: 48, rot: 0, len: .88, step: .8 },
+    goccia: { w: 32, h: 40, rot: 0, len: .5, step: .7 }
+  };
+  uid = 0;
+
+  parts(shape, c, id) {
+    const h = React.createElement; let k = 0;
+    const el = (tag, a, style) => h(tag, { key: k++, ...a, style });
+    const R = (x, y, width, height, rx) => ({ x, y, width, height, rx: rx || 0 });
+    const LS = 'var(--px-line-strong)';
+    const glass = (tag, a) => el(tag, a, { fill: 'var(--px-tube-bg)', stroke: LS, strokeWidth: 1.5, strokeLinejoin: 'round' });
+    const cap = (tag, a) => el(tag, a, { fill: 'var(--px-surface-3)', stroke: LS, strokeWidth: 1.5, strokeLinejoin: 'round' });
+    const col = (tag, a) => [el(tag, a, { fill: c }), el(tag, a, { fill: `url(#${id}s)` }), el(tag, a, { fill: `url(#${id}h)` })];
+    const white = (tag, a) => [el(tag, a, { fill: '#F5F4EF', stroke: 'rgba(14,22,32,.26)', strokeWidth: 1 }), el(tag, a, { fill: `url(#${id}s)`, opacity: .45 })];
+    const shine = a => el('rect', a, { fill: 'var(--px-glass-hi)' });
+    const mark = (d, o) => el('path', { d }, { fill: 'none', stroke: `rgba(14,22,32,${o || .3})`, strokeWidth: 1, strokeLinecap: 'round' });
+    switch (shape) {
+      case 'siringa': return [
+        cap('rect', R(5, 9.5, 12, 3)), cap('rect', R(1, 4, 4, 14, 2)), cap('rect', R(15, 1.5, 4, 19, 2)),
+        glass('rect', R(19, 5, 34, 12, 2.5)),
+        el('rect', R(23, 6.2, 4, 9.6, 1), { fill: 'var(--px-ink-3)' }),
+        ...col('rect', R(27, 6.2, 25, 9.6, 1.5)),
+        mark('M32 6.4v3M37 6.4v4.6M42 6.4v3M47 6.4v4.6', .34),
+        cap('rect', R(53, 8, 5, 6, 1)),
+        el('path', { d: 'M58 11H70.5' }, { fill: 'none', stroke: LS, strokeWidth: 1.6, strokeLinecap: 'round' })
+      ];
+      case 'penna': return [
+        glass('rect', R(24, 3, 36, 12, 2)),
+        ...col('rect', R(31, 6, 13, 6, 3)),
+        mark('M48.5 6.5v5M51.5 6.5v5', .28),
+        cap('rect', R(60, 4, 7, 10, 1.5)), mark('M62.3 6v6M64.7 6v6', .26),
+        ...col('rect', R(67, 5.5, 4, 7, 2)),
+        ...col('rect', R(1, 2, 25, 14, 6)),
+        el('rect', R(6, .6, 15, 3.2, 1.6), { fill: 'rgba(14,22,32,.3)' })
+      ];
+      case 'fiala': return [
+        glass('rect', R(10, 10, 10, 7)), glass('rect', R(3, 15, 24, 28, 5)),
+        ...col('path', { d: 'M4.6 27H25.4V39.4Q25.4 41.4 22.4 41.4H7.6Q4.6 41.4 4.6 39.4Z' }),
+        shine(R(6.2, 18, 2.4, 21, 1.2)),
+        cap('rect', R(8, 6.5, 14, 5, 1)),
+        ...col('rect', R(6.5, 1, 17, 6, 2.5))
+      ];
+      case 'cerotto': return [...white('rect', R(2, 2, 36, 36, 10)), ...col('rect', R(9.5, 9.5, 21, 21, 6))];
+      case 'cerotto-tondo': return [...white('circle', { cx: 20, cy: 20, r: 18 }), ...col('circle', { cx: 20, cy: 20, r: 10.5 })];
+      case 'bustina': return [
+        cap('rect', R(2, 2, 32, 40, 3)), mark('M5 7H31M5 37H31', .24),
+        ...col('rect', R(7, 12, 22, 20, 5)),
+        el('rect', R(13, 17, 10, 10, 3), { fill: 'none', stroke: 'rgba(255,255,255,.9)', strokeWidth: 1.4 })
+      ];
+      case 'flacone': return [
+        glass('path', { d: 'M9 17H19Q25 19 25 25V42Q25 46.5 21 46.5H7Q3 46.5 3 42V25Q3 19 9 17Z' }),
+        ...col('path', { d: 'M4.6 30H23.4V42Q23.4 44.9 21 44.9H7Q4.6 44.9 4.6 42Z' }),
+        shine(R(6.2, 23, 2.4, 19, 1.2)),
+        cap('rect', R(7, 13, 14, 4.5, 1.2)),
+        ...col('path', { d: 'M9.5 13L11 3Q11.3 1 13 1H15Q16.7 1 17 3L18.5 13Z' })
+      ];
+      case 'monodose': return [
+        glass('rect', R(8.2, 10, 3.6, 7)), glass('rect', R(5.5, 1, 9, 10, 2.5)),
+        glass('path', { d: 'M10 15.5C5 17.5 3 22 3 28V40Q3 46.5 10 46.5Q17 46.5 17 40V28C17 22 15 17.5 10 15.5Z' }),
+        ...col('path', { d: 'M4.6 29H15.4V40Q15.4 44.9 10 44.9Q4.6 44.9 4.6 40Z' }),
+        shine(R(5.9, 23, 2, 15, 1))
+      ];
+      default: return col('path', { d: 'M16 2C16 2 4 16.5 4 26A12 12 0 0 0 28 26C28 16.5 16 2 16 2Z' });
+    }
+  }
+  svg(shape, c, scale, id, style) {
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+    const stop = (o, col, op) => h('stop', { key: o, offset: o, stopColor: col, stopOpacity: op });
+    return h('svg', { width: g.w * scale, height: g.h * scale, viewBox: `0 0 ${g.w} ${g.h}`, 'aria-hidden': 'true',
+      style: { display: 'block', flex: 'none', overflow: 'visible', filter: 'drop-shadow(0 1px 1.2px rgba(14,22,32,.28))', ...style } },
+      h('defs', null,
+        h('linearGradient', { id: id + 's', x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#fff', .1), stop(.45, '#000', 0), stop(1, '#000', .26)),
+        h('radialGradient', { id: id + 'h', cx: .32, cy: .26, r: .5 }, stop(0, '#fff', .85), stop(.62, '#fff', 0), stop(1, '#fff', 0))),
+      ...this.parts(shape, c, id));
+  }
+  icon(shape, c, S, id) {
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+    const rot = this.props.rotate != null && this.props.rotate !== '' ? Number(this.props.rotate) : g.rot;
+    const a = Math.abs(rot) * Math.PI / 180, cs = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a));
+    const scale = S * .94 / Math.max(g.w * cs + g.h * sn, g.w * sn + g.h * cs);
+    return h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: S, height: S, flex: 'none', verticalAlign: 'middle' } },
+      this.svg(shape, c, scale, id, rot ? { transform: `rotate(${rot}deg)` } : null));
+  }
+  tube(shape, c, id) {
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+    const l = this.props.size !== 's', W = l ? 70 : 48, H = l ? 250 : 180, max = Number(this.props.scaleMax ?? 60);
+    const days = Math.max(0, Number(this.props.days ?? 21)), over = days >= max;
+    const side = 36, TW = W + 4, B = 12, CAP = 10, lvl = Math.min(days, max) / max * (H - 6);
+    const long = Math.max(g.w, g.h), short = Math.min(g.w, g.h), up = g.h > g.w;
+    const scale = W * g.len / long, pw = long * scale, th = short * scale, step = th * g.step;
+    const n = days > 0 ? Math.max(1, Math.min(Math.floor((H - 6) / step), Math.round(lvl / step))) : 0;
+    const JX = [-.7, .55, -.15, .8, -.45, .25, -.85, .4, 0, -.3], JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
+    const A = (key, style, ...kids) => h('span', { key, style: { display: 'block', position: 'absolute', ...style } }, ...kids);
+    const units = [];
+    for (let i = 0; i < n; i++) {
+      const j = i % 10, x = (W - pw) / 2 + JX[j] * (W - pw) / 2 * .9, r = JR[j] * (g.len > .8 ? .3 : .6) + (up ? 90 : 0);
+      units.push(A('u' + i, { left: x, bottom: 3 + i * step, width: pw, height: th },
+        this.svg(shape, c, scale, id, { position: 'absolute', left: (pw - g.w * scale) / 2, top: (th - g.h * scale) / 2, transform: `rotate(${r}deg)` })));
+    }
+    const tick = 'var(--px-ink-3)';
+    return h('span', { 'aria-hidden': 'true', style: { display: 'inline-block', position: 'relative', width: side * 2 + TW, height: H + B + CAP, flex: 'none' } },
+      A('base', { left: side - 10, width: TW + 20, bottom: 0, height: B, borderRadius: '3px 3px 7px 7px', background: 'var(--px-surface-3)', border: '1.5px solid var(--px-line-strong)' }),
+      A('tube', { left: side, bottom: B - 1, width: TW, height: H, border: '2px solid var(--px-line-strong)', borderTop: 'none', borderRadius: `0 0 ${W * .3}px ${W * .3}px`, background: 'var(--px-tube-bg)', overflow: 'hidden' },
+        ...units,
+        ...[7, 14].map(t => A('l' + t, { left: 0, right: 0, bottom: t / max * (H - 6), borderTop: '1px dashed var(--px-line-strong)', zIndex: 3 })),
+        A('glass', { inset: 0, background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, var(--px-glass-hi) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, var(--px-glass-hi) 88%, rgba(255,255,255,0) 100%)', pointerEvents: 'none', zIndex: 2 }),
+        over ? A('over', { left: '50%', top: 8, transform: 'translateX(-50%)', padding: '3px 6px', borderRadius: 6, background: 'var(--px-ink)', color: 'var(--px-surface)', font: '600 12px/1.2 var(--px-mono)', zIndex: 4 }, max + '+') : null),
+      A('cap', { left: side - 5, width: TW + 10, bottom: B + H - 3, height: CAP, borderRadius: '5px 5px 2px 2px', background: 'var(--px-surface-3)', border: '1.5px solid var(--px-line-strong)' }),
+      ...[7, 14].map(t => A('t' + t, { left: side + TW - 1, bottom: B - 1 + t / max * (H - 6) - 7, display: 'flex', alignItems: 'center', gap: 3, font: '500 11px/14px var(--px-mono)', color: tick, whiteSpace: 'nowrap' },
+        h('span', { style: { width: 6, borderTop: `1.5px solid ${tick}` } }), t + 'g')),
+      A('max', { left: side + TW + 8, bottom: B + H - 14, font: '500 11px/14px var(--px-mono)', color: tick }, max + 'g'),
+      (!over && days > 0) ? A('lvl', { right: side + TW + 1, bottom: B - 1 + lvl - 7, display: 'flex', alignItems: 'center', gap: 3, font: '650 11px/14px var(--px-mono)', color: 'var(--px-ink-2)', whiteSpace: 'nowrap' },
+        days + 'g', h('span', { style: { width: 6, borderTop: '2px solid var(--px-ink-2)' } })) : null);
+  }
+  renderVals() {
+    if (!this.uid) this.uid = ++Component.SEQ;
+    const p = this.props, shape = Component.SHAPES[p.shape] ? p.shape : 'siringa', c = p.color ?? '#12C2B0', id = 'pxp' + this.uid;
+    return { art: p.view === 'tubo' ? this.tube(shape, c, id) : this.icon(shape, c, Number(p.size ?? 48) || 48, id) };
+  }
+}
+</script>
+</body>
+</html>

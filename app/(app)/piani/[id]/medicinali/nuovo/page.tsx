@@ -26,6 +26,7 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
         // il colore lo decide il gruppo ATC: da AIFA (codice AIC) o da "A cosa serve"
         aic: null,
         atc_code: "",
+        form: "compressa",
         shape: "tonda",
         dose_morning: 1,
         dose_noon: 0,

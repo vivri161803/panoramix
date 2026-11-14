@@ -3,6 +3,7 @@
 import { formatShort, type ISODate } from "./dates";
 import { changeLabel } from "./digest";
 import type { Medication } from "./db-types";
+import { leftWord } from "./presidi";
 import { daysWord, formatQty, pillsWord, statusReason, upcomingChanges, type Forecast, type MedStatus, type StockMode } from "./forecast";
 
 export interface DispenserView {
@@ -59,7 +60,7 @@ export function dispenserView(med: Medication, f: Forecast, mode: StockMode, tod
     shape: med.shape,
     qty: f.stock,
     qtyText: formatQty(f.stock),
-    qtyWord: f.stock === 1 ? "compressa rimasta" : "compresse rimaste",
+    qtyWord: leftWord(med.shape, f.stock),
     perPack: med.pillsPerPack,
     rx: med.requiresPrescription,
     days: f.asNeeded ? Math.min(60, Math.round((f.stock / med.pillsPerPack) * 30)) : f.coverageDays,

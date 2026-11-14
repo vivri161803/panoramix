@@ -37,6 +37,7 @@ function medFields(m: ParsedMedication, atcCode: string | null) {
     atc_code: atcCode,
     // il colore dipende dal gruppo ATC: grigio per "Non so"
     color: atcColor(atcCode),
+    form: m.form,
     shape: m.shape,
     dose_morning: m.dose_morning,
     dose_noon: m.dose_noon,

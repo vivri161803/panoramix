@@ -34,6 +34,7 @@ export function medication(over: Partial<Medication> = {}): Medication {
     description: "",
     requiresPrescription: false,
     color: "#FFC020",
+    form: "compressa",
     shape: "capsula",
     aic: null,
     atcCode: null,

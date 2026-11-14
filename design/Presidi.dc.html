@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presidi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--px-bg:#F3F5F7;--px-surface:#FFFFFF;--px-surface-2:#EDF0F3;--px-surface-3:#E1E6EB;--px-line:#DAE0E6;--px-line-strong:#AEB8C2;--px-ink:#0E1620;--px-ink-2:#44505C;--px-ink-3:#5B6774;--px-primary:#132030;--px-on-primary:#FFFFFF;--px-link:#1C5CC8;--px-focus:#2E78F5;--px-ok-fg:#1A6B43;--px-ok-bg:#E4F2EA;--px-ok-line:#94CBAE;--px-order-fg:#8A4A00;--px-order-bg:#FFF0D9;--px-order-line:#E3A54A;--px-ordered-fg:#1E4DA6;--px-ordered-bg:#E5EDFB;--px-ordered-line:#94B3E8;--px-out-fg:#AE2418;--px-out-bg:#FCEAE7;--px-out-line:#E48C80;--px-tube-bg:#F1F4F7;--px-glass-hi:rgba(255,255,255,.75);--px-shadow:0 1px 2px rgba(14,22,32,.05),0 6px 20px rgba(14,22,32,.05);--px-font:"Geist",system-ui,sans-serif;--px-mono:"Geist Mono",ui-monospace,monospace}
+[data-theme="dark"]{color-scheme:dark;--px-bg:#0C1117;--px-surface:#141A22;--px-surface-2:#1B222C;--px-surface-3:#252E39;--px-line:#29333E;--px-line-strong:#46525F;--px-ink:#E9EEF3;--px-ink-2:#B3BDC7;--px-ink-3:#96A2AE;--px-primary:#E9EEF3;--px-on-primary:#0C1117;--px-link:#86B4FF;--px-ok-fg:#7DD3A4;--px-ok-bg:#11281C;--px-ok-line:#2D6A49;--px-order-fg:#F4C06A;--px-order-bg:#2D2110;--px-order-line:#7D5B22;--px-ordered-fg:#A2C1FF;--px-ordered-bg:#132139;--px-ordered-line:#36538D;--px-out-fg:#FF9C90;--px-out-bg:#331410;--px-out-line:#8C3B31;--px-tube-bg:#0F151C;--px-glass-hi:rgba(255,255,255,.12);--px-shadow:0 1px 2px rgba(0,0,0,.4)}
+body{margin:0;background:#E4E8EC;font-family:var(--px-font);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--px-focus);outline-offset:2px}
+</style>
+</helmet>
+<div style="padding:80px;display:flex;flex-direction:column;gap:120px;color:#0E1620;font-family:var(--px-font);font-variant-numeric:tabular-nums;width:max-content">
+
+<section data-screen-label="Presidi · icone" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">07 · PRESIDI</span>
+    <h1 style="margin:0;font:700 56px/1.05 var(--px-font);letter-spacing:-.03em">Iniezioni, cerotti, colliri</h1>
+    <p style="margin:0;font:400 20px/1.5 var(--px-font);color:#44505C">Stessa grammatica delle compresse: vetro e plastica nei toni neutri del tubo, il colore del medicinale solo su liquido, tappo o serbatoio. Stessi sei colori, stessa luce in alto a sinistra.</p>
+  </div>
+  <div style="background:#fff;border-radius:24px;padding:40px;display:flex;flex-direction:column;gap:16px;width:max-content">
+    <span style="font:600 15px/1 var(--px-font)">Presidi · pill.color × presidio.shape</span>
+    <div style="display:grid;grid-template-columns:110px repeat(9,84px);gap:6px 10px;align-items:end;padding-bottom:6px">
+      <span></span>
+      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Iniezioni</span>
+      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Cerotti</span>
+      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Colliri</span>
+      <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">siringa</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">penna</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">fiala</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">cerotto</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">cerotto-tondo</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">bustina</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">flacone</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">monodose</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">goccia</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px repeat(9,84px);gap:14px 10px;align-items:center">
+      <sc-for list="{{ pillColors }}" as="pc" hint-placeholder-count="6">
+        <span style="font:500 14px/1.2 var(--px-font)">{{ pc.name }}<br><span style="font:500 12px/1 var(--px-mono);color:#5B6774">{{ pc.hex }}</span></span>
+        <span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="siringa" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="penna" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="fiala" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="cerotto" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="cerotto-tondo" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="bustina" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="flacone" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="monodose" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="goccia" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Presidi · scala e tema" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">08 · SCALA E TEMA</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Da 128 a 20 px, chiaro e scuro</h2></div>
+  <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:24px;padding:40px;display:flex;align-items:flex-end;gap:28px">
+      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="9">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="128" hint-size="128px,128px"></dc-import>
+          <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="64" hint-size="64px,64px"></dc-import>
+          <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="32" hint-size="32px,32px"></dc-import>
+          <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="20" hint-size="20px,20px"></dc-import>
+          <span style="font:500 13px/1 var(--px-mono);color:#5B6774">{{ sh.shape }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div data-theme="dark" style="background:#141A22;border-radius:24px;padding:40px;display:grid;grid-template-columns:repeat(3,72px);gap:24px;align-content:center">
+      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="9">
+        <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="72" hint-size="72px,72px"></dc-import>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Presidi · dispenser" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:960px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">09 · NEL DISPENSER</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Lo stesso tubo, riempito di presidi</h2><p style="margin:0;font:400 18px/1.5 var(--px-font);color:#44505C">Scala comune 0–60 giorni con tacche a 7 e 14, come per le compresse: il livello dice sempre i giorni di copertura, qualunque cosa ci sia dentro. I pezzi lunghi si coricano, cerotti e bustine si impilano a scaglie.</p></div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;gap:12px">
+      <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:160px">
+          <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
+          <div style="display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center"><span style="font:650 16px/1.2 var(--px-font)">{{ tb.name }}</span><span style="font:400 14px/1.3 var(--px-font);color:#44505C">{{ tb.qty }}</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">{{ tb.shape }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div data-theme="dark" style="background:#141A22;border-radius:24px;padding:32px;display:flex;gap:12px;width:max-content">
+    <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:160px">
+        <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
+        <span style="font:650 16px/1.2 var(--px-font);color:#E9EEF3;text-align:center">{{ tb.name }}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Presidi · glifi e parole" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">10 · GLIFI E PAROLE</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Tipo di presidio nei controlli e nei testi</h2></div>
+  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:20px;width:560px">
+      <span style="font:600 15px/1 var(--px-font)">Glifi al tratto · 1,8 px, currentColor, come + e ▾ dei pulsanti</span>
+      <div style="display:grid;grid-template-columns:120px repeat(3,56px) 1fr;gap:14px 10px;align-items:center">
+        <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">32</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">24</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">16</span><span></span>
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+          <span style="font:500 15px/1.2 var(--px-font)">{{ ty.label }}</span>
+          <span style="display:flex;color:#0E1620">{{ ty.g32 }}</span><span style="display:flex;color:#0E1620">{{ ty.g24 }}</span><span style="display:flex;color:#0E1620">{{ ty.g16 }}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:28px;padding:0 10px;border-radius:999px;background:#EDF0F3;font:600 13px/1 var(--px-font);color:#44505C">{{ ty.g16 }}{{ ty.label }}</span>
+        </sc-for>
+      </div>
+      <span style="font:600 15px/1 var(--px-font);padding-top:12px;border-top:1px solid #EDF0F3">Selettore del tipo · scheda «Aggiungi medicinale»</span>
+      <div role="group" aria-label="Tipo di presidio" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+          <button type="button" onClick="{{ ty.pick }}" aria-pressed="{{ ty.pressed }}" style="{{ ty.btn }}">{{ ty.g24 }}<span>{{ ty.label }}</span></button>
+        </sc-for>
+      </div>
+      <div data-theme="dark" role="group" aria-label="Tipo di presidio, tema scuro" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:#141A22;padding:12px;border-radius:14px">
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+          <button type="button" onClick="{{ ty.pick }}" aria-pressed="{{ ty.pressed }}" style="{{ ty.btn }}">{{ ty.g24 }}<span>{{ ty.label }}</span></button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:4px;width:760px">
+      <span style="font:600 15px/1 var(--px-font);padding-bottom:14px">Parole per forma · al posto di «compressa / compresse»</span>
+      <div style="display:grid;grid-template-columns:56px 130px 1fr 1fr;gap:12px;padding-bottom:10px;font:600 13px/1 var(--px-mono);color:#5B6774"><span></span><span>shape</span><span>conteggio</span><span>+1 confezione</span></div>
+      <sc-for list="{{ words }}" as="w" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:56px 130px 1fr 1fr;gap:12px;align-items:center;padding:8px 0;border-top:1px solid #EDF0F3">
+          <dc-import name="Presidio" shape="{{ w.shape }}" color="{{ w.color }}" size="40" hint-size="40px,40px"></dc-import>
+          <span style="font:500 14px/1.2 var(--px-mono)">{{ w.shape }}</span>
+          <span style="font:400 16px/1.35 var(--px-font);color:#44505C"><span style="font-weight:650;color:#0E1620">{{ w.n }}</span> {{ w.left }}</span>
+          <span style="font:400 15px/1.35 var(--px-font);color:#44505C">{{ w.pack }}</span>
+        </div>
+      </sc-for>
+      <span style="font:400 14px/1.5 var(--px-font);color:#44505C;padding-top:12px;border-top:1px solid #EDF0F3">«goccia» è l’unità di dose (es. «1 goccia per occhio, 2 volte al giorno»), non una scorta: non entra nel tubo.</span>
+    </div>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { type: 'iniezione' };
+  glyph(type, s) {
+    const h = React.createElement, P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    const T = { transform: 'rotate(-45 12 12)' };
+    const kids = {
+      compressa: [h('rect', { key: 1, x: 3, y: 8.5, width: 18, height: 7, rx: 3.5, ...T }), h('path', { key: 2, d: 'M12 8.5v7', ...T })],
+      iniezione: [h('rect', { key: 1, x: 7, y: 9, width: 10, height: 6, rx: 1.5, ...T }), h('path', { key: 2, d: 'M2.5 12H7M2.5 9.5v5M7 7.5v9M17 12h5.5', ...T })],
+      cerotto: [h('rect', { key: 1, x: 3.5, y: 3.5, width: 17, height: 17, rx: 5 }), h('rect', { key: 2, x: 8.5, y: 8.5, width: 7, height: 7, rx: 2 })],
+      collirio: [h('path', { key: 1, d: 'M12 3.5c-3 4-5.5 7-5.5 10.5a5.5 5.5 0 0 0 11 0c0-3.5-2.5-6.5-5.5-10.5z' })]
+    }[type];
+    return h('svg', { width: s, height: s, viewBox: '0 0 24 24', 'aria-hidden': 'true', style: { flex: 'none', display: 'block' }, ...P }, ...kids);
+  }
+  renderVals() {
+    const C = { corallo: '#FF5E4D', sole: '#FFC020', turchese: '#12C2B0', viola: '#8D5BF5', lime: '#93D232', blu: '#2E78F5' };
+    const pillColors = [['Corallo', C.corallo], ['Giallo sole', C.sole], ['Turchese', C.turchese], ['Viola', C.viola], ['Verde lime', C.lime], ['Blu', C.blu]].map(([name, hex]) => ({ name, hex }));
+    const shapes = [['siringa', C.turchese], ['penna', C.blu], ['fiala', C.viola], ['cerotto', C.corallo], ['cerotto-tondo', C.sole], ['bustina', C.lime], ['flacone', C.blu], ['monodose', C.turchese], ['goccia', C.viola]].map(([shape, color]) => ({ shape, color }));
+    const tubes = [
+      ['siringa', C.turchese, 12, 'Enoxaparina', '12 siringhe'], ['penna', C.blu, 34, 'Insulina glargine', '3 penne'], ['fiala', C.viola, 28, 'Vitamina B12', '4 fiale'],
+      ['cerotto', C.corallo, 21, 'Fentanil', '7 cerotti'], ['cerotto-tondo', C.sole, 45, 'Nitroglicerina', '45 cerotti'], ['bustina', C.lime, 9, 'Rivastigmina', '9 cerotti'],
+      ['flacone', C.blu, 70, 'Timololo', '3 flaconi'], ['monodose', C.turchese, 16, 'Lacrime artificiali', '32 monodose']
+    ].map(([shape, color, days, name, qty]) => ({ shape, color, days, name, qty }));
+    const sel = this.state.type;
+    const types = [['compressa', 'Compressa'], ['iniezione', 'Iniezione'], ['cerotto', 'Cerotto'], ['collirio', 'Collirio']].map(([id, label]) => {
+      const on = sel === id;
+      return { label, pressed: on ? 'true' : 'false', pick: () => this.setState({ type: id }),
+        g32: this.glyph(id, 32), g24: this.glyph(id, 24), g16: this.glyph(id, 16),
+        btn: { minHeight: 76, padding: '10px 6px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
+          font: '600 15px/1.2 var(--px-font)', border: on ? '1px solid var(--px-primary)' : '1px solid var(--px-line-strong)',
+          background: on ? 'var(--px-primary)' : 'var(--px-surface)', color: on ? 'var(--px-on-primary)' : 'var(--px-ink)' } };
+    });
+    const words = [
+      ['siringa', C.turchese, 12, 'siringhe rimaste', 'Arrivata confezione: +6 siringhe'], ['penna', C.blu, 3, 'penne rimaste', 'Arrivata confezione: +5 penne'],
+      ['fiala', C.viola, 4, 'fiale rimaste', 'Arrivata confezione: +5 fiale'], ['cerotto', C.corallo, 7, 'cerotti rimasti', 'Arrivata confezione: +3 cerotti'],
+      ['cerotto-tondo', C.sole, 1, 'cerotto rimasto', 'Arrivata confezione: +15 cerotti'], ['bustina', C.lime, 9, 'cerotti rimasti (in bustina)', 'Arrivata confezione: +30 cerotti'],
+      ['flacone', C.blu, 1, 'flacone rimasto', 'Arrivata confezione: +1 flacone'], ['monodose', C.turchese, 32, 'monodose rimaste', 'Arrivata confezione: +20 monodose']
+    ].map(([shape, color, n, left, pack]) => ({ shape, color, n, left, pack }));
+    return { pillColors, shapes, tubes, types, words };
+  }
+}
+</script>
+</body>
+</html>

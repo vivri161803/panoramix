@@ -10,11 +10,13 @@ import { ATC_GROUPS, ATC_UNKNOWN, ATC_UNKNOWN_VALUE, atcColor, atcGroup } from "
 import { WEEKDAYS_LETTER, WEEKDAYS_LONG, type ISODate } from "@/lib/dates";
 import { daysWord, forecastMedication, formatQty, scheduleSummary, type FrequencyType, type PlanSettings } from "@/lib/forecast";
 import { PILL_SHAPES } from "@/lib/pills";
+import { FORMS, PRESIDIO_SHAPES, unitWord, type MedForm } from "@/lib/presidi";
 import type { MedicationInput } from "@/lib/schemas";
 import { dispenserView } from "@/lib/view";
 import { Dispenser } from "@/components/Dispenser";
 import { FieldError } from "@/components/ui/FieldError";
 import { Pill } from "@/components/ui/Pill";
+import { FormGlyph } from "@/components/ui/Presidio";
 import { Switch } from "@/components/ui/Switch";
 import { IconBack } from "@/components/ui/icons";
 
@@ -52,6 +54,8 @@ const SLOTS = [
 ] as const;
 
 type NumKey = "pills_per_pack" | "stock_qty" | "interval_days" | "cycle_on" | "cycle_off";
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const num = (s: string) => {
   const n = Number(s.replace(",", "."));
@@ -96,6 +100,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
     }
     if (d.shape) {
       patch.shape = d.shape;
+      patch.form = "compressa";
       got.add("shape");
     }
     if (d.requires_prescription !== null) {
@@ -154,6 +159,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       description: input.description,
       requiresPrescription: input.requires_prescription,
       color: pillColor,
+      form: input.form,
       shape: input.shape,
       aic: input.aic,
       atcCode: input.atc_code && input.atc_code !== ATC_UNKNOWN_VALUE ? input.atc_code : null,
@@ -307,12 +313,12 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
             <h2 className={h2}>Confezione e scorte</h2>
             <div className={grid2}>
               <div className="flex flex-col gap-2">
-                <label htmlFor="px-pp" className="px-label">Compresse per confezione</label>
+                <label htmlFor="px-pp" className="px-label">{cap(unitWord(f.shape, 2))} per confezione</label>
                 <input id="px-pp" type="number" inputMode="numeric" min={1} step={1} value={txt.pills_per_pack} onChange={(e) => setNum("pills_per_pack", e.target.value)} aria-invalid={fe.pills_per_pack ? true : undefined} className="px-input" style={hl("pills_per_pack")} />
                 <FieldError message={fe.pills_per_pack} />
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="px-qty" className="px-label">{weekly ? "Compresse in casa, fuori dal portapillole" : "Compresse in casa"}</label>
+                <label htmlFor="px-qty" className="px-label">{weekly && f.form === "compressa" ? "Compresse in casa, fuori dal portapillole" : `${cap(unitWord(f.shape, 2))} in casa`}</label>
                 <input id="px-qty" type="number" inputMode="decimal" min={0} step={0.5} value={txt.stock_qty} onChange={(e) => setNum("stock_qty", e.target.value)} aria-invalid={fe.stock_qty ? true : undefined} aria-describedby="px-qty-help" className="px-input" />
                 <span id="px-qty-help" className="text-[14px] leading-[1.35] text-px-ink-2">
                   {isNew ? "Conta le compresse adesso. Le mezze valgono ½." : "Se cambi questo numero diventa un nuovo conteggio."}
@@ -328,7 +334,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
           <section className={section}>
             <h2 className={h2}>Aspetto nel dispenser</h2>
             <div className="flex flex-wrap items-center gap-5">
-              <div role="img" aria-label={`Anteprima: compressa ${f.shape}`} className="grid h-28 w-28 flex-none place-items-center rounded-[18px] bg-px-surface-2">
+              <div role="img" aria-label={`Anteprima: ${f.form} ${f.shape}`} className="grid h-28 w-28 flex-none place-items-center rounded-[18px] bg-px-surface-2">
                 <Pill color={pillColor} shape={f.shape} size={76} rotate={-14} />
               </div>
               <div className="flex flex-[1_1_220px] flex-col gap-2">
@@ -368,9 +374,23 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
               </div>
             </div>
             <div className="flex flex-col gap-2.5">
+              <span className="px-label">Tipo</span>
+              <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-2 gap-2 min-[560px]:grid-cols-4">
+                {FORMS.map((t) => {
+                  const sel = t.id === f.form;
+                  return (
+                    <button key={t.id} type="button" role="radio" aria-checked={sel} onClick={() => !sel && set({ form: t.id as MedForm, shape: t.shapes[0] })} className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1.5 py-2.5 text-px-ink" style={radioCard(sel)}>
+                      <FormGlyph form={t.id} size={24} />
+                      <span className="text-[15px] font-semibold leading-[1.2]">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2.5">
               <span className="px-label">Forma</span>
               <div role="radiogroup" aria-label="Forma" className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr))]">
-                {PILL_SHAPES.map((s) => {
+                {[...PILL_SHAPES, ...PRESIDIO_SHAPES].filter((s) => (FORMS.find((t) => t.id === f.form)?.shapes as readonly string[]).includes(s.id)).map((s) => {
                   const sel = s.id === f.shape;
                   return (
                     <button key={s.id} type="button" role="radio" aria-checked={sel} onClick={() => set({ shape: s.id })} className="flex flex-col items-center gap-2.5 rounded-[14px] px-2 py-3.5 text-px-ink" style={{ ...radioCard(sel), ...(sel ? hl("shape") : undefined) }}>

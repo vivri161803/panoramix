@@ -5,7 +5,6 @@ import { dosesAt, upcomingChanges } from "@/lib/forecast";
 import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
 import { DoseChangesPanel } from "@/components/DoseChangesPanel";
-import type { PillShape } from "@/lib/pills";
 import { ATC_UNKNOWN, ATC_UNKNOWN_VALUE } from "@/lib/atc";
 
 export const metadata: Metadata = { title: "Modifica medicinale" };
@@ -37,7 +36,8 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         aic: m.aic,
         // medicinali di prima (senza gruppo): il modulo chiede a cosa servono; grigio = "Non so"
         atc_code: m.atcCode ?? (m.color === ATC_UNKNOWN.color ? ATC_UNKNOWN_VALUE : ""),
-        shape: m.shape as PillShape,
+        form: m.form,
+        shape: m.shape,
         dose_morning: now.doseMorning,
         dose_noon: now.doseNoon,
         dose_evening: now.doseEvening,
