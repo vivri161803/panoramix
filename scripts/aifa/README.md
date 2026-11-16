@@ -20,7 +20,8 @@ Formati verificati il 9 novembre 2026 sui file veri.
 ## Anagrafica confezioni · `confezioni_fornitura.csv`
 
 `https://drive.aifa.gov.it/farmaci/confezioni_fornitura.csv`, circa 82 MB, circa 160.000 righe,
-aggiornato ogni notte. Codifica: ASCII (accenti scritti come apostrofo, `UNITA'`). Tutti i campi
+aggiornato ogni notte. Codifica: ASCII (accenti scritti come apostrofo, `UNITA'`), letto come UTF-8
+(`encoding: "utf-8"` in `SOURCES`, di cui ASCII è un sottoinsieme). Tutti i campi
 tra virgolette tranne `CODICE_DITTA`. Righe terminate da `\n`.
 
 ```
@@ -40,7 +41,7 @@ tra virgolette tranne `CODICE_DITTA`. Righe terminate da `\n`.
 
 ## Principi attivi · `PA_confezioni.csv`
 
-`https://drive.aifa.gov.it/farmaci/PA_confezioni.csv`, circa 12 MB, circa 340.000 righe. ASCII.
+`https://drive.aifa.gov.it/farmaci/PA_confezioni.csv`, circa 12 MB, circa 340.000 righe. ASCII, letto come UTF-8.
 
 ```
 CODICE_AIC;PRINCIPIO_ATTIVO;QUANTITA;UNITA_MISURA
@@ -56,7 +57,7 @@ CODICE_AIC;PRINCIPIO_ATTIVO;QUANTITA;UNITA_MISURA
 
 ## Anagrafica ATC · `atc.csv`
 
-`https://drive.aifa.gov.it/farmaci/atc.csv`, ASCII. La lunghezza cambia: 92 righe il 9 novembre 2026
+`https://drive.aifa.gov.it/farmaci/atc.csv`, ASCII, letto come UTF-8. La lunghezza cambia: 92 righe il 9 novembre 2026
 in un download, 7.219 nel primo import di produzione dello stesso giorno.
 
 ```
@@ -122,3 +123,51 @@ Principio attivo;Confezione di riferimento;ATC;AIC;Farmaco;Confezione;Ditta;Prez
 - Test: `tests/aifa-parse.test.ts` (parser), `tests/aifa-freshness.test.ts` (avviso),
   `tests/db/aifa-import.db.test.ts` (pipeline completa sul Supabase locale: primo import, secondo
   giro saltato, file mancante, colonne cambiate, file troppo corto, confezione tolta).
+
+## Interface
+
+Modulo ES `parse.mjs`, importato da `scripts/import-aifa.mjs` e da `tests/aifa-parse.test.ts`.
+
+- `parseCsv(text, delimiter = ";")`: generatore di righe (array di stringhe); toglie il BOM,
+  gestisce `""`, a capo dentro i campi e righe `\r\n`, `\r` o `\n`.
+- `aic9(s)`: AIC a 9 cifre con zeri iniziali (toglie una `A` iniziale); `null` se non è un AIC.
+- `text(s)`: testo ripulito; `null` per vuoti, `N.D.`, `ND`, `Q.TA E UM NON PRESENTI SU ET`.
+- `num(s)`: numero con virgola o punto, `€` e spazi ammessi; `null` se non valido.
+- `itDate(s)`: `gg/mm/aaaa` → ISO; `itWordsDate(s)`: `15 ottobre 2026` → ISO; `null` se non valide.
+- `doseUnitsFromDescription(desc)`: ultimo "numero + COMPRESSE/CAPSULE/…" (`UNITS_RE`), tra 1 e 1000.
+- `requiresPrescription(regime)`: `true`/`false` dal prefisso di `FORNITURA`, altrimenti `null`.
+- `SOURCES`: le cinque sorgenti (`confezioni`, `principi_attivi`, `atc`, `carenze`, `trasparenza`)
+  con `url`, `encoding`, `preamble`, `headers`, `table`, `key`, `map(r, ctx)` e, per `carenze` e
+  `trasparenza`, `sourceDate`.
+- `decode(bytes, encoding)`: `TextDecoder` con la codifica della sorgente.
+- `parseSource(name, content)`: → `{ rows, sourceDate, total, skipped }`.
+- `HeaderMismatchError`: errore per intestazioni cambiate, file vuoto o troppe righe scartate.
+- `checkShrink(name, rows, previousRows)` e `MIN_ROWS_SHARE` (0,5): rifiuto dei file troppo corti.
+
+Tabelle di destinazione per sorgente (`SOURCES[*].table` / `key`): `aifa_packs` (`aic`),
+`aifa_pack_ingredients` (`aic`, `position`), `aifa_atc` (`code`), `aifa_shortages` (nessuna chiave),
+`aifa_transparency` (`aic`).
+
+## Invariants
+
+- Funzioni pure: nessuna rete, nessun database, nessun file (commento in testa a `parse.mjs`).
+- `parseSource` lancia `HeaderMismatchError` se l'intestazione non coincide con `spec.headers`
+  (confronto esatto dopo `trim`, oppure per prefisso con `{ prefix }`): in quel caso non si importa nulla.
+- `parseSource` lancia se il file non ha righe dati, o se le righe scartate superano
+  `MAX_SKIPPED_SHARE` (2%), tranne per `principi_attivi`.
+- Con `spec.key` i doppioni di chiave si tolgono e vale l'ultima riga; senza chiave (`carenze`)
+  si tengono tutte.
+- `position` di `principi_attivi` è assegnata da `parseSource` nell'ordine del file, a partire da 1 per AIC.
+- `checkShrink` non controlla nulla se l'ultimo import aveva meno di 20 righe (o nessuno);
+  altrimenti lancia se `rows < previousRows * MIN_ROWS_SHARE`.
+- Le date restituite sono stringhe ISO `aaaa-mm-gg` oppure `null` (date impossibili comprese).
+
+## Side Effects
+
+- None: `parse.mjs` non scrive né legge nulla fuori dagli argomenti. Download, scrittura delle
+  tabelle `aifa_*` e registro `aifa_imports` sono in `scripts/import-aifa.mjs` (vedi `../README.md`).
+
+## Verification
+
+- Run: `npm test` (vitest; parser in `tests/aifa-parse.test.ts`, fixture in `tests/fixtures/aifa/`)
+- Pipeline completa sul Supabase locale: `npm run test:db` (`tests/db/aifa-import.db.test.ts`)
