@@ -13,27 +13,28 @@ Next.js Server Actions (`"use server"`) for every user-initiated change: auth an
 - `aifa.ts`: `lookupAic(raw, format?)` returns `ActionResult<AicLookup>`. It reads `aifa_packs` and `aifa_pack_ingredients`, and needs a signed-in user.
 - `plans.ts`: `createPlan(input)`, `updatePlan(planId, input)`, `deletePlan(planId)`
 - `medications.ts`: `createMedication(planId, input, another?)`, `updateMedication(planId, medicationId, input)`, `deleteMedication(planId, medicationId)`, `addDoseChange(planId, medicationId, input)`, `deleteDoseChange(planId, medicationId, changeId)`
-- `stock.ts`: `arrivePacks`, `recountStock`, `toggleOrdered`, `undoStockEvent`, `takeAsNeeded`, `markOrdered(planId, medicationIds)`, `preparePillbox(planId)`, `undoPillbox(planId, runId)`
+- `stock.ts`: `arrivePacks`, `recountStock`, `toggleOrdered`, `undoStockEvent`, `takeAsNeeded`, `markOrdered(planId, medicationIds)`
 - `sharing.ts`: `inviteMember`, `cancelInvite`, `changeAccess(planId, { userId? , inviteId? }, role)`, `removeMember`, `leavePlan`, `acceptInvite(inviteId)`, `declineInvite(inviteId)`
 - `email.ts`: `sendTestEmail(planId)`
 
 ## Invariants
 - Authorization is checked in the action before any write. Medication and stock changes require `canEdit(role)` (owner or editor), and fail with `READ_ONLY_MESSAGE` otherwise. Plan settings, recipients, sharing, deleting a plan, and `sendTestEmail` require `isOwner(role)`, and fail with `OWNER_ONLY_MESSAGE` otherwise. RLS still applies on top because every write uses the user client.
 - Stock writes use optimistic concurrency. `record_stock_event` is called with `p_expected_qty` / `p_expected_as_of` (the stored reference), and `updateMedication` filters its `update` on `stock_qty` and `stock_as_of`. A mismatch surfaces as "Le scorte sono cambiate nel frattempo".
-- `updateMedication` moves the stock reference to `bundle.today` (`currentStock`) before saving the new schedule. It deletes dose changes that have already started, and records a `count` event only when the entered quantity differs from the computed stock.
+- `updateMedication` moves the stock reference to `maxDate(today, stockAsOf)` (`currentStock`) before saving the new schedule, or to `today` when the form changes the stock (a count that includes the pillbox). It deletes dose changes that have already started, and records a `count` event only when the entered quantity differs from the computed stock.
 - `createMedication` writes an initial `stock_events` row with `type: "count"` and `meta.initial: true`.
 - `atc_code` is resolved from `aifa_packs` when the AIC is known. The form's `"?"` (`ATC_UNKNOWN_VALUE`) is stored as `null`, and `color` is always derived with `atcColor(atcCode)`. `reorder_days` is kept only when `usesReorderDays(shape)` is true.
 - Dose changes must start after `today` and on or before `endDate`, and are not allowed for `as_needed` meds. Upserts use `onConflict: "medication_id,effective_date"`.
 - `undoStockEvent` reverses only the latest event, and only if it is an `arrival`, `count`, or `use`. It records an opposite `adjust` event and restores `meta.prev_ordered_at`.
 - `recountStock` clears "ordered" only when `recountClearsOrdered(forecast)` is true. After an arrival or recount, open `alert_log` episodes whose threshold no longer triggers are closed.
-- `preparePillbox` requires `stockMode === "weekly"` and a `prepWeek`. A duplicate week (`23505`) is reported as already prepared.
+- Stock dates: `arrivePacks`, `takeAsNeeded` and the undo of an `arrival` or `use` save at `maxDate(today, stockAsOf)` (they change only the stock at home; the days up to a future `stockAsOf` are already in the pillbox). `recountStock` and the undo of a `count` save at `today`. `closeEpisodesIfAbove` evaluates the forecast with the date just saved.
+- `createPlan` / `updatePlan` write only `plans` columns; there is no stock-mode change any more.
 - Recipients cannot include the owner's own email. Invites are rejected for the owner, for existing members, and for already-invited emails. The database hint `members_limit` caps a plan at 10 people.
 - `leavePlan` is refused for the owner. `declineInvite` deletes only invites that match the caller's lowercased email.
 
 ## Side Effects
 - Database writes through the user client:
   - tables `profiles`, `plans`, `plan_recipients`, `medications`, `dose_changes`, `stock_events`, `alert_log`, `plan_members`, `plan_invites`
-  - RPCs `record_stock_event`, `change_stock_mode`, `apply_prep`, `undo_prep`, `accept_plan_invite`, `delete_my_account`
+  - RPCs `record_stock_event`, `accept_plan_invite`, `delete_my_account`
 - Supabase Auth: `signInWithOtp` (magic link redirecting to `${APP_URL}/auth/confirm`) and `signOut`.
 - Email through `getEmailProvider().send`: invitations (`inviteMember`) and the owner-only test email (`sendTestEmail`). If the invite email fails, the invite is still saved.
 - Next.js cache and navigation: `revalidatePath("/piani/<id>", "layout")` and `revalidatePath("/piani")`, plus `redirect(...)` after create, update, and delete flows.

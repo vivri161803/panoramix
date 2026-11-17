@@ -17,85 +17,53 @@
 </helmet>
 <span aria-hidden="true" style="display:inline-flex;vertical-align:middle">{{ art }}</span>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":120,"height":120},"shape":{"editor":"enum","options":["siringa","penna","fiala","cerotto","cerotto-tondo","bustina","flacone","monodose","goccia"],"default":"siringa","tsType":"string"},"color":{"editor":"color","options":["#FF5E4D","#FFC020","#12C2B0","#8D5BF5"],"default":"#12C2B0","tsType":"string"},"view":{"editor":"enum","options":["icona","tubo"],"default":"icona","tsType":"string"},"size":{"editor":null,"default":96,"tsType":"number|\"s\"|\"l\""},"rotate":{"editor":null,"tsType":"number"},"days":{"editor":"int","default":21,"min":0,"max":120,"tsType":"number"},"scaleMax":{"editor":"int","default":60,"tsType":"number"}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":120,"height":120},"shape":{"editor":"enum","options":["pillola","bustina","liquido","iniezione","gocce","inalatore","cerotto","crema","supposta","altro"],"default":"iniezione","tsType":"string"},"color":{"editor":"color","options":["#FF5E4D","#FFC020","#12C2B0","#8D5BF5"],"default":"#12C2B0","tsType":"string"},"view":{"editor":"enum","options":["icona","tubo"],"default":"icona","tsType":"string"},"stock":{"editor":"enum","options":["auto","pezzi","livello"],"default":"auto","tsType":"string"},"size":{"editor":null,"default":96,"tsType":"number|\"s\"|\"l\""},"rotate":{"editor":null,"tsType":"number"},"days":{"editor":"int","default":21,"min":0,"max":120,"tsType":"number"},"scaleMax":{"editor":"int","default":60,"tsType":"number"}}'>
 class Component extends DCLogic {
   static SEQ = 0;
-  /* w,h: disegno · rot: inclinazione predefinita dell'icona · len,step: ingombro nel tubo (frazioni) */
+  /* Dieci categorie. w,h: disegno · rot: inclinazione dell'icona · stock: come si riempie il tubo (pezzi contati o livello continuo) · len,step: ingombro dei pezzi nel tubo */
   static SHAPES = {
-    siringa: { w: 72, h: 22, rot: -45, len: .94, step: .86 },
-    penna: { w: 72, h: 18, rot: -45, len: .94, step: .9 },
-    fiala: { w: 30, h: 44, rot: 0, len: .8, step: .84 },
-    cerotto: { w: 40, h: 40, rot: 0, len: .6, step: .36 },
-    'cerotto-tondo': { w: 40, h: 40, rot: 0, len: .6, step: .36 },
-    bustina: { w: 36, h: 44, rot: 0, len: .74, step: .34 },
-    flacone: { w: 28, h: 48, rot: 0, len: .88, step: .84 },
-    monodose: { w: 20, h: 48, rot: 0, len: .88, step: .8 },
-    goccia: { w: 32, h: 40, rot: 0, len: .5, step: .7 }
+    pillola: { w: 30, h: 14, rot: -45, stock: 'pezzi', len: .6, step: .8 },
+    bustina: { w: 26, h: 34, rot: 0, stock: 'pezzi', len: .72, step: .36 },
+    liquido: { w: 24, h: 36, rot: 0, stock: 'livello', len: .8, step: .84 },
+    iniezione: { w: 38, h: 14, rot: -45, stock: 'pezzi', len: .92, step: .86 },
+    gocce: { w: 24, h: 32, rot: 0, stock: 'livello', len: .5, step: .7 },
+    inalatore: { w: 28, h: 36, rot: 0, stock: 'livello', len: .8, step: .84 },
+    cerotto: { w: 34, h: 34, rot: 0, stock: 'pezzi', len: .6, step: .36 },
+    crema: { w: 24, h: 36, rot: 0, stock: 'livello', len: .8, step: .84 },
+    supposta: { w: 18, h: 34, rot: 0, stock: 'pezzi', len: .6, step: .8 },
+    altro: { w: 32, h: 26, rot: 0, stock: 'pezzi', len: .6, step: .7 }
   };
+  /* Nomi delle forme precedenti: restano validi e puntano alla nuova categoria */
+  static ALIAS = { siringa: ['iniezione'], penna: ['iniezione'], fiala: ['iniezione'], 'cerotto-tondo': ['cerotto'], flacone: ['gocce'], monodose: ['gocce', 'pezzi'], goccia: ['gocce'], compressa: ['pillola'], collirio: ['gocce'] };
   uid = 0;
 
+  /* Un solo segno per tutte: corpo neutro, contorno a 2, una sola zona nel colore del medicinale */
   parts(shape, c, id) {
     const h = React.createElement; let k = 0;
     const el = (tag, a, style) => h(tag, { key: k++, ...a, style });
     const R = (x, y, width, height, rx) => ({ x, y, width, height, rx: rx || 0 });
-    const LS = 'var(--px-line-strong)';
-    const glass = (tag, a) => el(tag, a, { fill: 'var(--px-tube-bg)', stroke: LS, strokeWidth: 1.5, strokeLinejoin: 'round' });
-    const cap = (tag, a) => el(tag, a, { fill: 'var(--px-surface-3)', stroke: LS, strokeWidth: 1.5, strokeLinejoin: 'round' });
+    const INK = 'var(--px-ink-3)';
+    const body = (tag, a) => el(tag, a, { fill: 'var(--px-surface)' });
+    const edge = (tag, a) => el(tag, a, { fill: 'none', stroke: INK, strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round' });
     const col = (tag, a) => [el(tag, a, { fill: c }), el(tag, a, { fill: `url(#${id}s)` }), el(tag, a, { fill: `url(#${id}h)` })];
-    const white = (tag, a) => [el(tag, a, { fill: '#F5F4EF', stroke: 'rgba(14,22,32,.26)', strokeWidth: 1 }), el(tag, a, { fill: `url(#${id}s)`, opacity: .45 })];
-    const shine = a => el('rect', a, { fill: 'var(--px-glass-hi)' });
-    const mark = (d, o) => el('path', { d }, { fill: 'none', stroke: `rgba(14,22,32,${o || .3})`, strokeWidth: 1, strokeLinecap: 'round' });
+    const P = d => ({ d });
     switch (shape) {
-      case 'siringa': return [
-        cap('rect', R(5, 9.5, 12, 3)), cap('rect', R(1, 4, 4, 14, 2)), cap('rect', R(15, 1.5, 4, 19, 2)),
-        glass('rect', R(19, 5, 34, 12, 2.5)),
-        el('rect', R(23, 6.2, 4, 9.6, 1), { fill: 'var(--px-ink-3)' }),
-        ...col('rect', R(27, 6.2, 25, 9.6, 1.5)),
-        mark('M32 6.4v3M37 6.4v4.6M42 6.4v3M47 6.4v4.6', .34),
-        cap('rect', R(53, 8, 5, 6, 1)),
-        el('path', { d: 'M58 11H70.5' }, { fill: 'none', stroke: LS, strokeWidth: 1.6, strokeLinecap: 'round' })
-      ];
-      case 'penna': return [
-        glass('rect', R(24, 3, 36, 12, 2)),
-        ...col('rect', R(31, 6, 13, 6, 3)),
-        mark('M48.5 6.5v5M51.5 6.5v5', .28),
-        cap('rect', R(60, 4, 7, 10, 1.5)), mark('M62.3 6v6M64.7 6v6', .26),
-        ...col('rect', R(67, 5.5, 4, 7, 2)),
-        ...col('rect', R(1, 2, 25, 14, 6)),
-        el('rect', R(6, .6, 15, 3.2, 1.6), { fill: 'rgba(14,22,32,.3)' })
-      ];
-      case 'fiala': return [
-        glass('rect', R(10, 10, 10, 7)), glass('rect', R(3, 15, 24, 28, 5)),
-        ...col('path', { d: 'M4.6 27H25.4V39.4Q25.4 41.4 22.4 41.4H7.6Q4.6 41.4 4.6 39.4Z' }),
-        shine(R(6.2, 18, 2.4, 21, 1.2)),
-        cap('rect', R(8, 6.5, 14, 5, 1)),
-        ...col('rect', R(6.5, 1, 17, 6, 2.5))
-      ];
-      case 'cerotto': return [...white('rect', R(2, 2, 36, 36, 10)), ...col('rect', R(9.5, 9.5, 21, 21, 6))];
-      case 'cerotto-tondo': return [...white('circle', { cx: 20, cy: 20, r: 18 }), ...col('circle', { cx: 20, cy: 20, r: 10.5 })];
-      case 'bustina': return [
-        cap('rect', R(2, 2, 32, 40, 3)), mark('M5 7H31M5 37H31', .24),
-        ...col('rect', R(7, 12, 22, 20, 5)),
-        el('rect', R(13, 17, 10, 10, 3), { fill: 'none', stroke: 'rgba(255,255,255,.9)', strokeWidth: 1.4 })
-      ];
-      case 'flacone': return [
-        glass('path', { d: 'M9 17H19Q25 19 25 25V42Q25 46.5 21 46.5H7Q3 46.5 3 42V25Q3 19 9 17Z' }),
-        ...col('path', { d: 'M4.6 30H23.4V42Q23.4 44.9 21 44.9H7Q4.6 44.9 4.6 42Z' }),
-        shine(R(6.2, 23, 2.4, 19, 1.2)),
-        cap('rect', R(7, 13, 14, 4.5, 1.2)),
-        ...col('path', { d: 'M9.5 13L11 3Q11.3 1 13 1H15Q16.7 1 17 3L18.5 13Z' })
-      ];
-      case 'monodose': return [
-        glass('rect', R(8.2, 10, 3.6, 7)), glass('rect', R(5.5, 1, 9, 10, 2.5)),
-        glass('path', { d: 'M10 15.5C5 17.5 3 22 3 28V40Q3 46.5 10 46.5Q17 46.5 17 40V28C17 22 15 17.5 10 15.5Z' }),
-        ...col('path', { d: 'M4.6 29H15.4V40Q15.4 44.9 10 44.9Q4.6 44.9 4.6 40Z' }),
-        shine(R(5.9, 23, 2, 15, 1))
-      ];
-      default: return col('path', { d: 'M16 2C16 2 4 16.5 4 26A12 12 0 0 0 28 26C28 16.5 16 2 16 2Z' });
+      case 'pillola': { const r = R(1, 1, 28, 12, 6); return [body('rect', r), ...col('path', P('M15 1H7A6 6 0 0 0 7 13H15Z')), edge('rect', r), edge('path', P('M15 1V13'))]; }
+      case 'bustina': { const r = R(1, 1, 24, 32, 3); return [body('rect', r), ...col('circle', { cx: 13, cy: 17, r: 5.5 }), edge('rect', r), edge('path', P('M1 6.5H25M1 27.5H25'))]; }
+      case 'liquido': { const b = P('M6 9H18A4 4 0 0 1 22 13V32A3 3 0 0 1 19 35H5A3 3 0 0 1 2 32V13A4 4 0 0 1 6 9Z'), t = R(7, 1, 10, 6, 1.5);
+        return [body('rect', t), edge('rect', t), body('path', b), ...col('path', P('M2 21H22V32A3 3 0 0 1 19 35H5A3 3 0 0 1 2 32Z')), edge('path', b)]; }
+      case 'iniezione': { const r = R(8, 2, 18, 10, 2); return [body('rect', r), ...col('path', P('M13 2H24A2 2 0 0 1 26 4V10A2 2 0 0 1 24 12H13Z')), edge('rect', r), edge('path', P('M2 7H8M2 2V12M26 7H36'))]; }
+      case 'gocce': return col('path', P('M12 1C12 1 2 13 2 20A10 10 0 0 0 22 20C22 13 12 1 12 1Z'));
+      case 'inalatore': { const b = P('M5 11H14A3 3 0 0 1 17 14V26H24A2 2 0 0 1 26 28V33A2 2 0 0 1 24 35H5A3 3 0 0 1 2 32V14A3 3 0 0 1 5 11Z');
+        return [...col('rect', R(5, 1, 9, 14, 2)), body('path', b), edge('path', b)]; }
+      case 'cerotto': { const r = R(1, 1, 32, 32, 9); return [body('rect', r), ...col('rect', R(10, 10, 14, 14, 4)), edge('rect', r)]; }
+      case 'crema': { const b = P('M2 1H22L19 29H5Z'), t = R(8, 29, 8, 6, 1); return [body('path', b), ...col('path', P('M3.2 12H20.8L19 29H5Z')), edge('path', b), body('rect', t), edge('rect', t)]; }
+      case 'supposta': return col('path', P('M9 1C14 5 17 12 17 20V31A2 2 0 0 1 15 33H3A2 2 0 0 1 1 31V20C1 12 4 5 9 1Z'));
+      default: { const r = R(1, 1, 30, 24, 3); return [body('rect', r), ...col('rect', R(1, 9, 30, 8)), edge('rect', r)]; }
     }
   }
   svg(shape, c, scale, id, style) {
-    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.altro;
     const stop = (o, col, op) => h('stop', { key: o, offset: o, stopColor: col, stopOpacity: op });
     return h('svg', { width: g.w * scale, height: g.h * scale, viewBox: `0 0 ${g.w} ${g.h}`, 'aria-hidden': 'true',
       style: { display: 'block', flex: 'none', overflow: 'visible', filter: 'drop-shadow(0 1px 1.2px rgba(14,22,32,.28))', ...style } },
@@ -105,28 +73,33 @@ class Component extends DCLogic {
       ...this.parts(shape, c, id));
   }
   icon(shape, c, S, id) {
-    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.altro;
     const rot = this.props.rotate != null && this.props.rotate !== '' ? Number(this.props.rotate) : g.rot;
     const a = Math.abs(rot) * Math.PI / 180, cs = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a));
     const scale = S * .94 / Math.max(g.w * cs + g.h * sn, g.w * sn + g.h * cs);
     return h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: S, height: S, flex: 'none', verticalAlign: 'middle' } },
       this.svg(shape, c, scale, id, rot ? { transform: `rotate(${rot}deg)` } : null));
   }
-  tube(shape, c, id) {
-    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.goccia;
+  tube(shape, c, id, stock) {
+    const h = React.createElement, g = Component.SHAPES[shape] || Component.SHAPES.altro;
     const l = this.props.size !== 's', W = l ? 70 : 48, H = l ? 250 : 180, max = Number(this.props.scaleMax ?? 60);
     const days = Math.max(0, Number(this.props.days ?? 21)), over = days >= max;
     const side = 36, TW = W + 4, B = 12, CAP = 10, lvl = Math.min(days, max) / max * (H - 6);
-    const long = Math.max(g.w, g.h), short = Math.min(g.w, g.h), up = g.h > g.w;
-    const scale = W * g.len / long, pw = long * scale, th = short * scale, step = th * g.step;
-    const n = days > 0 ? Math.max(1, Math.min(Math.floor((H - 6) / step), Math.round(lvl / step))) : 0;
-    const JX = [-.7, .55, -.15, .8, -.45, .25, -.85, .4, 0, -.3], JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
     const A = (key, style, ...kids) => h('span', { key, style: { display: 'block', position: 'absolute', ...style } }, ...kids);
     const units = [];
-    for (let i = 0; i < n; i++) {
-      const j = i % 10, x = (W - pw) / 2 + JX[j] * (W - pw) / 2 * .9, r = JR[j] * (g.len > .8 ? .3 : .6) + (up ? 90 : 0);
-      units.push(A('u' + i, { left: x, bottom: 3 + i * step, width: pw, height: th },
-        this.svg(shape, c, scale, id, { position: 'absolute', left: (pw - g.w * scale) / 2, top: (th - g.h * scale) / 2, transform: `rotate(${r}deg)` })));
+    if (stock === 'livello') {
+      /* Scorte continue (sciroppo, gocce, crema, inalatore): un livello pieno nel colore del medicinale */
+      if (days > 0) units.push(A('liq', { left: 0, right: 0, bottom: 0, height: Math.max(4, lvl), background: `linear-gradient(180deg, rgba(255,255,255,.2) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,.18) 100%), ${c}`, borderTop: '2px solid rgba(14,22,32,.3)' }));
+    } else {
+      const long = Math.max(g.w, g.h), short = Math.min(g.w, g.h), up = g.h > g.w;
+      const scale = W * g.len / long, pw = long * scale, th = short * scale, step = th * g.step;
+      const n = days > 0 ? Math.max(1, Math.min(Math.floor((H - 6) / step), Math.round(lvl / step))) : 0;
+      const JX = [-.7, .55, -.15, .8, -.45, .25, -.85, .4, 0, -.3], JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
+      for (let i = 0; i < n; i++) {
+        const j = i % 10, x = (W - pw) / 2 + JX[j] * (W - pw) / 2 * .9, r = JR[j] * (g.len > .8 ? .3 : .6) + (up ? 90 : 0);
+        units.push(A('u' + i, { left: x, bottom: 3 + i * step, width: pw, height: th },
+          this.svg(shape, c, scale, id, { position: 'absolute', left: (pw - g.w * scale) / 2, top: (th - g.h * scale) / 2, transform: `rotate(${r}deg)` })));
+      }
     }
     const tick = 'var(--px-ink-3)';
     return h('span', { 'aria-hidden': 'true', style: { display: 'inline-block', position: 'relative', width: side * 2 + TW, height: H + B + CAP, flex: 'none' } },
@@ -145,8 +118,10 @@ class Component extends DCLogic {
   }
   renderVals() {
     if (!this.uid) this.uid = ++Component.SEQ;
-    const p = this.props, shape = Component.SHAPES[p.shape] ? p.shape : 'siringa', c = p.color ?? '#12C2B0', id = 'pxp' + this.uid;
-    return { art: p.view === 'tubo' ? this.tube(shape, c, id) : this.icon(shape, c, Number(p.size ?? 48) || 48, id) };
+    const p = this.props, al = Component.ALIAS[p.shape];
+    const shape = Component.SHAPES[p.shape] ? p.shape : (al ? al[0] : 'altro'), c = p.color ?? '#12C2B0', id = 'pxp' + this.uid;
+    const stock = p.stock === 'pezzi' || p.stock === 'livello' ? p.stock : ((al && al[1]) || Component.SHAPES[shape].stock);
+    return { art: p.view === 'tubo' ? this.tube(shape, c, id, stock) : this.icon(shape, c, Number(p.size ?? 48) || 48, id) };
   }
 }
 </script>

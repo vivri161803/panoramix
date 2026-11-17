@@ -6,7 +6,7 @@ export const USAGE_DAYS = 7;
 /** Destinatari al giorno che Gmail accetta da una casella normale (circa). */
 export const GMAIL_DAILY_LIMIT = 500;
 
-/** Righe lette dal database e dall'Auth. Movimenti, preparazioni e invii sono già solo quelli del periodo. */
+/** Righe lette dal database e dall'Auth. Movimenti e invii sono già solo quelli del periodo. */
 export interface UsageRaw {
   users: { id: string; created_at: string; last_sign_in_at?: string | null }[];
   plans: { id: string; created_at: string }[];
@@ -14,7 +14,6 @@ export interface UsageRaw {
   pendingInvites: number;
   activeMeds: number;
   stockEvents: { created_by: string | null }[];
-  preps: { created_by: string | null }[];
   alertRuns: { status: string; recipients: string[] | null }[];
   notificationRuns: { status: string; recipients: string[] | null }[];
 }
@@ -22,7 +21,7 @@ export interface UsageRaw {
 export interface UsageStats {
   days: number;
   accounts: { total: number; created: number; signedIn: number };
-  /** chi ha registrato un movimento delle scorte o preparato il portapillole */
+  /** chi ha registrato un movimento delle scorte */
   recorded: number;
   /** chi ha fatto l'accesso o registrato qualcosa (senza doppioni) */
   active: number;
@@ -38,7 +37,7 @@ const after = (iso: string | null | undefined, since: Date) => !!iso && new Date
 
 export function summarizeUsage(raw: UsageRaw, since: Date, days = USAGE_DAYS): UsageStats {
   const signedIn = new Set(raw.users.filter((u) => after(u.last_sign_in_at, since)).map((u) => u.id));
-  const recorded = new Set([...raw.stockEvents, ...raw.preps].map((e) => e.created_by).filter((id): id is string => !!id));
+  const recorded = new Set(raw.stockEvents.map((e) => e.created_by).filter((id): id is string => !!id));
   const sent = [...raw.alertRuns, ...raw.notificationRuns].filter((r) => r.status === "sent");
   const recipients = sent.reduce((n, r) => n + (r.recipients?.length ?? 0), 0);
   return {
@@ -50,7 +49,7 @@ export function summarizeUsage(raw: UsageRaw, since: Date, days = USAGE_DAYS): U
     members: raw.members.length,
     pendingInvites: raw.pendingInvites,
     activeMeds: raw.activeMeds,
-    movements: raw.stockEvents.length + raw.preps.length,
+    movements: raw.stockEvents.length,
     emails: {
       alerts: raw.alertRuns.filter((r) => r.status === "sent").length,
       notifications: raw.notificationRuns.filter((r) => r.status === "sent").length,

@@ -2,8 +2,10 @@
 
 ## Overview
 Route handler invoked by Vercel Cron every day at 17:00 UTC (`vercel.json`
-schedule `0 17 * * *`). It sends reminders to people who prepare the weekly
-pill organiser on the following day.
+schedule `0 17 * * *`). It sends the pillbox reminder for plans with
+`prep_reminder` on when tomorrow is the plan's `prep_weekday`: the doses of the
+7 days from tomorrow for every scheduled, non-ended medication
+(`buildPrepReminderItems`). The reminder never changes stock.
 
 ## Interface
 - `GET(req: NextRequest)` (`route.ts:GET`) - returns JSON:

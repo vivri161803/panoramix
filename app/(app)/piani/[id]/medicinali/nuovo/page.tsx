@@ -16,7 +16,6 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
       planName={b.plan.patient_name}
       settings={b.settings}
       today={b.today}
-      nextPrep={b.forecast.nextPrep}
       initial={{
         name: "",
         strength: "",

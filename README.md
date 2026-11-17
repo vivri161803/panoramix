@@ -58,7 +58,7 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 
 ### Scorte
 
-- Due modi di contare: giorno per giorno, oppure con il portapillole settimanale, dove le compresse escono solo quando si segna «Portapillole preparato» (e l'operazione si può annullare).
+- Le scorte scendono giorno per giorno, dose per dose, in tutti i piani. Il portapillole è solo un promemoria facoltativo: la sera prima del giorno di preparazione arriva un'email con le dosi dei 7 giorni, e le scorte non cambiano.
 - Un dispenser grafico mostra a colpo d'occhio quanto resta di ogni medicina, con lo storico di arrivi, conteggi e prese.
 - Per i medicinali al bisogno il pulsante «Presa 1» scala le scorte e si può annullare.
 
@@ -128,9 +128,9 @@ Funzioni e database sono in due regioni diverse, quindi ogni lettura o scrittura
 
 ### Scelte tecniche
 
-- Tutta la logica delle scorte sta in funzioni pure in `lib/forecast.ts` (dosi, fabbisogno, copertura, data di esaurimento, stato, soglie, portapillole, calendario), coperta da test che includono mezze compresse, cicli e cambio dell'ora legale.
+- Tutta la logica delle scorte sta in funzioni pure in `lib/forecast.ts` (dosi, fabbisogno, copertura, data di esaurimento, stato, soglie, calendario), coperta da test che includono mezze compresse, cicli e cambio dell'ora legale.
 - Le date sono date di calendario senza fuso orario; "oggi" si calcola sempre nel fuso Europe/Rome (`lib/dates.ts`).
-- I movimenti di magazzino passano da funzioni SQL atomiche (`record_stock_event`, `apply_prep`, `undo_prep`), quindi una preparazione del portapillole si annulla esattamente.
+- I movimenti di magazzino passano da una funzione SQL atomica (`record_stock_event`) con un controllo ottimistico su quantità e data del riferimento.
 - I permessi sono controllati due volte: le Server Actions verificano il ruolo e le regole RLS del database bloccano comunque ogni scrittura non permessa.
 - I cron sono idempotenti: se girano due volte nello stesso giorno non partono email doppie (`alert_runs`, `notification_runs`).
 - I cron leggono ogni tabella a pagine da 1000 righe, il massimo che Supabase restituisce per richiesta, senza mettere elenchi di identificativi nell'indirizzo. Controllano 5 piani alla volta e mandano le email su 3 connessioni SMTP riaperte una sola volta (`lib/batch.ts`, `lib/email/provider.ts`).
@@ -219,12 +219,14 @@ Sono tutte in [`.env.example`](.env.example). Nel repository non ci sono mai val
 
 Le migrazioni sono in `supabase/migrations/` e vanno applicate in ordine:
 
-1. `…_schema.sql`: tabelle `profiles`, `plans`, `plan_recipients`, `medications`, `stock_events`, `prep_runs`, `alert_log`, `alert_runs`, `cron_runs`.
+1. `…_schema.sql`: tabelle `profiles`, `plans`, `plan_recipients`, `medications`, `stock_events`, `prep_runs` (tolta da `…_daily_stock.sql`), `alert_log`, `alert_runs`, `cron_runs`.
 2. `…_rls.sql`: Row Level Security, ogni riga è raggiungibile solo dal proprietario del piano.
-3. `…_functions.sql`: operazioni atomiche `record_stock_event`, `apply_prep`, `undo_prep`, `change_stock_mode`, `delete_my_account`.
+3. `…_functions.sql`: operazioni atomiche `record_stock_event`, `apply_prep`, `undo_prep`, `change_stock_mode` (le ultime tre tolte da `…_daily_stock.sql`), `delete_my_account`.
 4. `…_fk_indexes.sql`: indici sulle chiavi esterne `created_by`.
 5. `…_sharing.sql`: piani condivisi con `plan_members` e `plan_invites` (massimo 10 persone per piano), le funzioni `plan_role`, `can_view_plan`, `can_edit_plan`, `my_plan_invites`, `accept_plan_invite` e le regole RLS aggiornate (lettura per i membri, scrittura per il proprietario e per chi ha il permesso di modifica).
 6. `…_features.sql`: movimento `use` (presa al bisogno), `dose_changes`, impostazioni `prep_reminder` e `weekly_summary`, `notification_runs`, colonna `kind` in `cron_runs`.
+
+`…_daily_stock.sql` toglie la modalità settimanale: cancella `apply_prep`, `undo_prep`, `change_stock_mode`, la tabella `prep_runs` e le colonne `plans.stock_mode` e `mode_since`. Nei piani che erano settimanali sposta `stock_as_of` dei medicinali (non dei flaconi) al giorno in cui finisce il portapillole già preparato, e lascia il promemoria acceso solo a chi lo usava. Prima di applicarla in produzione: `pg_dump` del database e deploy fuori dagli orari dei cron (07:00 e 17:00 UTC).
 
 Un invito si accetta entrando con l'email invitata: compare in cima a «I miei piani» (`my_plan_invites`) e `accept_plan_invite` controlla che l'indirizzo coincida.
 
@@ -247,13 +249,14 @@ Per avere dati di prova accedi una volta all'app, sostituisci la tua email in `s
 
 Ogni medicinale ha un conteggio di riferimento (`stock_qty` + `stock_as_of`).
 
-- Giorno per giorno: la scorta di oggi è il riferimento meno le dosi previste dal giorno del riferimento fino a ieri compreso.
-- Portapillole settimanale: le compresse escono solo con "Portapillole preparato" (7 giorni di dosi dal giorno di preparazione). L'annullamento è esatto grazie a `prep_runs.deductions`.
+La scorta di oggi è il riferimento meno le dosi previste dal giorno del riferimento fino a ieri compreso, in tutti i piani.
 
-Ogni movimento sposta il riferimento: calcola la scorta attuale, applica il movimento, salva quantità e data di oggi e registra l'evento in `stock_events`.
+Ogni movimento sposta il riferimento: calcola la scorta attuale, applica il movimento, salva quantità e data e registra l'evento in `stock_events`.
+
+- Dopo la migrazione delle scorte giorno per giorno `stock_as_of` può essere nel futuro: fino a quel giorno le dosi sono nel portapillole già preparato. Copertura e lista farmacia partono da `max(oggi, stock_as_of)`; arrivi, prese al bisogno e annullamenti si salvano a quella data; un riconteggio, o una scorta scritta nel modulo, conta anche il portapillole e si salva a oggi.
 
 - I medicinali al bisogno non entrano nelle previsioni. Ogni «Presa» registra un movimento `use` e toglie le compresse dal riferimento.
-- Per i cambi di dose (`dose_changes`) ogni giorno usa le dosi dell'ultimo cambio già iniziato (`dosesAt` in `lib/forecast.ts`), quindi consumo, copertura, portapillole e calendario seguono la terapia a scalare. I cambi si programmano da domani in poi; quando si salva il medicinale, quelli già iniziati confluiscono nelle sue dosi.
+- Per i cambi di dose (`dose_changes`) ogni giorno usa le dosi dell'ultimo cambio già iniziato (`dosesAt` in `lib/forecast.ts`), quindi consumo, copertura, promemoria del portapillole e calendario seguono la terapia a scalare. I cambi si programmano da domani in poi; quando si salva il medicinale, quelli già iniziati confluiscono nelle sue dosi.
 
 </details>
 
@@ -284,7 +287,7 @@ In Supabase si configura lo stesso SMTP Gmail (Authentication → Emails → SMT
 
 ### Promemoria, riepiloghi e destinatari
 
-- Il promemoria del portapillole usa un secondo cron alle 17:00 UTC (le 18:00 o le 19:00) su `/api/cron/reminders`. Parte per i piani settimanali con il promemoria attivo quando domani è il giorno di preparazione, e contiene cosa mettere, cosa manca e i cambi di dose della settimana.
+- Il promemoria del portapillole usa un secondo cron alle 17:00 UTC (le 18:00 o le 19:00) su `/api/cron/reminders`. Parte per i piani con il promemoria acceso (spento di default) quando domani è il giorno di preparazione, e contiene le dosi dei 7 giorni di ogni medicinale e i cambi di dose della settimana. Con il promemoria acceso anche calendario e foglio A4 cominciano dal giorno di preparazione, e il riconteggio chiede le compresse «comprese quelle nel portapillole».
 - Il riepilogo del lunedì parte con il controllo del mattino, per i piani che l'hanno attivato (è spento di default).
 - Avvisi, promemoria e riepiloghi vanno al proprietario, ai destinatari aggiuntivi e alle persone con accesso al piano, senza doppioni. C'è un solo invio al giorno per piano e tipo (`alert_runs`, `notification_runs`).
 
@@ -405,7 +408,7 @@ Next.js 16 App Router application (React 19, TypeScript) deployed on Vercel (`fr
 - The service role is used only by the cron jobs (`lib/supabase/admin.ts:createAdminClient`) and by the AIFA import (`scripts/import-aifa.mjs`, its own `@supabase/supabase-js` client); `aifa_*` tables are select-only for authenticated users and written only with the service role.
 - Every module that imports `server-only` (`lib/env.ts`, `lib/data.ts`, `lib/cron-data.ts`, `lib/alerts.ts`, `lib/notify.ts`, `lib/ops.ts`, `lib/usage.ts`, `lib/actions/common.ts`, `lib/supabase/*`, `lib/email/provider.ts`) must not be imported by client components.
 - Calendar dates are `YYYY-MM-DD` strings without time zone; "today" is always computed in Europe/Rome (`lib/dates.ts:todayInRome`, SQL `rome_today()`).
-- Stock movements go through atomic RPCs (`record_stock_event`, `apply_prep`, `undo_prep`, `change_stock_mode`) with an optimistic check on `stock_qty`/`stock_as_of` (SQLSTATE 40001, hint `stale_stock`).
+- Stock movements go through the atomic RPC `record_stock_event` with an optimistic check on `stock_qty`/`stock_as_of` (SQLSTATE 40001, hint `stale_stock`).
 - Cron jobs are idempotent: at most one email per plan per day and kind, claimed via unique keys on `alert_runs (plan_id, run_date)` and `notification_runs (plan_id, kind, run_date)`.
 - Bulk admin reads paginate in pages of 1000 rows (`lib/batch.ts:selectAll`); concurrency and time budget are bounded by `runPool`, `CRON_CONCURRENCY` and `CRON_TIME_BUDGET_MS`.
 - A plan has at most 10 members plus pending invites and at most 5 extra recipients (enforced by triggers and by the actions).
@@ -413,7 +416,7 @@ Next.js 16 App Router application (React 19, TypeScript) deployed on Vercel (`fr
 
 ## Global Side Effects
 
-- Supabase Postgres: reads and writes to `profiles`, `plans`, `plan_recipients`, `plan_members`, `plan_invites`, `medications`, `stock_events`, `prep_runs`, `dose_changes`, `alert_log`, `alert_runs`, `notification_runs`, `cron_runs`, `aifa_imports` and the `aifa_*` reference tables.
+- Supabase Postgres: reads and writes to `profiles`, `plans`, `plan_recipients`, `plan_members`, `plan_invites`, `medications`, `stock_events`, `dose_changes`, `alert_log`, `alert_runs`, `notification_runs`, `cron_runs`, `aifa_imports` and the `aifa_*` reference tables.
 - Supabase Auth: `signInWithOtp` magic links, session cookies set by `proxy.ts`, `lib/supabase/server.ts` and `app/auth/confirm`; account deletion via `delete_my_account` cascades to all owned plans.
 - Email: SMTP via nodemailer (default `smtp.gmail.com:465`) or the Resend HTTP API (`EMAIL_PROVIDER=resend`) for alerts, reminders, weekly summaries, invites, test emails, and ops emails to `OPS_ALERT_EMAIL`.
 - Scheduled jobs: Vercel Cron calls `/api/cron/alerts` (07:00 UTC) and `/api/cron/reminders` (17:00 UTC) with `Authorization: Bearer $CRON_SECRET`; GitHub Actions downloads AIFA open data (`drive.aifa.gov.it`, `www.aifa.gov.it`) nightly and writes it with the service role.

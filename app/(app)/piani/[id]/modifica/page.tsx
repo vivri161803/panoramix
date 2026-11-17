@@ -18,11 +18,9 @@ export default async function ModificaPianoPage({ params }: PageProps<"/piani/[i
       planId={p.id}
       managerEmail={b.profile.email}
       medCount={b.medications.length}
-      meds={b.forecast.items.map(({ med, forecast }) => ({ id: med.id, name: med.name, strength: med.strength, color: med.color, shape: med.shape, current: forecast.stock }))}
       initial={{
         patient_name: p.patient_name,
         notes: p.notes,
-        stock_mode: p.stock_mode,
         prep_weekday: p.prep_weekday,
         alert_under_14: p.alert_under_14,
         alert_under_7: p.alert_under_7,

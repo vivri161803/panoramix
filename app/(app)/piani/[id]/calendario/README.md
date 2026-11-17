@@ -11,6 +11,7 @@ week navigation and a link to the printable sheet.
 - Links: `?settimana=<week.prev|week.next>`, "Questa settimana" (when `!week.isCurrent`), and `/piani/[id]/stampa?settimana=<week.start>`.
 
 ## Invariants
+- The week starts on the plan's `prep_weekday` when `prep_reminder` is on, otherwise on Monday (`calendarWeekStart`); the A4 sheet uses the same start.
 - `as_needed` medications are not in the grid; they are listed below it.
 - Today's column is highlighted when `d.date === b.today`.
 

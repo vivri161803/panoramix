@@ -3,7 +3,6 @@ import Link from "next/link";
 import { listMyInvites, listPlans } from "@/lib/data";
 import { ROLE_LABEL } from "@/lib/roles";
 import { InvitesList } from "@/components/InvitesList";
-import { formatRelative } from "@/lib/dates";
 import { daysWord } from "@/lib/forecast";
 import { Pill } from "@/components/ui/Pill";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -60,15 +59,9 @@ export default async function PianiPage() {
               if (c === null) return min;
               return min === null || c < min ? c : min;
             }, null);
-            const weekly = plan.stock_mode === "weekly";
-            const nextLabel = weekly ? "Prossima preparazione" : "Copertura minima";
-            const next = weekly
-              ? `${forecast.prepOverdue ? "In ritardo: " : ""}${formatRelative(forecast.nextPrep!, forecast.today)}`
-              : minCov === null
-                ? "—"
-                : `${minCov} ${daysWord(minCov)}`;
+            const nextLabel = "Copertura minima";
+            const next = minCov === null ? "—" : `${minCov} ${daysWord(minCov)}`;
             const count = `${forecast.items.length} ${forecast.items.length === 1 ? "medicina" : "medicine"}`;
-            const mode = weekly ? "settimanale" : "giorno per giorno";
             const sum = summary(entry);
             return (
               <Link
@@ -81,7 +74,7 @@ export default async function PianiPage() {
                   <div className="flex min-w-0 flex-col gap-1">
                     <span className="text-[22px] font-[650] leading-[1.2] tracking-[-0.01em] [overflow-wrap:anywhere]">{plan.patient_name}</span>
                     <span className="text-px-ink-2">
-                      {count} · {mode}
+                      {count}
                     </span>
                     {role !== "owner" && (
                       <span className="self-start rounded-[8px] border border-px-line-strong px-2 py-1 text-[13px] font-semibold leading-none text-px-ink-2">

@@ -25,7 +25,6 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
       medicationId={m.id}
       settings={b.settings}
       today={b.today}
-      nextPrep={b.forecast.nextPrep}
       currentColor={m.color}
       initial={{
         name: m.name,

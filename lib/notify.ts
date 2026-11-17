@@ -2,10 +2,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { addDays, isoWeekday, type ISODate } from "@/lib/dates";
-import { toPlanSettings, toPrepRun, type PlanRow } from "@/lib/db-types";
+import { toPlanSettings, type PlanRow } from "@/lib/db-types";
 import { forecastPlan } from "@/lib/forecast";
 import { loadCronData, planAudience, type CronData } from "@/lib/cron-data";
-import { buildReminderItems, buildSummaryMeds } from "@/lib/digest";
+import { buildPrepReminderItems, buildSummaryMeds } from "@/lib/digest";
 import { getEmailProvider, type EmailProvider } from "@/lib/email/provider";
 import { CRON_CONCURRENCY, runPool, timeoutMessage, type CronRunOptions } from "@/lib/batch";
 import { renderPrepReminderEmail, renderWeeklySummaryEmail, type RenderedEmail } from "@/lib/email/templates";
@@ -57,13 +57,12 @@ async function sendOnce(admin: SupabaseClient, provider: EmailProvider, plan: Pl
   return { outcome: "sent" as const };
 }
 
+function planMeds(data: CronData, plan: PlanRow) {
+  return data.meds.filter((m) => m.planId === plan.id);
+}
+
 function planForecast(data: CronData, plan: PlanRow, today: ISODate) {
-  return forecastPlan(
-    toPlanSettings(plan),
-    data.meds.filter((m) => m.planId === plan.id),
-    data.runs.filter((r) => r.plan_id === plan.id).map(toPrepRun),
-    today,
-  );
+  return forecastPlan(toPlanSettings(plan), planMeds(data, plan), today);
 }
 
 type Builder = (plan: PlanRow, data: CronData) => RenderedEmail | null;
@@ -123,11 +122,10 @@ export async function runPrepReminders(admin: SupabaseClient, today: ISODate, dr
     "prep_reminder",
     today,
     dryRun,
-    (p) => p.stock_mode === "weekly" && p.prep_reminder,
+    (p) => p.prep_reminder,
     (plan, d) => {
-      const fc = planForecast(d, plan, today);
-      if (fc.nextPrep !== tomorrow || fc.prepWeek !== tomorrow) return null;
-      const items = buildReminderItems(fc.items.map((i) => i.med), fc.prepPreview, tomorrow);
+      if (isoWeekday(tomorrow) !== plan.prep_weekday) return null;
+      const items = buildPrepReminderItems(planMeds(d, plan), tomorrow);
       if (!items.length) return null;
       const owner = d.profiles.get(plan.owner_id);
       return renderPrepReminderEmail({
@@ -165,7 +163,6 @@ export async function runWeeklySummaries(admin: SupabaseClient, today: ISODate, 
       return renderWeeklySummaryEmail({
         patientName: plan.patient_name,
         today,
-        nextPrep: fc.nextPrep,
         meds,
         planUrl: `${env.appUrl()}/piani/${plan.id}`,
         settingsUrl: `${env.appUrl()}/piani/${plan.id}/modifica`,

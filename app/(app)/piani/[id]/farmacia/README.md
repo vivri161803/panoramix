@@ -7,7 +7,7 @@ text; the app does not send it.
 
 ## Interface
 - `default FarmaciaPage({ params })` (`page.tsx`) - `metadata.title = "Lista per la farmacia"`.
-  Builds items with `buildPharmacyItems(b.forecast.items, b.today, b.forecast.nextPrep)` (`lib/pharmacy`)
+  Builds items with `buildPharmacyItems(b.forecast.items, b.today)` (`lib/pharmacy`); each medicine's 30-day need starts at `max(today, stock_as_of)`,
   and renders `PharmacyList` (`components/PharmacyList`) with `editable = canEdit(b.role)`.
 
 ## Invariants

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getPlanBundle, type PlanBundle } from "@/lib/data";
 import type { Medication } from "@/lib/db-types";
+import { maxDate, type ISODate } from "@/lib/dates";
 import { currentStock, forecastMedication, formatQty, pillsWord, recountClearsOrdered, type AlertType } from "@/lib/forecast";
 import { doseSchema, packsSchema, qtySchema } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
@@ -23,14 +24,21 @@ function refresh(planId: string) {
 }
 
 /**
+ * Data della scorta salvata dopo un movimento che cambia solo la scorta in casa (arrivo, presa al
+ * bisogno e i loro annullamenti): se stock_as_of è nel futuro, le dosi fino a quel giorno sono già
+ * nel portapillole e non si toccano. Un riconteggio, invece, conta tutto e si salva a oggi.
+ */
+function homeStockDate(bundle: PlanBundle, med: Medication): ISODate {
+  return maxDate(bundle.today, med.stockAsOf);
+}
+
+/**
  * Dopo un arrivo o un nuovo conteggio: chiude gli episodi di avviso
  * delle soglie non più superate (la volta successiva l'avviso potrà ripartire).
+ * `asOf` è la data della scorta appena salvata.
  */
-async function closeEpisodesIfAbove(bundle: PlanBundle, med: Medication, newQty: number, orderedAt: string | null) {
-  const f = forecastMedication(
-    { ...med, stockQty: newQty, stockAsOf: bundle.today, orderedAt },
-    { plan: bundle.settings, today: bundle.today, nextPrep: bundle.forecast.nextPrep ?? undefined },
-  );
+async function closeEpisodesIfAbove(bundle: PlanBundle, med: Medication, newQty: number, asOf: ISODate, orderedAt: string | null) {
+  const f = forecastMedication({ ...med, stockQty: newQty, stockAsOf: asOf, orderedAt }, { plan: bundle.settings, today: bundle.today });
   const stillTriggered = new Set<AlertType>(f.triggered);
   const supabase = await createClient();
   const { data: open } = await supabase.from("alert_log").select("id, alert_type").eq("medication_id", med.id).is("closed_at", null);
@@ -46,22 +54,23 @@ export async function arrivePacks(planId: string, medicationId: string, packs: n
   const parsed = packsSchema.safeParse(packs);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const added = parsed.data * med.pillsPerPack;
-  const now = currentStock(med, bundle.settings.stockMode, bundle.today);
+  const now = currentStock(med, bundle.today);
   const after = now + added;
+  const asOf = homeStockDate(bundle, med);
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("record_stock_event", {
     p_medication_id: med.id,
     p_type: "arrival",
     p_delta: added,
     p_qty_after: after,
-    p_effective_date: bundle.today,
+    p_effective_date: asOf,
     p_expected_qty: med.stockQty,
     p_expected_as_of: med.stockAsOf,
     p_clear_ordered: true,
     p_meta: { packs: parsed.data, prev_ordered_at: med.orderedAt },
   });
   if (error) return fail(dbError(error, "Non riesco a registrare l’arrivo. Riprova."));
-  await closeEpisodesIfAbove(bundle, med, after, null);
+  await closeEpisodesIfAbove(bundle, med, after, asOf, null);
   refresh(planId);
   return { ok: true, message: `Aggiunte ${formatQty(added)} ${pillsWord(added)} di ${med.name}`, data: { eventId: data as string } };
 }
@@ -71,12 +80,10 @@ export async function recountStock(planId: string, medicationId: string, qty: nu
   if (!med) return fail(denied ?? "Medicinale non trovato.");
   const parsed = qtySchema.safeParse(qty);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
-  const now = currentStock(med, bundle.settings.stockMode, bundle.today);
-  // "Ordinata" resta finché il nuovo conteggio non è sopra tutte le soglie
-  const fNew = forecastMedication(
-    { ...med, stockQty: parsed.data, stockAsOf: bundle.today, orderedAt: null },
-    { plan: bundle.settings, today: bundle.today, nextPrep: bundle.forecast.nextPrep ?? undefined },
-  );
+  const now = currentStock(med, bundle.today);
+  // "Ordinata" resta finché il nuovo conteggio non è sopra tutte le soglie.
+  // Il conteggio comprende anche il portapillole: si salva a oggi.
+  const fNew = forecastMedication({ ...med, stockQty: parsed.data, stockAsOf: bundle.today, orderedAt: null }, { plan: bundle.settings, today: bundle.today });
   const clearOrdered = !!med.orderedAt && recountClearsOrdered(fNew);
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("record_stock_event", {
@@ -91,7 +98,7 @@ export async function recountStock(planId: string, medicationId: string, qty: nu
     p_meta: { previous: now, prev_ordered_at: clearOrdered ? med.orderedAt : undefined },
   });
   if (error) return fail(dbError(error, "Non riesco a salvare il conteggio. Riprova."));
-  await closeEpisodesIfAbove(bundle, med, parsed.data, clearOrdered ? null : med.orderedAt);
+  await closeEpisodesIfAbove(bundle, med, parsed.data, bundle.today, clearOrdered ? null : med.orderedAt);
   refresh(planId);
   return {
     ok: true,
@@ -127,14 +134,16 @@ export async function undoStockEvent(planId: string, medicationId: string, event
     return fail("Questo movimento non si può più annullare.");
   }
   const delta = Number(last.delta);
-  const now = currentStock(med, bundle.settings.stockMode, bundle.today);
+  const now = currentStock(med, bundle.today);
   const after = Math.max(0, now - delta);
+  // stessa data del movimento annullato: un conteggio vale a oggi, arrivo e presa sulla scorta in casa
+  const asOf = last.type === "count" ? bundle.today : homeStockDate(bundle, med);
   const { error } = await supabase.rpc("record_stock_event", {
     p_medication_id: med.id,
     p_type: "adjust",
     p_delta: after - now,
     p_qty_after: after,
-    p_effective_date: bundle.today,
+    p_effective_date: asOf,
     p_expected_qty: med.stockQty,
     p_expected_as_of: med.stockAsOf,
     p_clear_ordered: false,
@@ -154,7 +163,7 @@ export async function takeAsNeeded(planId: string, medicationId: string, qty: nu
   if (med.frequencyType !== "as_needed") return fail("Si registrano le prese solo per i medicinali al bisogno.");
   const parsed = doseSchema.safeParse(qty);
   if (!parsed.success || parsed.data <= 0) return fail(parsed.success ? "Indica quante compresse sono state prese." : parsed.error.issues[0].message);
-  const now = currentStock(med, bundle.settings.stockMode, bundle.today);
+  const now = currentStock(med, bundle.today);
   if (now <= 0) return fail(`${med.name} risulta finita: ricontrolla il conteggio o registra un arrivo.`);
   const taken = Math.min(parsed.data, now);
   const after = now - taken;
@@ -164,7 +173,7 @@ export async function takeAsNeeded(planId: string, medicationId: string, qty: nu
     p_type: "use",
     p_delta: -taken,
     p_qty_after: after,
-    p_effective_date: bundle.today,
+    p_effective_date: homeStockDate(bundle, med),
     p_expected_qty: med.stockQty,
     p_expected_as_of: med.stockAsOf,
     p_clear_ordered: false,
@@ -190,36 +199,4 @@ export async function markOrdered(planId: string, medicationIds: string[]): Prom
   if (error) return fail(dbError(error));
   refresh(planId);
   return { ok: true, message: ids.length === 1 ? "1 medicinale segnato come ordinato" : `${ids.length} medicinali segnati come ordinati` };
-}
-
-export async function preparePillbox(planId: string): Promise<ActionResult<{ runId: string }>> {
-  const bundle = await getPlanBundle(planId);
-  if (!canEdit(bundle.role)) return fail(READ_ONLY_MESSAGE);
-  if (bundle.settings.stockMode !== "weekly" || !bundle.forecast.prepWeek) return fail("Il piano non usa il portapillole settimanale.");
-  const items = bundle.forecast.prepPreview;
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("apply_prep", {
-    p_plan_id: planId,
-    p_week_start: bundle.forecast.prepWeek,
-    p_today: bundle.today,
-    p_items: items.map((i) => ({ medication_id: i.medicationId, take: i.take })),
-  });
-  if (error) {
-    if (error.code === "23505") return fail("Il portapillole di questa settimana risulta già preparato.");
-    return fail(dbError(error, "Non riesco a registrare la preparazione. Riprova."));
-  }
-  const total = items.reduce((s, i) => s + i.take, 0);
-  refresh(planId);
-  return { ok: true, message: `Portapillole preparato: tolte ${formatQty(total)} ${pillsWord(total)} dalle scorte`, data: { runId: data as string } };
-}
-
-export async function undoPillbox(planId: string, runId: string): Promise<ActionResult> {
-  const bundle = await getPlanBundle(planId);
-  if (!canEdit(bundle.role)) return fail(READ_ONLY_MESSAGE);
-  if (!bundle.runRows.some((r) => r.id === runId)) return fail("Preparazione non trovata.");
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("undo_prep", { p_run_id: runId, p_today: bundle.today });
-  if (error) return fail(dbError(error, "Non riesco ad annullare la preparazione. Riprova."));
-  refresh(planId);
-  return { ok: true, message: "Preparazione annullata: compresse rimesse nelle scorte" };
 }

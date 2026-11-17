@@ -23,14 +23,13 @@ text) lives in `@/lib/*`. Shared presentational primitives live in
 | File | Exports | Server actions / external APIs used |
 | --- | --- | --- |
 | `Toast.tsx` | `ToastProvider({ children })`, `useToast()` returns `(text, undo?) => void` | Reads and clears the `px_flash` cookie |
-| `Dispenser.tsx` | `Dispenser({ med: DispenserView, size?, scaleMax = 60, actions?, historyHref? })`, `DispenserActions` (`onArrive`, `onOrdered`, `onRecount`, `onTake`, `historyHref`, `editHref`, `busy?`) | None. Pure UI that reports user intent through `actions` callbacks |
-| `DispenserGrid.tsx` | `DispenserGrid({ planId, meds, readOnly = false })` | `arrivePacks`, `recountStock`, `takeAsNeeded`, `toggleOrdered`, `undoStockEvent` (`@/lib/actions/stock`) |
-| `PrepPanel.tsx` | `PrepPanel({ planId, weekLabel, due, lastRun })` | `preparePillbox`, `undoPillbox` (`@/lib/actions/stock`) |
+| `Dispenser.tsx` | `Dispenser({ med: DispenserView, size?, scaleMax = 60, actions?, historyHref?, prepReminder = false })`, `DispenserActions` (`onArrive`, `onOrdered`, `onRecount`, `onTake`, `historyHref`, `editHref`, `busy?`) | None. Pure UI that reports user intent through `actions` callbacks |
+| `DispenserGrid.tsx` | `DispenserGrid({ planId, meds, readOnly = false, prepReminder })` | `arrivePacks`, `recountStock`, `takeAsNeeded`, `toggleOrdered`, `undoStockEvent` (`@/lib/actions/stock`) |
 | `PharmacyList.tsx` | `PharmacyList({ planId, patientName, senderName, today, items, editable })` | `markOrdered` (`@/lib/actions/stock`). Also `navigator.share`, `navigator.clipboard.writeText`, `window.print` |
-| `MedicationForm.tsx` | `MedicationForm({ planId, planName, medicationId?, initial, settings, today, nextPrep, extra?, currentColor? })` | `createMedication`, `updateMedication`, `deleteMedication` (`@/lib/actions/medications`), `lookupAic` (`@/lib/actions/aifa`) |
+| `MedicationForm.tsx` | `MedicationForm({ planId, planName, medicationId?, initial, settings, today, extra?, currentColor? })` | `createMedication`, `updateMedication`, `deleteMedication` (`@/lib/actions/medications`), `lookupAic` (`@/lib/actions/aifa`) |
 | `BarcodeScanner.tsx` | `default BarcodeScanner({ onDetected(raw, format), onClose })` | `navigator.mediaDevices.getUserMedia`, native `BarcodeDetector` or the `barcode-detector/ponyfill` (zxing-wasm), `navigator.vibrate` |
 | `DoseChangesPanel.tsx` | `DoseChangesPanel({ planId, medicationId, today, endDate, current, changes })`, `DoseChangeView` | `addDoseChange`, `deleteDoseChange` (`@/lib/actions/medications`) |
-| `PlanForm.tsx` | `PlanForm({ planId?, initial, managerEmail, meds, medCount, extra? })`, `PlanFormMed` | `createPlan`, `updatePlan`, `deletePlan` (`@/lib/actions/plans`) |
+| `PlanForm.tsx` | `PlanForm({ planId?, initial, managerEmail, medCount, extra? })` | `createPlan`, `updatePlan`, `deletePlan` (`@/lib/actions/plans`) |
 | `PlanHeader.tsx` | `PlanHeader({ plan: PlanRow, tab, role: PlanRole, ownerName })` | None. A server-compatible module with no `"use client"`. It renders `LeavePlanButton` |
 | `MembersPanel.tsx` | `MembersPanel({ planId, ownerEmail, members, invites })`, `MemberItem`, `InviteItem` | `inviteMember`, `changeAccess`, `removeMember`, `cancelInvite` (`@/lib/actions/sharing`) |
 | `InvitesList.tsx` | `InvitesList({ invites: MyInviteRow[] })` | `acceptInvite`, `declineInvite` (`@/lib/actions/sharing`) |
@@ -41,7 +40,7 @@ text) lives in `@/lib/*`. Shared presentational primitives live in
 
 ## Invariants
 
-- Components that call `useToast()` (`DispenserGrid`, `PrepPanel`,
+- Components that call `useToast()` (`DispenserGrid`,
   `PharmacyList`, `DoseChangesPanel`, `MembersPanel`, `InvitesList`,
   `LeavePlanButton`) must render inside `ToastProvider`. Outside a provider,
   the default context value is a no-op, so messages are silently dropped.
@@ -49,8 +48,14 @@ text) lives in `@/lib/*`. Shared presentational primitives live in
   (`@/lib/actions/common`): `{ ok: true, message?, data? }` or
   `{ ok: false, error, fieldErrors? }`. The undo buttons depend on the
   returned `data`. Stock actions return `data.eventId`, which
-  `undoStockEvent` consumes. `preparePillbox` returns `data.runId`, which
-  `undoPillbox` consumes.
+  `undoStockEvent` consumes.
+- The recount question is "Quante ne hai in tutto?", followed by ", comprese
+  quelle nel portapillole" when the plan has `prep_reminder` on
+  (`DispenserGrid` passes `prepReminder` to every `Dispenser`).
+- `PlanForm` has no stock-mode choice. The "Promemoria del portapillole"
+  switch is always shown (default off), and the prep weekday picker appears
+  only when it is on. `PlanHeader` shows "Promemoria del portapillole
+  {giorno}" only when `prep_reminder` is on.
 - `DispenserGrid` passes no `actions` when `readOnly` is true. `Dispenser`
   then shows only the history link (`historyHref`) and no mutation controls.
 - `PlanHeader` shows "Impostazioni piano" only when `isOwner(role)` and

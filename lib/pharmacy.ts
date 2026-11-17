@@ -1,7 +1,7 @@
 // Lista per la farmacia: cosa ordinare, quante confezioni e il testo da condividere.
 // Funzioni pure, usate sia dal server sia dal browser.
 
-import { addDays, formatDayMonthYear, type ISODate } from "./dates";
+import { addDays, formatDayMonthYear, maxDate, type ISODate } from "./dates";
 import { dosesAt, dosesBetween, dosesPhrase, type Forecast, type MedicationData, type MedStatus } from "./forecast";
 
 /** Giorni di terapia da coprire con l'ordine. */
@@ -26,8 +26,8 @@ export interface PharmacyItem {
 }
 
 /**
- * Confezioni per coprire `targetDays` di terapia oltre le compresse già in casa
- * (dalla prossima preparazione, nel portapillole settimanale). Almeno 1.
+ * Confezioni per coprire `targetDays` di terapia da `start` oltre le compresse già in casa.
+ * `start` è max(oggi, stock_as_of): i giorni prima di stock_as_of sono già nel portapillole. Almeno 1.
  */
 export function suggestedPacks(
   med: MedicationData,
@@ -50,8 +50,7 @@ export interface PharmacyMed extends MedicationData {
 }
 
 /** Medicine in corso con la proposta di ordine: selezionate quelle esaurite o sotto soglia e non ancora ordinate. */
-export function buildPharmacyItems<M extends PharmacyMed>(items: { med: M; forecast: Forecast }[], today: ISODate, nextPrep: ISODate | null): PharmacyItem[] {
-  const start = nextPrep && nextPrep > today ? nextPrep : today;
+export function buildPharmacyItems<M extends PharmacyMed>(items: { med: M; forecast: Forecast }[], today: ISODate): PharmacyItem[] {
   return items
     .filter((i) => !i.forecast.ended)
     .map(({ med, forecast: f }) => ({
@@ -65,7 +64,7 @@ export function buildPharmacyItems<M extends PharmacyMed>(items: { med: M; forec
       status: f.status,
       ordered: !!med.orderedAt,
       selected: (f.status === "out" || f.status === "order") && !med.orderedAt,
-      packs: suggestedPacks(med, f, start),
+      packs: suggestedPacks(med, f, maxDate(today, med.stockAsOf)),
       phrase: f.asNeeded ? "" : dosesPhrase(dosesAt(med, today)),
     }));
 }

@@ -30,8 +30,8 @@ describe("lista per la farmacia", () => {
       medication({ id: "c", name: "C", stockQty: 300 }),
       medication({ id: "d", name: "D", stockQty: 0, endDate: "2026-11-05" }),
     ];
-    const fc = forecastPlan(planSettings(), meds, [], MON);
-    const items = buildPharmacyItems(fc.items, MON, fc.nextPrep);
+    const fc = forecastPlan(planSettings(), meds, MON);
+    const items = buildPharmacyItems(fc.items, MON);
     expect(items.map((i) => i.id).sort()).toEqual(["a", "b", "c"]);
     expect(Object.fromEntries(items.map((i) => [i.id, i.selected]))).toEqual({ a: true, b: false, c: false });
     expect(items.find((i) => i.id === "b")!.ordered).toBe(true);

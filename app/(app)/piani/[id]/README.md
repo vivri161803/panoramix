@@ -1,14 +1,13 @@
 # Plan dashboard (`/piani/[id]`)
 
 ## Overview
-Main page of a plan: summary (soonest to run out or next weekly prep), the
-count of medicines to order, the prep panel for weekly plans, the stock
-dispenser grid and the ATC colour legend. Parent of all per-plan app pages.
+Main page of a plan: summary (soonest to run out), the count of medicines to
+order, the stock dispenser grid and the ATC colour legend. Parent of all per-plan app pages.
 
 ## Interface
 - `generateMetadata({ params })` (`page.tsx`) - title = `plan.patient_name`.
 - `default PianoPage({ params })` (`page.tsx`) - uses `getPlanBundle` (`lib/data`), `dispenserView` (`lib/view`),
-  `canEdit` (`lib/roles`), `groupsPresent` (`lib/atc`), `PlanHeader` (`tab="dispenser"`), `DispenserGrid`, `PrepPanel`.
+  `canEdit` (`lib/roles`), `groupsPresent` (`lib/atc`), `PlanHeader` (`tab="dispenser"`), `DispenserGrid` (with `prepReminder={b.settings.prepReminder}`).
 - `Legend({ codes, colors })` - local; renders ATC groups present in the plan.
 - Subdirectories:
   - [calendario](./calendario/README.md) - weekly dose calendar.
@@ -21,10 +20,10 @@ dispenser grid and the ATC colour legend. Parent of all per-plan app pages.
 ## Invariants
 - All pages here load data through `getPlanBundle(id)`, which calls `requireProfile` and returns 404 (`notFound`) for a non-UUID id or a plan the user cannot read.
 - With no medications, shows an empty state; the "Aggiungi il primo medicinale" link appears only when `canEdit(b.role)`.
-- `PrepPanel` is rendered only for weekly plans with `fc.prepWeek` and edit rights; `DispenserGrid` is `readOnly` without edit rights.
+- `DispenserGrid` is `readOnly` without edit rights.
 
 ## Side Effects
-- Page reads only (Supabase via `getPlanBundle`); stock and prep mutations are server actions in `DispenserGrid` / `PrepPanel`.
+- Page reads only (Supabase via `getPlanBundle`); stock mutations are server actions in `DispenserGrid`.
 
 ## Verification
 - Run: `npm test`

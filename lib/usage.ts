@@ -29,7 +29,7 @@ async function count(what: string, query: PromiseLike<{ count: number | null; er
 export async function collectUsage(admin: SupabaseClient, now: Date = new Date()): Promise<UsageStats> {
   const since = new Date(now.getTime() - USAGE_DAYS * 24 * 60 * 60 * 1000);
   const sinceIso = since.toISOString();
-  const [users, plans, members, pendingInvites, activeMeds, stockEvents, preps, alertRuns, notificationRuns] = await Promise.all([
+  const [users, plans, members, pendingInvites, activeMeds, stockEvents, alertRuns, notificationRuns] = await Promise.all([
     listAllUsers(admin),
     selectAll<UsageRaw["plans"][number]>("piani", (from, to) => admin.from("plans").select("id, created_at").order("id").range(from, to)),
     selectAll<UsageRaw["members"][number]>("membri", (from, to) => admin.from("plan_members").select("plan_id").order("plan_id").order("user_id").range(from, to)),
@@ -38,9 +38,6 @@ export async function collectUsage(admin: SupabaseClient, now: Date = new Date()
     selectAll<UsageRaw["stockEvents"][number]>("movimenti", (from, to) =>
       admin.from("stock_events").select("created_by").gte("created_at", sinceIso).order("id").range(from, to),
     ),
-    selectAll<UsageRaw["preps"][number]>("preparazioni", (from, to) =>
-      admin.from("prep_runs").select("created_by").gte("created_at", sinceIso).order("id").range(from, to),
-    ),
     selectAll<UsageRaw["alertRuns"][number]>("invii degli avvisi", (from, to) =>
       admin.from("alert_runs").select("status, recipients").gte("created_at", sinceIso).order("id").range(from, to),
     ),
@@ -48,7 +45,7 @@ export async function collectUsage(admin: SupabaseClient, now: Date = new Date()
       admin.from("notification_runs").select("status, recipients").gte("created_at", sinceIso).order("id").range(from, to),
     ),
   ]);
-  return summarizeUsage({ users, plans, members, pendingInvites, activeMeds, stockEvents, preps, alertRuns, notificationRuns }, since);
+  return summarizeUsage({ users, plans, members, pendingInvites, activeMeds, stockEvents, alertRuns, notificationRuns }, since);
 }
 
 /** È già girato oggi un altro controllo del mattino? Serve a non mandare il riepilogo due volte. */

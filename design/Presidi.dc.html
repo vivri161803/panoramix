@@ -18,39 +18,36 @@ body{margin:0;background:#E4E8EC;font-family:var(--px-font);-webkit-font-smoothi
 *{box-sizing:border-box}
 button{font:inherit;color:inherit}
 :focus-visible{outline:2.5px solid var(--px-focus);outline-offset:2px}
+
 </style>
 </helmet>
 <div style="padding:80px;display:flex;flex-direction:column;gap:120px;color:#0E1620;font-family:var(--px-font);font-variant-numeric:tabular-nums;width:max-content">
 
-<section data-screen-label="Presidi · icone" style="display:flex;flex-direction:column;gap:32px">
+<section data-screen-label="Categorie · icone" style="display:flex;flex-direction:column;gap:32px">
   <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
-    <span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">07 · PRESIDI</span>
-    <h1 style="margin:0;font:700 56px/1.05 var(--px-font);letter-spacing:-.03em">Iniezioni, cerotti, colliri</h1>
-    <p style="margin:0;font:400 20px/1.5 var(--px-font);color:#44505C">Stessa grammatica delle compresse: vetro e plastica nei toni neutri del tubo, il colore del medicinale solo su liquido, tappo o serbatoio. Stessi sei colori, stessa luce in alto a sinistra.</p>
+    <span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">07 · CATEGORIE</span>
+    <h1 style="margin:0;font:700 56px/1.05 var(--px-font);letter-spacing:-.03em">Dieci categorie, un solo segno</h1>
+    <p style="margin:0;font:400 20px/1.5 var(--px-font);color:#44505C">Ogni forma farmaceutica AIFA ricade in una di dieci categorie. Tutte le icone seguono la stessa regola: corpo neutro, contorno a 2, una sola zona nel colore del medicinale. Stessi sei colori e stessa luce delle compresse.</p>
   </div>
   <div style="background:#fff;border-radius:24px;padding:40px;display:flex;flex-direction:column;gap:16px;width:max-content">
-    <span style="font:600 15px/1 var(--px-font)">Presidi · pill.color × presidio.shape</span>
-    <div style="display:grid;grid-template-columns:110px repeat(9,84px);gap:6px 10px;align-items:end;padding-bottom:6px">
-      <span></span>
-      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Iniezioni</span>
-      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Cerotti</span>
-      <span style="grid-column:span 3;font:600 13px/1 var(--px-font);border-bottom:1px solid #DAE0E6;padding-bottom:8px">Colliri</span>
-      <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">siringa</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">penna</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">fiala</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">cerotto</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">cerotto-tondo</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">bustina</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">flacone</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">monodose</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">goccia</span>
+    <span style="font:600 15px/1 var(--px-font)">Categorie · pill.color × presidio.shape</span>
+    <div style="display:grid;grid-template-columns:110px repeat(10,84px);gap:6px 10px;align-items:end;padding-bottom:8px;border-bottom:1px solid #DAE0E6">
+      <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">pillola</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">bustina</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">liquido</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">iniezione</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">gocce</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">inalatore</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">cerotto</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">crema</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">supposta</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774;text-align:center">altro</span>
     </div>
-    <div style="display:grid;grid-template-columns:110px repeat(9,84px);gap:14px 10px;align-items:center">
+    <div style="display:grid;grid-template-columns:110px repeat(10,84px);gap:14px 10px;align-items:center">
       <sc-for list="{{ pillColors }}" as="pc" hint-placeholder-count="6">
         <span style="font:500 14px/1.2 var(--px-font)">{{ pc.name }}<br><span style="font:500 12px/1 var(--px-mono);color:#5B6774">{{ pc.hex }}</span></span>
-        <span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="siringa" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="penna" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="fiala" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="cerotto" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="cerotto-tondo" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="bustina" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="flacone" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="monodose" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="goccia" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span>
+        <span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="pillola" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="bustina" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="liquido" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="iniezione" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="gocce" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="inalatore" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="cerotto" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="crema" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="supposta" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span><span style="display:flex;justify-content:center"><dc-import name="Presidio" shape="altro" color="{{ pc.hex }}" size="56" hint-size="56px,56px"></dc-import></span>
       </sc-for>
     </div>
   </div>
 </section>
 
-<section data-screen-label="Presidi · scala e tema" style="display:flex;flex-direction:column;gap:32px">
+<section data-screen-label="Categorie · scala e tema" style="display:flex;flex-direction:column;gap:32px">
   <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">08 · SCALA E TEMA</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Da 128 a 20 px, chiaro e scuro</h2></div>
   <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap">
     <div style="background:#fff;border-radius:24px;padding:40px;display:flex;align-items:flex-end;gap:28px">
-      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="9">
+      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="10">
         <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
           <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="128" hint-size="128px,128px"></dc-import>
           <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="64" hint-size="64px,64px"></dc-import>
@@ -60,73 +57,72 @@ button{font:inherit;color:inherit}
         </div>
       </sc-for>
     </div>
-    <div data-theme="dark" style="background:#141A22;border-radius:24px;padding:40px;display:grid;grid-template-columns:repeat(3,72px);gap:24px;align-content:center">
-      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="9">
+    <div data-theme="dark" style="background:#141A22;border-radius:24px;padding:40px;display:grid;grid-template-columns:repeat(5,72px);gap:24px;align-content:center">
+      <sc-for list="{{ shapes }}" as="sh" hint-placeholder-count="10">
         <dc-import name="Presidio" shape="{{ sh.shape }}" color="{{ sh.color }}" size="72" hint-size="72px,72px"></dc-import>
       </sc-for>
     </div>
   </div>
 </section>
 
-<section data-screen-label="Presidi · dispenser" style="display:flex;flex-direction:column;gap:32px">
-  <div style="display:flex;flex-direction:column;gap:8px;max-width:960px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">09 · NEL DISPENSER</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Lo stesso tubo, riempito di presidi</h2><p style="margin:0;font:400 18px/1.5 var(--px-font);color:#44505C">Scala comune 0–60 giorni con tacche a 7 e 14, come per le compresse: il livello dice sempre i giorni di copertura, qualunque cosa ci sia dentro. I pezzi lunghi si coricano, cerotti e bustine si impilano a scaglie.</p></div>
-  <div style="display:flex;gap:24px;flex-wrap:wrap">
-    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;gap:12px">
-      <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="8">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:160px">
-          <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
-          <div style="display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center"><span style="font:650 16px/1.2 var(--px-font)">{{ tb.name }}</span><span style="font:400 14px/1.3 var(--px-font);color:#44505C">{{ tb.qty }}</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">{{ tb.shape }}</span></div>
-        </div>
-      </sc-for>
-    </div>
+<section data-screen-label="Categorie · dispenser" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:960px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">09 · NEL DISPENSER</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Un tubo, due modi di riempirlo</h2><p style="margin:0;font:400 18px/1.5 var(--px-font);color:#44505C">Scala comune 0–60 giorni con tacche a 7 e 14: l’altezza dice sempre i giorni di copertura. Ciò che si conta (pillole, bustine, iniezioni, cerotti, supposte) si impila a pezzi. Ciò che non si conta (sciroppi, gocce, inalatori, creme) riempie il tubo con un livello nel colore del medicinale.</p></div>
+  <div style="background:#fff;border-radius:24px;padding:32px;display:flex;gap:12px;width:max-content">
+    <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="10">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:160px">
+        <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" stock="{{ tb.stock }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center"><span style="font:650 16px/1.2 var(--px-font)">{{ tb.name }}</span><span style="font:400 14px/1.3 var(--px-font);color:#44505C">{{ tb.qty }}</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">{{ tb.shape }} · {{ tb.mode }}</span></div>
+      </div>
+    </sc-for>
   </div>
   <div data-theme="dark" style="background:#141A22;border-radius:24px;padding:32px;display:flex;gap:12px;width:max-content">
-    <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="8">
+    <sc-for list="{{ tubes }}" as="tb" hint-placeholder-count="10">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:160px">
-        <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
+        <dc-import name="Presidio" view="tubo" shape="{{ tb.shape }}" stock="{{ tb.stock }}" color="{{ tb.color }}" days="{{ tb.days }}" hint-size="146px,272px"></dc-import>
         <span style="font:650 16px/1.2 var(--px-font);color:#E9EEF3;text-align:center">{{ tb.name }}</span>
       </div>
     </sc-for>
   </div>
 </section>
 
-<section data-screen-label="Presidi · glifi e parole" style="display:flex;flex-direction:column;gap:32px">
-  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">10 · GLIFI E PAROLE</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">Tipo di presidio nei controlli e nei testi</h2></div>
+<section data-screen-label="Categorie · glifi e parole" style="display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 14px/1 var(--px-mono);color:#5B6774;letter-spacing:.06em">10 · GLIFI E PAROLE</span><h2 style="margin:0;font:700 40px/1.1 var(--px-font);letter-spacing:-.02em">La categoria nei controlli e nei testi</h2></div>
   <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
-    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:20px;width:560px">
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:20px;width:640px">
       <span style="font:600 15px/1 var(--px-font)">Glifi al tratto · 1,8 px, currentColor, come + e ▾ dei pulsanti</span>
       <div style="display:grid;grid-template-columns:120px repeat(3,56px) 1fr;gap:14px 10px;align-items:center">
         <span></span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">32</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">24</span><span style="font:500 13px/1 var(--px-mono);color:#5B6774">16</span><span></span>
-        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="10">
           <span style="font:500 15px/1.2 var(--px-font)">{{ ty.label }}</span>
           <span style="display:flex;color:#0E1620">{{ ty.g32 }}</span><span style="display:flex;color:#0E1620">{{ ty.g24 }}</span><span style="display:flex;color:#0E1620">{{ ty.g16 }}</span>
           <span style="display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:28px;padding:0 10px;border-radius:999px;background:#EDF0F3;font:600 13px/1 var(--px-font);color:#44505C">{{ ty.g16 }}{{ ty.label }}</span>
         </sc-for>
       </div>
-      <span style="font:600 15px/1 var(--px-font);padding-top:12px;border-top:1px solid #EDF0F3">Selettore del tipo · scheda «Aggiungi medicinale»</span>
-      <div role="group" aria-label="Tipo di presidio" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
-        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+      <span style="font:600 15px/1 var(--px-font);padding-top:12px;border-top:1px solid #EDF0F3">Selettore della categoria · scheda «Aggiungi medicinale»</span>
+      <div role="group" aria-label="Categoria del medicinale" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="10">
           <button type="button" onClick="{{ ty.pick }}" aria-pressed="{{ ty.pressed }}" style="{{ ty.btn }}">{{ ty.g24 }}<span>{{ ty.label }}</span></button>
         </sc-for>
       </div>
-      <div data-theme="dark" role="group" aria-label="Tipo di presidio, tema scuro" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:#141A22;padding:12px;border-radius:14px">
-        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="4">
+      <div data-theme="dark" role="group" aria-label="Categoria del medicinale, tema scuro" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;background:#141A22;padding:12px;border-radius:14px">
+        <sc-for list="{{ types }}" as="ty" hint-placeholder-count="10">
           <button type="button" onClick="{{ ty.pick }}" aria-pressed="{{ ty.pressed }}" style="{{ ty.btn }}">{{ ty.g24 }}<span>{{ ty.label }}</span></button>
         </sc-for>
       </div>
     </div>
-    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:4px;width:760px">
-      <span style="font:600 15px/1 var(--px-font);padding-bottom:14px">Parole per forma · al posto di «compressa / compresse»</span>
-      <div style="display:grid;grid-template-columns:56px 130px 1fr 1fr;gap:12px;padding-bottom:10px;font:600 13px/1 var(--px-mono);color:#5B6774"><span></span><span>shape</span><span>conteggio</span><span>+1 confezione</span></div>
-      <sc-for list="{{ words }}" as="w" hint-placeholder-count="8">
-        <div style="display:grid;grid-template-columns:56px 130px 1fr 1fr;gap:12px;align-items:center;padding:8px 0;border-top:1px solid #EDF0F3">
+    <div style="background:#fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:4px;width:860px">
+      <span style="font:600 15px/1 var(--px-font);padding-bottom:14px">Parole e parole chiave AIFA per categoria</span>
+      <div style="display:grid;grid-template-columns:48px 96px 1fr 1fr 1.2fr;gap:12px;padding-bottom:10px;font:600 13px/1 var(--px-mono);color:#5B6774"><span></span><span>shape</span><span>scorta</span><span>+1 confezione</span><span>forma AIFA contiene</span></div>
+      <sc-for list="{{ words }}" as="w" hint-placeholder-count="10">
+        <div style="display:grid;grid-template-columns:48px 96px 1fr 1fr 1.2fr;gap:12px;align-items:center;padding:8px 0;border-top:1px solid #EDF0F3">
           <dc-import name="Presidio" shape="{{ w.shape }}" color="{{ w.color }}" size="40" hint-size="40px,40px"></dc-import>
           <span style="font:500 14px/1.2 var(--px-mono)">{{ w.shape }}</span>
-          <span style="font:400 16px/1.35 var(--px-font);color:#44505C"><span style="font-weight:650;color:#0E1620">{{ w.n }}</span> {{ w.left }}</span>
+          <span style="font:400 15px/1.35 var(--px-font);color:#44505C"><span style="font-weight:650;color:#0E1620">{{ w.n }}</span> {{ w.left }}</span>
           <span style="font:400 15px/1.35 var(--px-font);color:#44505C">{{ w.pack }}</span>
+          <span style="font:500 12px/1.4 var(--px-mono);color:#5B6774">{{ w.keys }}</span>
         </div>
       </sc-for>
-      <span style="font:400 14px/1.5 var(--px-font);color:#44505C;padding-top:12px;border-top:1px solid #EDF0F3">«goccia» è l’unità di dose (es. «1 goccia per occhio, 2 volte al giorno»), non una scorta: non entra nel tubo.</span>
+      <span style="font:400 14px/1.5 var(--px-font);color:#44505C;padding-top:12px;border-top:1px solid #EDF0F3">Le categorie a livello mostrano i giorni stimati, non i pezzi. Con stock="pezzi" o stock="livello" si forza l’altro modo: colliri monodose a pezzi, penne multidose a livello. Ciò che non combacia con nessuna parola chiave va in «altro», e chi gestisce il piano può sempre correggere a mano.</span>
     </div>
   </div>
 </section>
@@ -138,38 +134,54 @@ class Component extends DCLogic {
   glyph(type, s) {
     const h = React.createElement, P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
     const T = { transform: 'rotate(-45 12 12)' };
+    const r = (k, x, y, width, height, rx, o) => h('rect', { key: k, x, y, width, height, rx, ...o });
+    const p = (k, d, o) => h('path', { key: k, d, ...o });
     const kids = {
-      compressa: [h('rect', { key: 1, x: 3, y: 8.5, width: 18, height: 7, rx: 3.5, ...T }), h('path', { key: 2, d: 'M12 8.5v7', ...T })],
-      iniezione: [h('rect', { key: 1, x: 7, y: 9, width: 10, height: 6, rx: 1.5, ...T }), h('path', { key: 2, d: 'M2.5 12H7M2.5 9.5v5M7 7.5v9M17 12h5.5', ...T })],
-      cerotto: [h('rect', { key: 1, x: 3.5, y: 3.5, width: 17, height: 17, rx: 5 }), h('rect', { key: 2, x: 8.5, y: 8.5, width: 7, height: 7, rx: 2 })],
-      collirio: [h('path', { key: 1, d: 'M12 3.5c-3 4-5.5 7-5.5 10.5a5.5 5.5 0 0 0 11 0c0-3.5-2.5-6.5-5.5-10.5z' })]
+      pillola: [r(1, 3, 8.5, 18, 7, 3.5, T), p(2, 'M12 8.5v7', T)],
+      bustina: [r(1, 6, 3, 12, 18, 2), p(2, 'M6 7h12M6 17h12')],
+      liquido: [r(1, 9, 2.5, 6, 3.5, 1), p(2, 'M9 8h6a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a3 3 0 0 1 3-3z'), p(3, 'M6 14h12')],
+      iniezione: [r(1, 7, 9, 10, 6, 1.5, T), p(2, 'M2.5 12H7M2.5 9.5v5M7 7.5v9M17 12h5.5', T)],
+      gocce: [p(1, 'M12 3.5c-3 4-5.5 7-5.5 10.5a5.5 5.5 0 0 0 11 0c0-3.5-2.5-6.5-5.5-10.5z')],
+      inalatore: [r(1, 8, 2.5, 5, 6, 1), p(2, 'M7 8.5h7v8h5.5v5H7z')],
+      cerotto: [r(1, 3.5, 3.5, 17, 17, 5), r(2, 8.5, 8.5, 7, 7, 2)],
+      crema: [p(1, 'M6 3h12l-2 15H8z'), r(2, 10, 18, 4, 3.5, .5)],
+      supposta: [p(1, 'M12 2.5c3 2.5 4.5 6 4.5 10v7a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2v-7c0-4 1.5-7.5 4.5-10z')],
+      altro: [r(1, 3.5, 5.5, 17, 13, 2), p(2, 'M3.5 10h17M3.5 14h17')]
     }[type];
     return h('svg', { width: s, height: s, viewBox: '0 0 24 24', 'aria-hidden': 'true', style: { flex: 'none', display: 'block' }, ...P }, ...kids);
   }
   renderVals() {
     const C = { corallo: '#FF5E4D', sole: '#FFC020', turchese: '#12C2B0', viola: '#8D5BF5', lime: '#93D232', blu: '#2E78F5' };
     const pillColors = [['Corallo', C.corallo], ['Giallo sole', C.sole], ['Turchese', C.turchese], ['Viola', C.viola], ['Verde lime', C.lime], ['Blu', C.blu]].map(([name, hex]) => ({ name, hex }));
-    const shapes = [['siringa', C.turchese], ['penna', C.blu], ['fiala', C.viola], ['cerotto', C.corallo], ['cerotto-tondo', C.sole], ['bustina', C.lime], ['flacone', C.blu], ['monodose', C.turchese], ['goccia', C.viola]].map(([shape, color]) => ({ shape, color }));
+    const shapes = [['pillola', C.corallo], ['bustina', C.lime], ['liquido', C.viola], ['iniezione', C.turchese], ['gocce', C.blu], ['inalatore', C.sole], ['cerotto', C.corallo], ['crema', C.turchese], ['supposta', C.viola], ['altro', C.blu]].map(([shape, color]) => ({ shape, color }));
     const tubes = [
-      ['siringa', C.turchese, 12, 'Enoxaparina', '12 siringhe'], ['penna', C.blu, 34, 'Insulina glargine', '3 penne'], ['fiala', C.viola, 28, 'Vitamina B12', '4 fiale'],
-      ['cerotto', C.corallo, 21, 'Fentanil', '7 cerotti'], ['cerotto-tondo', C.sole, 45, 'Nitroglicerina', '45 cerotti'], ['bustina', C.lime, 9, 'Rivastigmina', '9 cerotti'],
-      ['flacone', C.blu, 70, 'Timololo', '3 flaconi'], ['monodose', C.turchese, 16, 'Lacrime artificiali', '32 monodose']
-    ].map(([shape, color, days, name, qty]) => ({ shape, color, days, name, qty }));
+      ['pillola', 'auto', C.corallo, 26, 'Ramipril', '26 compresse', 'pezzi'], ['bustina', 'auto', C.lime, 9, 'Macrogol', '9 bustine', 'pezzi'],
+      ['iniezione', 'auto', C.turchese, 12, 'Enoxaparina', '12 siringhe', 'pezzi'], ['cerotto', 'auto', C.corallo, 21, 'Fentanil', '7 cerotti', 'pezzi'],
+      ['supposta', 'auto', C.viola, 6, 'Paracetamolo', '6 supposte', 'pezzi'], ['gocce', 'pezzi', C.blu, 16, 'Lacrime artificiali', '32 monodose', 'pezzi'],
+      ['liquido', 'auto', C.viola, 18, 'Lattulosio', '1 flacone aperto', 'livello'], ['gocce', 'auto', C.blu, 34, 'Timololo', '2 flaconi', 'livello'],
+      ['inalatore', 'auto', C.sole, 45, 'Salmeterolo', '1 inalatore', 'livello'], ['crema', 'auto', C.turchese, 5, 'Diclofenac gel', '1 tubo', 'livello']
+    ].map(([shape, stock, color, days, name, qty, mode]) => ({ shape, stock, color, days, name, qty, mode }));
     const sel = this.state.type;
-    const types = [['compressa', 'Compressa'], ['iniezione', 'Iniezione'], ['cerotto', 'Cerotto'], ['collirio', 'Collirio']].map(([id, label]) => {
+    const types = [['pillola', 'Pillola'], ['bustina', 'Bustina'], ['liquido', 'Liquido'], ['iniezione', 'Iniezione'], ['gocce', 'Gocce'], ['inalatore', 'Inalatore'], ['cerotto', 'Cerotto'], ['crema', 'Crema'], ['supposta', 'Supposta'], ['altro', 'Altro']].map(([id, label]) => {
       const on = sel === id;
       return { label, pressed: on ? 'true' : 'false', pick: () => this.setState({ type: id }),
         g32: this.glyph(id, 32), g24: this.glyph(id, 24), g16: this.glyph(id, 16),
-        btn: { minHeight: 76, padding: '10px 6px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
+        btn: { minHeight: 76, padding: '10px 4px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer',
           font: '600 15px/1.2 var(--px-font)', border: on ? '1px solid var(--px-primary)' : '1px solid var(--px-line-strong)',
           background: on ? 'var(--px-primary)' : 'var(--px-surface)', color: on ? 'var(--px-on-primary)' : 'var(--px-ink)' } };
     });
     const words = [
-      ['siringa', C.turchese, 12, 'siringhe rimaste', 'Arrivata confezione: +6 siringhe'], ['penna', C.blu, 3, 'penne rimaste', 'Arrivata confezione: +5 penne'],
-      ['fiala', C.viola, 4, 'fiale rimaste', 'Arrivata confezione: +5 fiale'], ['cerotto', C.corallo, 7, 'cerotti rimasti', 'Arrivata confezione: +3 cerotti'],
-      ['cerotto-tondo', C.sole, 1, 'cerotto rimasto', 'Arrivata confezione: +15 cerotti'], ['bustina', C.lime, 9, 'cerotti rimasti (in bustina)', 'Arrivata confezione: +30 cerotti'],
-      ['flacone', C.blu, 1, 'flacone rimasto', 'Arrivata confezione: +1 flacone'], ['monodose', C.turchese, 32, 'monodose rimaste', 'Arrivata confezione: +20 monodose']
-    ].map(([shape, color, n, left, pack]) => ({ shape, color, n, left, pack }));
+      ['pillola', C.corallo, 26, 'compresse rimaste', '+30 compresse', 'COMPRESS · CAPSUL · PASTIGL · CONFETT'],
+      ['bustina', C.lime, 9, 'bustine rimaste', '+20 bustine', 'BUSTIN · GRANULAT · POLVERE ORALE'],
+      ['liquido', C.viola, 18, 'giorni stimati · 1 flacone', '+1 flacone', 'SCIROPPO · SOLUZIONE ORALE · SOSPENSIONE ORALE · GOCCE ORALI'],
+      ['iniezione', C.turchese, 12, 'siringhe rimaste', '+6 siringhe', 'INIETT · INFUS · SIRINGA · PENNA · FIALA'],
+      ['gocce', C.blu, 34, 'giorni stimati · 2 flaconi', '+1 flacone', 'COLLIRIO · OFTALM · AURICOL · NASAL'],
+      ['inalatore', C.sole, 45, 'giorni stimati · 1 inalatore', '+1 inalatore', 'INALAZ · NEBULIZZ · AEROSOL'],
+      ['cerotto', C.corallo, 7, 'cerotti rimasti', '+3 cerotti', 'CEROTT · TRANSDERM'],
+      ['crema', C.turchese, 5, 'giorni stimati · 1 tubo', '+1 tubo', 'CREMA · POMATA · UNGUENTO · GEL · SCHIUMA'],
+      ['supposta', C.viola, 6, 'supposte rimaste', '+10 supposte', 'SUPPOST · OVUL · RETTAL · VAGINAL'],
+      ['altro', C.blu, 3, 'unità rimaste', '+1 confezione', 'nessuna corrispondenza']
+    ].map(([shape, color, n, left, pack, keys]) => ({ shape, color, n, left, pack: 'Arrivata confezione: ' + pack, keys }));
     return { pillColors, shapes, tubes, types, words };
   }
 }

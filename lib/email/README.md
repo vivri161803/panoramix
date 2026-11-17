@@ -19,8 +19,8 @@ Outgoing email for Appoteca. It has two parts: a provider abstraction that sends
 - `templates.ts` (other emails; all return `RenderedEmail`)
   - `interface RenderedEmail { subject; html; text }`
   - `InviteEmailData` / `renderInviteEmail(d)`: plan invitation
-  - `ReminderItem`, `ReminderEmailData` / `renderPrepReminderEmail(d)`: pillbox preparation reminder
-  - `SummaryMed`, `SummaryEmailData`, `summaryHeadline(meds)` / `renderWeeklySummaryEmail(d)`: Monday summary
+  - `ReminderItem` (name, strength, color, `phrase`, `changeNote?`), `ReminderEmailData` / `renderPrepReminderEmail(d)`: pillbox preparation reminder with the doses of the 7 days (no quantities to deduct and no "missing" note)
+  - `SummaryMed`, `SummaryEmailData`, `summaryHeadline(meds)` / `renderWeeklySummaryEmail(d)`: Monday summary (no next pillbox preparation)
   - `renderOpsEmail({ title, problems, appUrl, when })`: technical alert for the ops address. The intro changes when every problem starts with `"Dati AIFA"`.
   - `renderUsageEmail(stats, { from, to, appUrl })`: weekly usage report. A warning note appears when `recipientsPerDay >= GMAIL_DAILY_LIMIT * 0.8`.
 

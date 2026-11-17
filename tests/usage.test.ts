@@ -23,7 +23,6 @@ const raw: UsageRaw = {
   activeMeds: 9,
   // "c" non ha rifatto l'accesso ma ha registrato un movimento; null = utente eliminato
   stockEvents: [{ created_by: "c" }, { created_by: "a" }, { created_by: null }],
-  preps: [{ created_by: "a" }],
   alertRuns: [
     { status: "sent", recipients: ["x", "y"] },
     { status: "failed", recipients: ["x"] },
@@ -48,7 +47,7 @@ describe("summarizeUsage", () => {
     expect(u.members).toBe(3);
     expect(u.pendingInvites).toBe(2);
     expect(u.activeMeds).toBe(9);
-    expect(u.movements).toBe(4);
+    expect(u.movements).toBe(3);
   });
 
   it("conta solo gli invii riusciti e i loro destinatari", () => {
@@ -56,7 +55,7 @@ describe("summarizeUsage", () => {
   });
 
   it("senza dati restituisce zeri", () => {
-    const empty = summarizeUsage({ users: [], plans: [], members: [], pendingInvites: 0, activeMeds: 0, stockEvents: [], preps: [], alertRuns: [], notificationRuns: [] }, since);
+    const empty = summarizeUsage({ users: [], plans: [], members: [], pendingInvites: 0, activeMeds: 0, stockEvents: [], alertRuns: [], notificationRuns: [] }, since);
     expect(empty.active).toBe(0);
     expect(empty.emails.recipientsPerDay).toBe(0);
   });
@@ -76,7 +75,7 @@ describe("renderUsageEmail", () => {
   });
 
   it("singolare con una persona attiva", () => {
-    const one = summarizeUsage({ ...raw, users: [raw.users[0]], stockEvents: [], preps: [] }, since);
+    const one = summarizeUsage({ ...raw, users: [raw.users[0]], stockEvents: [] }, since);
     expect(renderUsageEmail(one, dates).subject).toBe("[Appoteca] Utilizzo: 1 persona attiva negli ultimi 7 giorni");
   });
 

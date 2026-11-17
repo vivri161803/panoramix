@@ -30,7 +30,6 @@ interface Props {
   initial: MedicationInput;
   settings: PlanSettings;
   today: ISODate;
-  nextPrep: ISODate | null;
   /** contenuto sotto il modulo (es. cambi di dose programmati) */
   extra?: React.ReactNode;
   /** colore salvato: per i medicinali di prima, finché non si sceglie il gruppo */
@@ -62,7 +61,7 @@ const num = (s: string) => {
   return s.trim() === "" || !Number.isFinite(n) ? NaN : n;
 };
 
-export function MedicationForm({ planId, planName, medicationId, initial, settings, today, nextPrep, extra, currentColor }: Props) {
+export function MedicationForm({ planId, planName, medicationId, initial, settings, today, extra, currentColor }: Props) {
   const isNew = !medicationId;
   const [f, setF] = useState(initial);
   const [txt, setTxt] = useState<Record<NumKey, string>>({
@@ -92,7 +91,6 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
     setF((x) => ({ ...x, form, shape, dose_morning: up(x.dose_morning), dose_noon: up(x.dose_noon), dose_evening: up(x.dose_evening) }));
   };
   const setNum = (k: NumKey, v: string) => setTxt((t) => ({ ...t, [k]: v }));
-  const weekly = settings.stockMode === "weekly";
   // il gruppo arriva da AIFA (codice completo con AIC): si mostra e basta
   const groupFromAifa = !!f.aic && (f.atc_code?.length ?? 0) > 1 && !!atcGroup(f.atc_code);
   const pillColor = f.atc_code === ATC_UNKNOWN_VALUE ? ATC_UNKNOWN.color : f.atc_code ? atcColor(f.atc_code) : (currentColor ?? ATC_UNKNOWN.color);
@@ -190,8 +188,8 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
       reorderDays: input.reorder_days,
       orderedAt: null,
     };
-    const fc = forecastMedication(med, { plan: settings, today, nextPrep: nextPrep ?? undefined });
-    return { med, fc, view: dispenserView(med, fc, settings.stockMode, today) };
+    const fc = forecastMedication(med, { plan: settings, today });
+    return { med, fc, view: dispenserView(med, fc, today) };
   })();
 
   const sum1 = scheduleSummary(preview.med);
@@ -204,7 +202,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
         ? `${qtyText} in casa → bastano fino alla fine della terapia`
         : preview.fc.reorder
           ? `${qtyText} in casa → promemoria di riordino tra ${cov} ${daysWord(cov)}`
-          : `${qtyText} in casa → ${cov} ${daysWord(cov)} di copertura${weekly ? " (compreso il portapillole)" : ""}`;
+          : `${qtyText} in casa → ${cov} ${daysWord(cov)} di copertura`;
 
   function save(another = false) {
     setError(null);
@@ -332,7 +330,7 @@ export function MedicationForm({ planId, planName, medicationId, initial, settin
                 <FieldError message={fe.pills_per_pack} />
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="px-qty" className="px-label">{weekly && f.form === "compressa" ? "Compresse in casa, fuori dal portapillole" : `${cap(unitWord(f.shape, 2))} in casa`}</label>
+                <label htmlFor="px-qty" className="px-label">{`${cap(unitWord(f.shape, 2))} in casa`}</label>
                 <input id="px-qty" type="number" inputMode="decimal" min={0} step={0.5} value={txt.stock_qty} onChange={(e) => setNum("stock_qty", e.target.value)} aria-invalid={fe.stock_qty ? true : undefined} aria-describedby="px-qty-help" className="px-input" />
                 <span id="px-qty-help" className="text-[14px] leading-[1.35] text-px-ink-2">
                   {isNew ? (f.form === "compressa" ? "Conta le compresse adesso. Le mezze valgono ½." : `${howMany(f.shape, true)} hai adesso?`) : "Se cambi questo numero diventa un nuovo conteggio."}
