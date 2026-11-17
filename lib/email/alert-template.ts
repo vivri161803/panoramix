@@ -1,8 +1,9 @@
 // Email di avviso: HTML compatibile con i client (tabelle, stili inline) + versione solo testo.
 // Design: UI_mobile_pc/PanoramixEmail.dc.html
 
-import { formatLong, type ISODate } from "@/lib/dates";
-import { daysWord, formatQty, type MedStatus } from "@/lib/forecast";
+import { capitalize, formatLong, type ISODate } from "@/lib/dates";
+import { daysWord, formatQty, type FrequencyType, type MedStatus } from "@/lib/forecast";
+import { categoryLabel, leftWord, type Category } from "@/lib/categories";
 
 export interface AlertEmailMed {
   name: string;
@@ -17,11 +18,19 @@ export interface AlertEmailMed {
   /** "1 al mattino" */
   dosesPhrase: string;
   asNeeded: boolean;
-  /** flacone di collirio: promemoria di riordino dopo X giorni, non un conteggio */
-  reorder?: boolean;
-  /** parola per i pezzi della confezione: "compresse", "siringhe", "flaconi"… */
+  /** parola del contenitore per la confezione: "compresse", "siringhe", "flacone"… */
   unit?: string;
+  category: Category;
+  daysPerPack: number | null;
+  frequencyType: FrequencyType;
+  /** a livello: «circa 18 giorni · 1 flacone e mezzo»; vuoto a pezzi */
+  levelText: string;
 }
+
+/** «Compresse rimaste», «Flaconi rimasti» */
+const leftLabel = (m: AlertEmailMed) => capitalize(leftWord(m, 2));
+/** a pezzi «26», a livello la frase senza arrotondare 0,967 a 1 */
+const leftValue = (m: AlertEmailMed) => m.levelText || formatQty(m.qty);
 
 export interface AlertEmailData {
   patientName: string;
@@ -55,7 +64,6 @@ function medLabel(m: AlertEmailMed) {
 
 function coverageText(m: AlertEmailMed) {
   if (m.asNeeded) return "al bisogno";
-  if (m.reorder) return "promemoria di riordino";
   if (m.coverageDays === null) return "fino alla fine della terapia";
   return `${m.coverageDays} ${daysWord(m.coverageDays)}`;
 }
@@ -108,7 +116,8 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
       <td align="right" valign="middle"><span style="display:inline-block;padding:6px 10px;border-radius:999px;background:${chip.bg};color:${chip.fg};border:1px solid ${chip.bc};font:600 14px/1 ${FONT};white-space:nowrap;">${chip.label}</span></td>
     </tr></table>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
-      ${row("Compresse rimaste", formatQty(m.qty))}
+      ${row("Categoria", categoryLabel(m.category))}
+      ${row(leftLabel(m), leftValue(m))}
       ${row("Giorni di copertura", coverageText(m))}
       ${row("Finisce", runOutText(m))}
       ${row("Ricetta", m.requiresPrescription ? "Serve la ricetta" : "Non serve")}
@@ -162,7 +171,7 @@ export function renderAlertEmail(d: AlertEmailData): { subject: string; html: st
   const textMeds = d.meds
     .map(
       (m) =>
-        `• ${medLabel(m)} — ${m.status === "out" ? "ESAURITA" : "Da ordinare"}\n  Compresse rimaste: ${formatQty(m.qty)}\n  Giorni di copertura: ${coverageText(m)}\n  Finisce: ${runOutText(m)}\n  Ricetta: ${m.requiresPrescription ? "serve la ricetta" : "non serve"}`,
+        `• ${medLabel(m)} (${categoryLabel(m.category)}) — ${m.status === "out" ? "ESAURITA" : "Da ordinare"}\n  ${leftLabel(m)}: ${leftValue(m)}\n  Giorni di copertura: ${coverageText(m)}\n  Finisce: ${runOutText(m)}\n  Ricetta: ${m.requiresPrescription ? "serve la ricetta" : "non serve"}`,
     )
     .join("\n\n");
   const text = [

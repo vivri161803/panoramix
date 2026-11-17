@@ -22,8 +22,8 @@ describe("promemoria del portapillole", () => {
       }),
     ];
     expect(buildPrepReminderItems(meds, SUN)).toEqual([
-      { name: "Ramipril", strength: "5 mg", color: "#FFC020", phrase: "1 al mattino", changeNote: undefined },
-      { name: "Prednisone", strength: "5 mg", color: "#FFC020", phrase: "2 al mattino", changeNote: "Dal mer 18 nov: 1 al mattino" },
+      { name: "Ramipril", strength: "5 mg", color: "#FFC020", categoryLabel: "Pillola", phrase: "1 compressa al mattino", changeNote: undefined },
+      { name: "Prednisone", strength: "5 mg", color: "#FFC020", categoryLabel: "Pillola", phrase: "2 compresse al mattino", changeNote: "Dal mer 18 nov: 1 al mattino" },
     ]);
   });
 
@@ -39,10 +39,16 @@ describe("promemoria del portapillole", () => {
 
   it("include flaconi e siringhe con dosi nella settimana", () => {
     const meds = [
-      medication({ id: "g", name: "Collirio", form: "collirio", shape: "flacone", pillsPerPack: 1, stockQty: 1, reorderDays: 30, doseMorning: 1, doseEvening: 1 }),
-      medication({ id: "h", name: "Eparina", form: "iniezione", shape: "siringa", frequencyType: "weekdays", weekdays: [3] }),
+      medication({ id: "g", name: "Collirio", category: "gocce", shape: null, pillsPerPack: 1, stockQty: 1, daysPerPack: 30, doseMorning: 0, doseEvening: 1 }),
+      medication({ id: "h", name: "Eparina", category: "iniezione", shape: null, frequencyType: "weekdays", weekdays: [3] }),
+      medication({ id: "i", name: "Lattulosio", category: "liquido", shape: null, pillsPerPack: 1, stockQty: 1, daysPerPack: 15, doseMorning: 5 }),
     ];
-    expect(buildPrepReminderItems(meds, SUN).map((i) => i.name)).toEqual(["Collirio", "Eparina"]);
+    const items = buildPrepReminderItems(meds, SUN);
+    expect(items.map((i) => [i.name, i.categoryLabel, i.phrase])).toEqual([
+      ["Collirio", "Gocce", "1 goccia alla sera"],
+      ["Eparina", "Iniezione", "1 siringa al mattino"],
+      ["Lattulosio", "Liquido", "5 ml al mattino"],
+    ]);
   });
 });
 
@@ -63,5 +69,12 @@ describe("riepilogo settimanale", () => {
       ["Finita", "out"],
       ["Ok", "ok"],
     ]);
+  });
+
+  it("a livello porta categoria, modo e levelText", () => {
+    const today = "2026-11-16";
+    const syrup = medication({ id: "s", name: "Lattulosio", category: "liquido", shape: null, pillsPerPack: 1, stockQty: 1.5, daysPerPack: 12, doseMorning: 5, stockAsOf: today });
+    const [m] = buildSummaryMeds(forecastPlan(planSettings(), [syrup], today));
+    expect(m).toMatchObject({ category: "liquido", daysPerPack: 12, frequencyType: "daily", levelText: "circa 18 giorni · 1 flacone e mezzo" });
   });
 });

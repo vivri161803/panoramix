@@ -134,7 +134,7 @@ Modulo ES `parse.mjs`, importato da `scripts/import-aifa.mjs` e da `tests/aifa-p
 - `text(s)`: testo ripulito; `null` per vuoti, `N.D.`, `ND`, `Q.TA E UM NON PRESENTI SU ET`.
 - `num(s)`: numero con virgola o punto, `€` e spazi ammessi; `null` se non valido.
 - `itDate(s)`: `gg/mm/aaaa` → ISO; `itWordsDate(s)`: `15 ottobre 2026` → ISO; `null` se non valide.
-- `doseUnitsFromDescription(desc)`: ultimo "numero + COMPRESSE/CAPSULE/…" (`UNITS_RE`), tra 1 e 1000.
+- `doseUnitsFromDescription(desc)`: ultimo "numero + COMPRESSE/CAPSULE/SUPPOSTE/…" (`UNITS_RE`), tra 1 e 1000.
 - `requiresPrescription(regime)`: `true`/`false` dal prefisso di `FORNITURA`, altrimenti `null`.
 - `SOURCES`: le cinque sorgenti (`confezioni`, `principi_attivi`, `atc`, `carenze`, `trasparenza`)
   con `url`, `encoding`, `preamble`, `headers`, `table`, `key`, `map(r, ctx)` e, per `carenze` e

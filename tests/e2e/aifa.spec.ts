@@ -79,7 +79,8 @@ test("codice AIC, colore per gruppo e scheda Disponibilità", async ({ page }) =
   await expect(page.getByText("Dati presi da AIFA: controllali prima di salvare")).toBeVisible();
   await expect(page.getByLabel("Nome", { exact: true })).toHaveValue("Triatec");
   await expect(page.getByLabel(/^Dosaggio/)).toHaveValue("Ramipril 5 mg");
-  await expect(page.getByLabel("Compresse per confezione")).toHaveValue("14");
+  await expect(page.getByRole("button", { name: "Pillola", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Quante compresse in una confezione?")).toHaveValue("14");
   await expect(page.getByText("Cuore e circolazione")).toBeVisible();
   await expect(page.getByLabel("A cosa serve")).toHaveCount(0);
   await page.getByLabel(/Compresse in casa/).fill("10");
@@ -96,7 +97,9 @@ test("codice AIC, colore per gruppo e scheda Disponibilità", async ({ page }) =
   await expect(page.getByLabel("Nome", { exact: true })).toHaveValue("");
   await expect(page).toHaveURL(`${planUrl}/medicinali/nuovo`);
 
-  // a mano, senza codice: "A cosa serve" è obbligatorio
+  // a mano, senza codice: prima la categoria, poi "A cosa serve" è obbligatorio
+  await expect(page.getByLabel(/Compresse in casa/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Pillola", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitamina D");
   await page.getByLabel(/Compresse in casa/).fill("4");
   await page.getByRole("button", { name: "Salva medicinale" }).click();

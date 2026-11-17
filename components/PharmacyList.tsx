@@ -5,7 +5,8 @@ import { markOrdered } from "@/lib/actions/stock";
 import type { ISODate } from "@/lib/dates";
 import { doctorRequestText, pharmacyText, type PharmacyItem, type PharmacyLine } from "@/lib/pharmacy";
 import { useToast } from "@/components/Toast";
-import { Pill } from "@/components/ui/Pill";
+import { Presidio } from "@/components/ui/Presidio";
+import { categoryLabel, containerWord } from "@/lib/categories";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { IconPrint } from "@/components/ui/icons";
 
@@ -39,7 +40,7 @@ export function PharmacyList({ planId, patientName, senderName, today, items, ed
     () =>
       items
         .filter((i) => sel[i.id])
-        .map((i) => ({ name: i.name, strength: i.strength, packs: packs[i.id] ?? 1, pillsPerPack: i.pillsPerPack, rx: i.rx, phrase: i.phrase })),
+        .map((i) => ({ name: i.name, strength: i.strength, packs: packs[i.id] ?? 1, pillsPerPack: i.pillsPerPack, rx: i.rx, phrase: i.phrase, category: i.category, daysPerPack: i.daysPerPack, frequencyType: i.frequencyType })),
     [items, sel, packs],
   );
   const text = pharmacyText(patientName, lines, today);
@@ -71,13 +72,13 @@ export function PharmacyList({ planId, patientName, senderName, today, items, ed
                 onChange={(e) => setSel((s) => ({ ...s, [i.id]: e.target.checked }))}
                 className="h-6 w-6 flex-none accent-[var(--px-primary)]"
               />
-              <Pill color={i.color} shape={i.shape} size={26} />
+              <Presidio category={i.category} pillShape={i.shape} color={i.color} size={26} />
               <span className="flex min-w-0 flex-col">
                 <span className="t-body-strong [overflow-wrap:anywhere]">
                   {i.name} <span className="font-medium text-px-ink-2">{i.strength}</span>
                 </span>
                 <span className="text-[14px] text-px-ink-2">
-                  {i.pillsPerPack} per confezione{i.rx ? " · serve la ricetta" : ""}
+                  {categoryLabel(i.category)} · {i.pillsPerPack} {containerWord(i, i.pillsPerPack)} per confezione{i.rx ? " · serve la ricetta" : ""}
                 </span>
               </span>
             </label>

@@ -6,6 +6,7 @@ import { canEdit } from "@/lib/roles";
 import { MedicationForm } from "@/components/MedicationForm";
 import { DoseChangesPanel } from "@/components/DoseChangesPanel";
 import { ATC_UNKNOWN, ATC_UNKNOWN_VALUE } from "@/lib/atc";
+import { isLevel, levelPhrase } from "@/lib/categories";
 
 export const metadata: Metadata = { title: "Modifica medicinale" };
 
@@ -18,6 +19,7 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
   const m = item.med;
   // il modulo mostra le dosi in vigore oggi (i cambi già iniziati confluiscono lì al salvataggio)
   const now = dosesAt(m, b.today);
+  const level = isLevel(m);
   return (
     <MedicationForm
       planId={b.plan.id}
@@ -26,6 +28,7 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
       settings={b.settings}
       today={b.today}
       currentColor={m.color}
+      levelStockText={level ? levelPhrase(item.forecast.stock, item.forecast.coverageDays, m) : undefined}
       initial={{
         name: m.name,
         strength: m.strength,
@@ -35,9 +38,9 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         aic: m.aic,
         // medicinali di prima (senza gruppo): il modulo chiede a cosa servono; grigio = "Non so"
         atc_code: m.atcCode ?? (m.color === ATC_UNKNOWN.color ? ATC_UNKNOWN_VALUE : ""),
-        form: m.form,
-        reorder_days: m.reorderDays,
-        shape: m.shape,
+        category: m.category,
+        days_per_pack: m.daysPerPack ?? null,
+        shape: m.shape as "tonda" | "ovale" | "capsula" | null,
         dose_morning: now.doseMorning,
         dose_noon: now.doseNoon,
         dose_evening: now.doseEvening,
@@ -48,7 +51,8 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
         cycle_off: m.cycleOff,
         start_date: m.startDate,
         end_date: m.endDate,
-        stock_qty: item.forecast.stock,
+        // a livello la scorta non è un campo del modulo: si riconta dal Dispenser
+        stock_qty: level ? null : item.forecast.stock,
       }}
       extra={
         m.frequencyType === "as_needed" ? null : (
@@ -58,6 +62,9 @@ export default async function ModificaMedicinalePage({ params }: PageProps<"/pia
             today={b.today}
             endDate={m.endDate}
             current={now}
+            category={m.category}
+            daysPerPack={m.daysPerPack ?? null}
+            frequencyType={m.frequencyType}
             changes={upcomingChanges(m, b.today).map((c) => ({ id: c.id!, from: c.from, doseMorning: c.doseMorning, doseNoon: c.doseNoon, doseEvening: c.doseEvening }))}
           />
         )

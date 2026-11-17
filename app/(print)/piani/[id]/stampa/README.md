@@ -19,6 +19,7 @@ and print stylesheet reused by the therapy sheet.
 ## Invariants
 - The sheet element must have `id="px-sheet"` (`SHEET_ID`) and the shrinkable area must carry `data-fit`.
 - `fitSheet` reduces CSS `zoom` in 0.02 steps until no overflow, never below 0.5.
+- Legend and cells show the `Presidio` icon of each category; the legend adds the category name (`categoryLabel`), cells the dose with its word (`doseWord`, «5 ml», «1 goccia»).
 - Font scale per cell follows `maxPerCell`: 1 for up to 2 doses, 0.86 for 3, 0.74 for 4, 0.64 above; legend scales to 0.8 above 8 entries.
 - Rendered PDF is A4 at 794x1123 CSS px, scale 2, JPEG quality 0.92.
 

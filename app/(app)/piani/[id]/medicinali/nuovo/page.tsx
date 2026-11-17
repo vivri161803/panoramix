@@ -25,8 +25,10 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
         // il colore lo decide il gruppo ATC: da AIFA (codice AIC) o da "A cosa serve"
         aic: null,
         atc_code: "",
-        form: "compressa",
-        shape: "tonda",
+        // la categoria si sceglie (o arriva dalla scansione) prima del resto del modulo
+        category: null,
+        shape: null,
+        days_per_pack: null,
         dose_morning: 1,
         dose_noon: 0,
         dose_evening: 0,
@@ -37,7 +39,7 @@ export default async function NuovoMedicinalePage({ params }: PageProps<"/piani/
         cycle_off: 7,
         start_date: b.today,
         end_date: null,
-        stock_qty: 0,
+        stock_qty: null,
       }}
     />
   );

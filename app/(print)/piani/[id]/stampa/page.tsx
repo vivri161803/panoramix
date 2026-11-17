@@ -4,21 +4,14 @@ import { getPlanBundle } from "@/lib/data";
 import { formatDayMonth, isoWeekday, WEEKDAYS_LONG } from "@/lib/dates";
 import { formatQty, SLOT_LABEL, SLOTS } from "@/lib/forecast";
 import { pillLook } from "@/lib/pills";
+import { categoryLabel, doseWord } from "@/lib/categories";
+import { Presidio } from "@/components/ui/Presidio";
 import { resolveWeek, weekGrid } from "@/lib/week";
 import { IconBack } from "@/components/ui/icons";
 import { PrintButton } from "./PrintButton";
 import "./print.css";
 
 export const metadata: Metadata = { title: "Stampa" };
-
-function Dot({ color, size }: { color: string; size: number }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{ flex: "none", width: size, height: size, borderRadius: "50%", background: color, boxShadow: "inset 0 -2px 3px rgba(0,0,0,.2),0 0 0 1.5px rgba(0,0,0,.25)" }}
-    />
-  );
-}
 
 export default async function StampaPage({ params, searchParams }: PageProps<"/piani/[id]/stampa">) {
   const { id } = await params;
@@ -59,11 +52,11 @@ export default async function StampaPage({ params, searchParams }: PageProps<"/p
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px" }}>
             {legend.map((m) => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Dot color={m.color} size={22} />
+                <Presidio category={m.category} pillShape={m.shape} color={m.color} size={26} />
                 <span style={{ font: `600 ${19 * legendScale}px/1.25 var(--px-font)` }}>
                   {m.name}{" "}
                   <span style={{ fontWeight: 400, color: "#44505C" }}>
-                    {[m.strength, pillLook(m.atcCode, m.shape)].filter(Boolean).join(" · ")}
+                    {[m.strength, categoryLabel(m.category), pillLook(m.atcCode, m.shape)].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </div>
@@ -90,9 +83,9 @@ export default async function StampaPage({ params, searchParams }: PageProps<"/p
                       return (
                         <div key={it.medicationId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span aria-hidden="true" style={{ flex: "none", width: px(24), height: px(24), border: "2.5px solid #0E1620", borderRadius: 5 }} />
-                          <Dot color={m.color} size={18 * scale} />
+                          <Presidio category={m.category} pillShape={m.shape} color={m.color} size={Math.round(22 * scale)} />
                           <span style={{ font: `600 ${px(19)}/1.15 var(--px-font)` }}>
-                            {m.name} <span style={{ fontWeight: 500, color: "#44505C" }}>× {formatQty(it.qty)}</span>
+                            {m.name} <span style={{ fontWeight: 500, color: "#44505C" }}>· {formatQty(it.qty)} {doseWord(m, it.qty)}</span>
                           </span>
                         </div>
                       );

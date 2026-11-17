@@ -16,8 +16,8 @@ global stylesheet. User-facing text is in Italian.
 | `AppIcon.tsx` | `AppIcon({ size = 32, label = "Appoteca" })` | App logo SVG. A `null` label makes it decorative (`aria-hidden`). |
 | `Disclaimer.tsx` | `DISCLAIMER` (string), `Disclaimer()` | Footer carrying the medical disclaimer text. Hidden when printing (`print:hidden`). |
 | `FieldError.tsx` | `FieldError({ id?, message? })` | `role="alert"` error line with `IconAlertCircle`. Renders `null` when `message` is empty. |
-| `Pill.tsx` | `Pill({ color, shape, size = 28, rotate = 0 })` | Tablet swatch built with `pillStyle` / `PILL_RATIO` from `@/lib/pills`. Delegates to `Presidio` when `isPresidio(shape)` (from `@/lib/presidi`). Unknown shapes fall back to `PILL_RATIO.tonda`. |
-| `Presidio.tsx` | `PRESIDIO_GEO`, `PresidioSvg({ shape, color, scale, style? })`, `Presidio({ shape, color, size = 48, rotate? })`, `FormGlyph({ form: MedForm, size = 24 })` | SVG drawings for non-tablet forms: `siringa`, `penna`, `fiala`, `cerotto`, `cerotto-tondo`, `bustina`, `flacone`, `monodose`, `goccia`. `PRESIDIO_GEO` holds the drawing size, tilt, and tube footprint (`len`, `step`) that `Dispenser` also uses. `FormGlyph` draws line glyphs for `compressa`, `iniezione`, `cerotto`, and `collirio`. |
+| `Pill.tsx` | `Pill({ color, shape, size = 28, rotate = 0 })` | Draws only pills (`tonda`, `ovale`, `capsula`) with `pillStyle` / `PILL_RATIO` from `@/lib/pills`. Unknown shapes fall back to `PILL_RATIO.tonda`. Any medication of any category is drawn with `Presidio`. |
+| `Presidio.tsx` | `PRESIDIO_GEO` (per `Category`), `PresidioSvg({ category, color, scale, style? })`, `Presidio({ category, pillShape?, color, size?, rotate?, view = "icon", level?, days?, scaleMax = 60, status?, asNeeded?, hasStock? })`, `CategoryGlyph({ category, size = 24 })` | Client component (`"use client"`). Port of `design/Presidio.dc.html`: the 10 category icons (neutral body, 2-unit outline, one zone in the med colour; `pillola` delegates to `Pill` with `pillShape`). `view="icon"` draws the tilted icon (`size` number); `view="tube"` draws the Dispenser tube on the 0–`scaleMax` scale (`size` `"s"`/`"l"`): stacked icons up to `days`, or a full band when `level` (default `defaultMode(category) === "livello"`), «60+» beyond the scale, ticks at 7 and 14 coloured by `status`. `CategoryGlyph` draws the 10 line glyphs of `design/Presidi.dc.html` section 10 (viewBox 24, stroke 1,8, `currentColor`). |
 | `StatusChip.tsx` | `StatusChip({ status: MedStatus })`, `STATUS_LABEL` | Chip for the `MedStatus` values `ok`, `order`, `ordered`, `out` (type from `@/lib/forecast`). |
 | `Switch.tsx` | `Switch({ checked, onChange, label, sub? })` | Client component (`"use client"`). A `role="switch"` button. |
 | `icons.tsx` | `IconPlus`, `IconBack`, `IconNext`, `IconCheck`, `IconCheckCircle`, `IconAlertCircle`, `IconXCircle`, `IconClose`, `IconChevronDown`, `IconPrint`, `IconMail` | Decorative (`aria-hidden`) SVG icons that draw in `currentColor`. |
@@ -29,14 +29,15 @@ global stylesheet. User-facing text is in Italian.
   ids must stay the same across instances (`AppIcon.tsx` header comment).
   Keep the drawing in sync with `app/icon.svg` and `public/email-logo.png`.
 - `PresidioSvg` makes per-instance gradient ids from `useId()` (prefix `pxp`).
-  `Presidio` and `PresidioSvg` fall back to `PRESIDIO_GEO.goccia` for unknown
-  shapes.
+  `Presidio` and `PresidioSvg` fall back to `PRESIDIO_GEO.altro` for unknown
+  categories.
 - Changing a `PRESIDIO_GEO` entry also changes how pieces stack in the
-  `Dispenser` tube (`components/Dispenser.tsx:geo`).
+  `Dispenser` tube (`Presidio view="tube"`).
 - `StatusChip` and `STATUS_LABEL` must cover every `MedStatus` key.
-- Only `Switch.tsx` is marked `"use client"`. The other files have no
-  directive and inherit the client or server environment of whatever imports
-  them. `PresidioSvg` calls the `useId` hook, so it must render as a React
+- Only `Switch.tsx` and `Presidio.tsx` are marked `"use client"` (the tube
+  animates its pieces with state). The other files have no directive and
+  inherit the client or server environment of whatever imports them.
+  `PresidioSvg` calls the `useId` hook, so it must render as a React
   component.
 
 ## Side Effects

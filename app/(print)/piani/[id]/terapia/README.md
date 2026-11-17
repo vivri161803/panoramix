@@ -8,14 +8,15 @@ disclaimer.
 ## Interface
 - `default TerapiaPage({ params })` (`page.tsx`) - `metadata.title = "Scheda terapia"`.
   Uses `getPlanBundle`, `dosesAt`, `slotDose`, `frequencyPhrase`, `upcomingChanges`,
-  `SLOTS`, `formatQty` (`lib/forecast`), `changeLabel` (`lib/digest`), `pillLook` (`lib/pills`),
+  `SLOTS`, `formatQty` (`lib/forecast`), `changeLabel` (`lib/digest`), `pillLook` (`lib/pills`), `categoryLabel` / `doseWord` (`lib/categories`), `Presidio` (`components/ui/Presidio`),
   `EMAIL_DISCLAIMER` (`lib/email/alert-template`).
 - Reuses `PrintButton` and `print.css` from [../stampa/README.md](../stampa/README.md);
   file name `Terapia <patient> <today>.pdf`.
 
 ## Invariants
 - Medicines whose `endDate` is before `today` are excluded; `frequencyType === "as_needed"` ones are listed separately.
-- Doses shown are those in effect today (`dosesAt(m, b.today)`); upcoming changes appear in the notes column.
+- Doses shown are those in effect today (`dosesAt(m, b.today)`), each with its dose word (`doseWord`: «compressa», «ml», «gocce»); upcoming changes appear in the notes column.
+- Each medicine shows the `Presidio` icon of its category and the category name.
 
 ## Side Effects
 - Reads plan data via `getPlanBundle`; browser printing via `PrintButton`.

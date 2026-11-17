@@ -16,7 +16,8 @@ dose changes.
 - `notFound()` if the medication is not in `b.forecast.items`.
 - The form shows the doses in effect today (`dosesAt(m, b.today)`); changes already started are merged there on save.
 - `atc_code` falls back to `ATC_UNKNOWN_VALUE` when the medication has no ATC code and its colour is `ATC_UNKNOWN.color`, otherwise `""`.
-- `DoseChangesPanel` is omitted for `frequencyType === "as_needed"`.
+- `DoseChangesPanel` is omitted for `frequencyType === "as_needed"`; it gets `category`, `daysPerPack` and `frequencyType` for the dose step and word.
+- For a level med (`isLevel`) `stock_qty` is not passed to the form; `levelStockText` (`levelPhrase`) is shown read-only instead.
 
 ## Side Effects
 - Page reads only; saving is done by the server actions used by `MedicationForm` / `DoseChangesPanel`.

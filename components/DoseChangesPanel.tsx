@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { addDoseChange, deleteDoseChange } from "@/lib/actions/medications";
 import { addDays, formatLong, type ISODate } from "@/lib/dates";
-import { dosesPhrase, formatQty, totalPerDose } from "@/lib/forecast";
+import { dosesPhrase, totalPerDose, type FrequencyType } from "@/lib/forecast";
+import { doseStep, doseWord, type Category } from "@/lib/categories";
 import { useToast } from "@/components/Toast";
 import { FieldError } from "@/components/ui/FieldError";
 
@@ -31,7 +32,13 @@ export function DoseChangesPanel({
   endDate,
   current,
   changes,
+  category,
+  daysPerPack,
+  frequencyType,
 }: {
+  category: Category;
+  daysPerPack: number | null;
+  frequencyType: FrequencyType;
   planId: string;
   medicationId: string;
   today: ISODate;
@@ -41,6 +48,8 @@ export function DoseChangesPanel({
   /** solo i cambi futuri */
   changes: DoseChangeView[];
 }) {
+  const wm = { category, daysPerPack, frequencyType };
+  const step = doseStep(wm);
   const [date, setDate] = useState(addDays(today, 1));
   const [d, setD] = useState<Doses>(current);
   const [err, setErr] = useState<Record<string, string>>({});
@@ -118,20 +127,31 @@ export function DoseChangesPanel({
                 {s.label}
               </span>
               <div className="flex items-center justify-between gap-1">
-                <button type="button" onClick={() => setD((x) => ({ ...x, [s.key]: Math.max(0, x[s.key] - 0.5) }))} aria-label={`Mezza compressa in meno ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                <button type="button" onClick={() => setD((x) => ({ ...x, [s.key]: Math.max(0, x[s.key] - step) }))} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in meno ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
                   −
                 </button>
-                <output aria-live="polite" aria-labelledby={`px-dc-${s.key}`} className="text-[22px] font-[650] leading-none">
-                  {formatQty(d[s.key])}
-                </output>
-                <button type="button" onClick={() => setD((x) => ({ ...x, [s.key]: Math.min(20, x[s.key] + 0.5) }))} aria-label={`Mezza compressa in più ${s.w}`} className="h-11 w-11 rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={999}
+                  step={step}
+                  value={d[s.key]}
+                  onChange={(e) => {
+                    const v = Number(e.target.value.replace(",", "."));
+                    setD((x) => ({ ...x, [s.key]: Number.isFinite(v) ? Math.min(999, Math.max(0, Math.round(v / step) * step)) : 0 }));
+                  }}
+                  aria-labelledby={`px-dc-${s.key}`}
+                  className="h-11 w-0 min-w-[56px] flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[20px] font-[650] leading-none text-px-ink"
+                />
+                <button type="button" onClick={() => setD((x) => ({ ...x, [s.key]: Math.min(999, x[s.key] + step) }))} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in più ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
                   +
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <span className="text-[15px] text-px-ink-2">{totalPerDose(d) > 0 ? `Dal ${formatLong(date || today)}: ${dosesPhrase(d)}` : "Con tutte le dosi a zero la medicina resta sospesa da quel giorno."}</span>
+        <span className="text-[15px] text-px-ink-2">{totalPerDose(d) > 0 ? `Dal ${formatLong(date || today)}: ${dosesPhrase(d, (n) => doseWord(wm, n))}` : "Con tutte le dosi a zero la medicina resta sospesa da quel giorno."}</span>
         <FieldError message={err._} />
         <button type="button" disabled={pending} onClick={add} className="px-btn px-btn-sm px-btn-secondary self-start">
           {pending ? "Salvataggio…" : "Programma il cambio"}

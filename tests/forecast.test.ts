@@ -3,7 +3,10 @@ import { addDays, diffDays, isoWeekday, todayInRome } from "@/lib/dates";
 import {
   buildWeek,
   calendarWeekStart,
+  consumptionBetween,
+  consumptionOn,
   currentStock,
+  dosesPhrase,
   dosesOn,
   evaluateAlerts,
   forecastMedication,
@@ -41,6 +44,7 @@ function med(over: Partial<MedicationData> = {}): MedicationData {
     stockQty: 0,
     stockAsOf: SUN,
     orderedAt: null,
+    category: "pillola",
     ...over,
   };
 }
@@ -313,28 +317,52 @@ describe("ora legale e fuso Europe/Rome", () => {
   });
 });
 
-describe("flacone di collirio: promemoria di riordino dopo X giorni", () => {
-  const drops = (over: Partial<MedicationData> = {}) => med({ doseMorning: 2, doseEvening: 2, pillsPerPack: 1, stockQty: 1, stockAsOf: SUN, reorderDays: 30, ...over });
+describe("consumo nei due modi di conteggio", () => {
+  const syrup = (over: Partial<MedicationData> = {}) => med({ category: "liquido", doseMorning: 5, pillsPerPack: 1, stockQty: 1, stockAsOf: SUN, daysPerPack: 30, ...over });
 
-  it("le gocce non consumano la scorta, il livello sono i giorni al promemoria", () => {
-    const f = forecastMedication(drops(), daily(addDays(SUN, 10)));
-    expect(f.stock).toBe(1);
+  it("a pezzi consuma le dosi, a livello 1 / daysPerPack per giorno di uso", () => {
+    expect(consumptionOn(med({ doseMorning: 1, doseEvening: 1 }), MON)).toBe(2);
+    expect(consumptionOn(syrup({ doseMorning: 15 }), MON)).toBeCloseTo(1 / 30);
+    expect(consumptionBetween(syrup(), SUN, addDays(SUN, 29))).toBeCloseTo(1);
+  });
+
+  it("fuori dalle date di terapia non consuma", () => {
+    expect(consumptionOn(syrup({ startDate: MON }), SUN)).toBe(0);
+    expect(consumptionOn(syrup({ endDate: SUN }), MON)).toBe(0);
+    expect(consumptionOn(med({ startDate: MON }), SUN)).toBe(0);
+  });
+
+  it("a livello niente consumo nei giorni esclusi, nella pausa di un ciclo e con dose 0", () => {
+    const weekdays = syrup({ frequencyType: "weekdays", weekdays: [1] });
+    expect(consumptionOn(weekdays, MON)).toBeCloseTo(1 / 30);
+    expect(consumptionOn(weekdays, addDays(MON, 1))).toBe(0);
+    const cycle = syrup({ frequencyType: "cycle", cycleOn: 2, cycleOff: 1, startDate: SUN });
+    expect([0, 1, 2].map((i) => consumptionOn(cycle, addDays(SUN, i)) > 0)).toEqual([true, true, false]);
+    const suspended = syrup({ doseChanges: [{ from: MON, doseMorning: 0, doseNoon: 0, doseEvening: 0 }] });
+    expect(consumptionOn(suspended, MON)).toBe(0);
+  });
+
+  it("flacone migrato: stessa data di esaurimento di stock_as_of + giorni del vecchio promemoria", () => {
+    const today = addDays(SUN, 10);
+    const f = forecastMedication(syrup({ category: "gocce", doseMorning: 2, doseEvening: 2 }), daily(today));
+    expect(currentStock(syrup(), today)).toBeCloseTo(20 / 30);
     expect(f.coverageDays).toBe(20);
     expect(f.runOutDate).toBe(addDays(SUN, 30));
-    expect(f.triggered).toEqual([]);
-    expect(f.status).toBe("ok");
+    expect(f.lastPack).toBe(true);
+    expect(f.triggered).toEqual(["last_pack"]);
   });
 
-  it("dopo X giorni scatta il promemoria, anche con gli avvisi del piano spenti", () => {
-    const f = forecastMedication(drops(), daily(addDays(SUN, 31), { alertUnder14: false, alertLastPack: false }));
-    expect(f.coverageDays).toBe(0);
-    expect(f.triggered).toEqual(["under_14"]);
+  it("1/3 di flacone da 30 giorni copre 10 giorni, con gli avvisi di soglia delle compresse", () => {
+    const f = forecastMedication(syrup({ stockQty: 1 / 3 }), daily(SUN, { alertUnder7: true }));
+    expect(f.coverageDays).toBe(10);
+    expect(f.triggered).toEqual(["under_14", "last_pack"]);
     expect(f.status).toBe("order");
-    expect(statusReason(f, null)).toBe("È ora di riordinare il flacone");
-    expect(forecastMedication(drops({ orderedAt: "2026-12-08T08:00:00Z" }), daily(addDays(SUN, 31))).status).toBe("ordered");
+    expect(statusReason(f, null)).toBe("Restano 10 giorni: è ora di ordinare");
   });
 
-  it("un flacone nuovo fa ripartire il conto", () => {
-    expect(forecastMedication(drops({ stockAsOf: addDays(SUN, 31) }), daily(addDays(SUN, 31))).coverageDays).toBe(30);
+  it("frasi delle dosi con la parola della categoria", () => {
+    expect(dosesPhrase({ doseMorning: 5, doseNoon: 0, doseEvening: 0 }, (n) => (n === 1 ? "goccia" : "ml"))).toBe("5 ml al mattino");
+    expect(dosesPhrase({ doseMorning: 0, doseNoon: 0, doseEvening: 1 }, (n) => (n === 1 ? "goccia" : "gocce"))).toBe("1 goccia alla sera");
+    expect(dosesPhrase({ doseMorning: 1, doseNoon: 0, doseEvening: 0 })).toBe("1 al mattino");
   });
 });

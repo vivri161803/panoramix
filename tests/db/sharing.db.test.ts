@@ -22,7 +22,7 @@ describe.skipIf(!enabled)("piani condivisi: regole di accesso", () => {
     planId = plan.id;
     const { data: med, error: mErr } = await owner.db
       .from("medications")
-      .insert({ plan_id: planId, name: "Ramipril", pills_per_pack: 28, color: "#FF5E4D", shape: "tonda", dose_morning: 1, frequency_type: "daily", stock_qty: 20 })
+      .insert({ plan_id: planId, name: "Ramipril", pills_per_pack: 28, color: "#FF5E4D", category: "pillola", shape: "tonda", dose_morning: 1, frequency_type: "daily", stock_qty: 20 })
       .select("id, stock_as_of")
       .single();
     if (mErr) throw mErr;

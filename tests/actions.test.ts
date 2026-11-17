@@ -121,8 +121,9 @@ const validMed = {
   requires_prescription: false,
   aic: null,
   atc_code: "C",
-  form: "compressa" as const,
+  category: "pillola" as const,
   shape: "tonda" as const,
+  days_per_pack: null,
   dose_morning: 1,
   dose_noon: 0,
   dose_evening: 0,
@@ -291,6 +292,84 @@ describe("stock_as_of nel futuro (dosi già nel portapillole)", () => {
     const up = db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "update")![1][0] as Record<string, unknown>;
     expect(up).toMatchObject({ stock_as_of: MON });
     expect(db.rpc[0][1]).toMatchObject({ p_type: "count", p_qty_after: 14, p_effective_date: MON, p_expected_qty: 10, p_expected_as_of: MON });
+  });
+});
+
+describe("categorie e modo di conteggio", () => {
+  // sciroppo a livello: 15 giorni di uso per flacone, 1 flacone in casa
+  const syrup = medication({ id: "syrup", name: "Lattulosio", category: "liquido", shape: null, daysPerPack: 15, pillsPerPack: 1, stockQty: 1, stockAsOf: MON, doseMorning: 5 });
+  const syrupPrn = medication({ id: "syrup-prn", name: "Sciroppo per la tosse", category: "liquido", shape: null, daysPerPack: null, frequencyType: "as_needed", pillsPerPack: 1, stockQty: 2, stockAsOf: MON, doseMorning: 5 });
+  const syrupInput = { ...validMed, name: "Lattulosio", category: "liquido" as const, shape: null, days_per_pack: 15, pills_per_pack: 1, dose_morning: 5, stock_qty: undefined };
+  beforeEach(() => setBundle("owner", [daily, syrup, syrupPrn]));
+  const updated = () => db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "update")![1][0] as Record<string, unknown>;
+
+  it("salva categoria e days_per_pack; la forma solo per le pillole", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...syrupInput, shape: "tonda", stock_qty: 1.5 })).rejects.toThrow("REDIRECT");
+    const ins = db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;
+    expect(ins).toMatchObject({ category: "liquido", shape: null, days_per_pack: 15, stock_qty: 1.5, pills_per_pack: 1 });
+  });
+
+  it("alla creazione la scorta è obbligatoria e segue il modo", async () => {
+    expect(await createMedication(PLAN.id, { ...syrupInput })).toMatchObject({ ok: false, fieldErrors: { stock_qty: expect.any(String) } });
+    expect(await createMedication(PLAN.id, { ...syrupInput, stock_qty: 1.3 })).toMatchObject({ ok: false, fieldErrors: { stock_qty: expect.any(String) } });
+    expect(await createMedication(PLAN.id, { ...validMed, stock_qty: 1.3 })).toMatchObject({ ok: false, fieldErrors: { stock_qty: expect.any(String) } });
+    expect(db.calls).toEqual([]);
+  });
+
+  it("al bisogno days_per_pack è vietato", async () => {
+    expect(await createMedication(PLAN.id, { ...syrupInput, frequency_type: "as_needed", stock_qty: 1 })).toMatchObject({ ok: false, fieldErrors: { days_per_pack: expect.any(String) } });
+  });
+
+  it("dosi fino a 999", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, category: "iniezione", shape: null, dose_morning: 999, stock_qty: 5 })).rejects.toThrow("REDIRECT");
+    expect(await createMedication(PLAN.id, { ...validMed, dose_morning: 1000 })).toMatchObject({ ok: false });
+  });
+
+  it("modificare days_per_pack di un medicinale a livello non registra nessun conteggio", async () => {
+    db.results.medications = [{ data: [{ id: "syrup" }] }];
+    await expect(updateMedication(PLAN.id, syrup.id, { ...syrupInput, days_per_pack: 20 })).rejects.toThrow("REDIRECT");
+    expect(updated()).toMatchObject({ days_per_pack: 20, stock_qty: 1, stock_as_of: MON });
+    expect(db.rpc).toEqual([]);
+  });
+
+  it("cambio di modo senza la scorta nel modo nuovo: errore sul campo della scorta", async () => {
+    const r = await updateMedication(PLAN.id, syrup.id, { ...syrupInput, days_per_pack: null, pills_per_pack: 10 });
+    expect(r).toMatchObject({ ok: false, fieldErrors: { stock_qty: expect.any(String) } });
+    expect(db.calls).toEqual([]);
+  });
+
+  it("cambio di modo con la scorta: salva quella scorta e registra un conteggio 'mode_change'", async () => {
+    db.results.medications = [{ data: [{ id: "syrup" }] }];
+    await expect(updateMedication(PLAN.id, syrup.id, { ...syrupInput, days_per_pack: null, pills_per_pack: 10, stock_qty: 7 })).rejects.toThrow("REDIRECT");
+    expect(updated()).toMatchObject({ days_per_pack: null, pills_per_pack: 10, stock_as_of: MON });
+    expect(db.rpc).toEqual([
+      [
+        "record_stock_event",
+        expect.objectContaining({ p_type: "count", p_delta: 7, p_qty_after: 7, p_expected_qty: 1, p_expected_as_of: MON, p_meta: expect.objectContaining({ reason: "mode_change" }) }),
+      ],
+    ]);
+  });
+
+  it("riconteggio a livello: accetta chiusi + quasi finito o pieno, rifiuta il resto", async () => {
+    await recountStock(PLAN.id, syrup.id, 1.1);
+    await recountStock(PLAN.id, syrup.id, 2);
+    expect(db.rpc.map(([, p]) => p.p_qty_after)).toEqual([1.1, 2]);
+    expect(await recountStock(PLAN.id, syrup.id, 1.3)).toMatchObject({ ok: false });
+    expect(db.rpc).toHaveLength(2);
+  });
+
+  it("«Finito un flacone» su uno sciroppo al bisogno toglie 1 flacone", async () => {
+    const r = await takeAsNeeded(PLAN.id, syrupPrn.id, 1);
+    expect(r).toMatchObject({ ok: true, message: "Sciroppo per la tosse: 1 flacone in meno, ne restano 1" });
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "use", p_delta: -1, p_qty_after: 1 });
+  });
+
+  it("un arrivo a livello aggiunge contenitori", async () => {
+    const r = await arrivePacks(PLAN.id, syrup.id, 2);
+    expect(r).toMatchObject({ ok: true, message: "Lattulosio: aggiunti 2 flaconi" });
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "arrival", p_delta: 2, p_qty_after: 3 });
   });
 });
 

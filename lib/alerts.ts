@@ -8,7 +8,7 @@ import { getEmailProvider } from "@/lib/email/provider";
 import { CRON_CONCURRENCY, groupBy, runPool, selectAll, timeoutMessage, type CronRunOptions } from "@/lib/batch";
 import { renderAlertEmail, type AlertEmailMed } from "@/lib/email/alert-template";
 import type { ISODate } from "@/lib/dates";
-import { unitWord } from "@/lib/presidi";
+import { containerWord, doseWord, isLevel, levelPhrase } from "@/lib/categories";
 
 export function toEmailMed(med: Medication, f: Forecast, today: ISODate): AlertEmailMed {
   return {
@@ -21,10 +21,13 @@ export function toEmailMed(med: Medication, f: Forecast, today: ISODate): AlertE
     runOutDate: f.runOutDate,
     requiresPrescription: med.requiresPrescription,
     pillsPerPack: med.pillsPerPack,
-    dosesPhrase: dosesPhrase(dosesAt(med, today)),
+    dosesPhrase: dosesPhrase(dosesAt(med, today), (n) => doseWord(med, n)),
     asNeeded: f.asNeeded,
-    reorder: f.reorder,
-    unit: unitWord(med.shape, med.pillsPerPack),
+    unit: containerWord(med, med.pillsPerPack),
+    category: med.category,
+    daysPerPack: med.daysPerPack ?? null,
+    frequencyType: med.frequencyType,
+    levelText: isLevel(med) ? levelPhrase(f.stock, f.coverageDays, med) : "",
   };
 }
 

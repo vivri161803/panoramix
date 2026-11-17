@@ -99,7 +99,7 @@ function isoOrNull(y, mo, d) {
 }
 
 // numero + (eventuale "(2X14)") + compresse/capsule/…: si prende l'ultimo della descrizione
-const UNITS_RE = /(\d+)\s*(?:\(\s*\d+\s*X\s*\d+\s*\)\s*)?(?:COMPRESS[EA]|CAPSUL[EA]|CPR|CPS|PERL[EA]|CONFETT[IO]|PASTIGLI[EA]|GOMM[EA]|OVUL[IO]|BUSTIN[EA]|SIRING(?:A|HE)|PENN[AE]|FIAL[AE]|FLACON(?:E|I|CINO|CINI)|CEROTT[OI]|MONODOSE)\b/gi;
+const UNITS_RE = /(\d+)\s*(?:\(\s*\d+\s*X\s*\d+\s*\)\s*)?(?:COMPRESS[EA]|CAPSUL[EA]|CPR|CPS|PERL[EA]|CONFETT[IO]|PASTIGLI[EA]|GOMM[EA]|OVUL[IO]|SUPPOST[EA]|BUSTIN[EA]|SIRING(?:A|HE)|PENN[AE]|FIAL[AE]|FLACON(?:E|I|CINO|CINI)|CEROTT[OI]|MONODOSE)\b/gi;
 
 /** Compresse (o capsule, bustine…) per confezione lette dalla descrizione; null se non si capisce. */
 export function doseUnitsFromDescription(desc) {

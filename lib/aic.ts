@@ -1,7 +1,7 @@
 // Codice AIC: lettura dai codici a barre della scatola e dati del modulo a partire dall'anagrafica
 // AIFA. Funzioni pure, usate dallo scanner (client) e da lookupAic (server). Test: tests/aic.test.ts.
 
-import type { MedForm } from "@/lib/presidi";
+import { categoryFromAifa, type Category, type CountMode } from "@/lib/categories";
 import { doseUnitsFromDescription, requiresPrescription } from "@/scripts/aifa/parse.mjs";
 
 export type ScanFormat = "data_matrix" | "code_39" | "code_128" | "ean_13" | "manual" | string;
@@ -205,25 +205,16 @@ export interface AicLookup {
   strength: string;
   pills_per_pack: number | null;
   atc_code: string | null;
-  /** tipo e forma suggeriti dalla forma farmaceutica e dalla descrizione (null = non si capisce) */
-  form: MedForm | null;
+  /** categoria dalla forma farmaceutica AIFA (altro se non si riconosce) */
+  category: Category;
+  /** forma della pillola, se si capisce (capsula); null altrimenti */
   shape: string | null;
+  /** modo di conteggio suggerito: PENNA/MULTIDOSE → livello, MONODOSE → pezzi */
+  mode: CountMode;
   /** solo se il file AIFA ha il regime di fornitura */
   requires_prescription: boolean | null;
   /** descrizione della confezione, per il riquadro "Dati presi da AIFA" */
   pack_description: string;
-}
-
-/** Tipo e forma del medicinale dalla forma farmaceutica AIFA ("Collirio, soluzione") e dalla confezione ("6 siringhe"). */
-export function formFromAifa(forma: string, desc: string): { form: MedForm | null; shape: string | null } {
-  const f = forma.toLowerCase();
-  const d = desc.toLowerCase();
-  if (/collirio|oftalmic/.test(f)) return { form: "collirio", shape: /monodose/.test(d) ? "monodose" : "flacone" };
-  if (/cerott|transderm/.test(f)) return { form: "cerotto", shape: /bustin/.test(d) ? "bustina" : "cerotto" };
-  if (/iniett|infusion/.test(f)) return { form: "iniezione", shape: /penn/.test(d) ? "penna" : /siring/.test(d) ? "siringa" : "fiala" };
-  if (/capsul/.test(f)) return { form: "compressa", shape: "capsula" };
-  if (/compress/.test(f)) return { form: "compressa", shape: null };
-  return { form: null, shape: null };
 }
 
 /** Dati del modulo a partire da una confezione AIFA e dai suoi principi attivi. */
@@ -234,7 +225,7 @@ export function packToForm(pack: AifaPackRow, ingredients: IngredientRow[]): Aic
     strength: buildStrength(ingredients, pack.pack_description),
     pills_per_pack: pack.dose_units ?? doseUnitsFromDescription(pack.pack_description),
     atc_code: pack.atc_code,
-    ...formFromAifa(pack.form, pack.pack_description),
+    ...categoryFromAifa(pack.form, pack.pack_description),
     requires_prescription: requiresPrescription(pack.rx_regime),
     pack_description: pack.pack_description,
   };
