@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlanBundle, type PlanBundle } from "@/lib/data";
 import type { Medication } from "@/lib/db-types";
 import { maxDate, type ISODate } from "@/lib/dates";
-import { currentStock, forecastMedication, formatQty, pillsWord, recountClearsOrdered, type AlertType } from "@/lib/forecast";
-import { doseSchema, packsSchema, qtySchema } from "@/lib/schemas";
+import { currentStock, forecastMedication, formatQty, recountClearsOrdered, type AlertType } from "@/lib/forecast";
+import { containerWord, defaultMode, isLevel, levelQuantity } from "@/lib/categories";
+import { doseSchema, levelQtySchema, packsSchema, qtySchema } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
 import { dbError, fail, type ActionResult } from "./common";
 
@@ -28,6 +29,11 @@ function refresh(planId: string) {
  * bisogno e i loro annullamenti): se stock_as_of è nel futuro, le dosi fino a quel giorno sono già
  * nel portapillole e non si toccano. Un riconteggio, invece, conta tutto e si salva a oggi.
  */
+/** «12 compresse», «1 flacone e mezzo» (a livello senza arrotondare a mezze unità) */
+function qtyText(med: Medication, q: number): string {
+  return isLevel(med) ? levelQuantity(q, med) : `${formatQty(q)} ${containerWord(med, q)}`;
+}
+
 function homeStockDate(bundle: PlanBundle, med: Medication): ISODate {
   return maxDate(bundle.today, med.stockAsOf);
 }
@@ -72,13 +78,14 @@ export async function arrivePacks(planId: string, medicationId: string, packs: n
   if (error) return fail(dbError(error, "Non riesco a registrare l’arrivo. Riprova."));
   await closeEpisodesIfAbove(bundle, med, after, asOf, null);
   refresh(planId);
-  return { ok: true, message: `Aggiunte ${formatQty(added)} ${pillsWord(added)} di ${med.name}`, data: { eventId: data as string } };
+  return { ok: true, message: `${med.name}: aggiunt${added === 1 ? "o" : "i"} ${formatQty(added)} ${containerWord(med, added)}`, data: { eventId: data as string } };
 }
 
 export async function recountStock(planId: string, medicationId: string, qty: number): Promise<ActionResult<{ eventId: string }>> {
   const { bundle, med, denied } = await load(planId, medicationId);
   if (!med) return fail(denied ?? "Medicinale non trovato.");
-  const parsed = qtySchema.safeParse(qty);
+  // a pezzi multipli di ½; a livello contenitori chiusi + quello aperto (pieno, metà, quasi finito, nessuno)
+  const parsed = (isLevel(med) ? levelQtySchema : qtySchema).safeParse(qty);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const now = currentStock(med, bundle.today);
   // "Ordinata" resta finché il nuovo conteggio non è sopra tutte le soglie.
@@ -102,7 +109,7 @@ export async function recountStock(planId: string, medicationId: string, qty: nu
   refresh(planId);
   return {
     ok: true,
-    message: `Conteggio di ${med.name} aggiornato: ${formatQty(parsed.data)} ${pillsWord(parsed.data)}`,
+    message: `Conteggio di ${med.name} aggiornato: ${qtyText(med, parsed.data)}`,
     data: { eventId: data as string },
   };
 }
@@ -156,13 +163,16 @@ export async function undoStockEvent(planId: string, medicationId: string, event
   return { ok: true, message: "Azione annullata" };
 }
 
-/** Medicinale al bisogno: registra una presa e toglie le compresse dalle scorte. */
+/**
+ * Medicinale al bisogno: registra una presa e la toglie dalle scorte. Nelle categorie a livello
+ * («Finito un flacone») la quantità è 1 contenitore.
+ */
 export async function takeAsNeeded(planId: string, medicationId: string, qty: number): Promise<ActionResult<{ eventId: string }>> {
   const { bundle, med, denied } = await load(planId, medicationId);
   if (!med) return fail(denied ?? "Medicinale non trovato.");
   if (med.frequencyType !== "as_needed") return fail("Si registrano le prese solo per i medicinali al bisogno.");
   const parsed = doseSchema.safeParse(qty);
-  if (!parsed.success || parsed.data <= 0) return fail(parsed.success ? "Indica quante compresse sono state prese." : parsed.error.issues[0].message);
+  if (!parsed.success || parsed.data <= 0) return fail(parsed.success ? `Indica quante ${containerWord(med, 2)} sono state prese.` : parsed.error.issues[0].message);
   const now = currentStock(med, bundle.today);
   if (now <= 0) return fail(`${med.name} risulta finita: ricontrolla il conteggio o registra un arrivo.`);
   const taken = Math.min(parsed.data, now);
@@ -183,7 +193,11 @@ export async function takeAsNeeded(planId: string, medicationId: string, qty: nu
   refresh(planId);
   return {
     ok: true,
-    message: `${med.name}: presa ${formatQty(taken)} ${pillsWord(taken)}, ne restano ${formatQty(after)}`,
+    // nelle categorie a livello si toglie un contenitore finito («1 flacone in meno»), altrimenti una presa
+    message:
+      defaultMode(med.category) === "livello"
+        ? `${med.name}: ${formatQty(taken)} ${containerWord(med, taken)} in meno, ne restano ${formatQty(after)}`
+        : `${med.name}: presa ${formatQty(taken)} ${containerWord(med, taken)}, ne restano ${formatQty(after)}`,
     data: { eventId: data as string },
   };
 }

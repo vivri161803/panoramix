@@ -1,14 +1,14 @@
 "use client";
 
 // Porting di UI_mobile_pc/Dispenser.dc.html: scala comune 0–60 giorni, tacche a 7 e 14.
+// Il tubo viene da Presidio (view="tube"): pezzi impilati, o una fascia piena a livello.
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties } from "react";
-import { pillStyle } from "@/lib/pills";
-import { isPresidio, unitWord } from "@/lib/presidi";
-import { PRESIDIO_GEO, PresidioSvg } from "@/components/ui/Presidio";
+import { useState } from "react";
+import { defaultMode, finishedOneLabel, recountQuestion } from "@/lib/categories";
 import type { MedStatus } from "@/lib/forecast";
 import type { DispenserView } from "@/lib/view";
+import { CategoryGlyph, Presidio } from "@/components/ui/Presidio";
 import { StatusChip, STATUS_LABEL } from "@/components/ui/StatusChip";
 import { IconChevronDown, IconPlus } from "@/components/ui/icons";
 
@@ -19,217 +19,40 @@ const META: Record<MedStatus, { bg: string; bc: string; ring: string; fg: string
   out: { bg: "var(--px-out-bg)", bc: "var(--px-out-fg)", ring: "0 0 0 1px var(--px-out-fg)", fg: "var(--px-out-fg)" },
 };
 
-const GEO: Record<string, [number, number]> = { tonda: [0.46, 0.46], ovale: [0.58, 0.37], capsula: [0.72, 0.31] };
-const DIMS = { s: { W: 48, H: 180 }, l: { W: 70, H: 250 } };
-const JX = [-0.7, 0.55, -0.15, 0.8, -0.45, 0.25, -0.85, 0.4, 0, -0.3];
-const JR = [-16, 11, -5, 19, -10, 4, -20, 8, 14, -2];
+type Size = "s" | "l";
 
-type Size = keyof typeof DIMS;
+/** Quello aperto, nel riconteggio a livello: pieno, metà, quasi finito o nessuno. */
+const OPEN_OPTIONS = [
+  { v: 1, label: "Pieno" },
+  { v: 0.5, label: "Metà" },
+  { v: 0.1, label: "Quasi finito" },
+  { v: 0, label: "Nessuno" },
+] as const;
 
-function geo(shape: string, W: number) {
-  // presidi (design/Presidio.dc.html): i pezzi lunghi si coricano, cerotti e bustine si impilano a scaglie
-  const p = PRESIDIO_GEO[shape];
-  if (p) {
-    const scale = (W * p.len) / Math.max(p.w, p.h);
-    const ph = Math.min(p.w, p.h) * scale;
-    return { pw: Math.max(p.w, p.h) * scale, ph, step: ph * p.step, scale, p };
-  }
-  const g = GEO[shape] ?? GEO.tonda;
-  const pw = W * g[0];
-  const ph = W * g[1];
-  return { pw, ph, step: ph * 0.8 };
+/** Scorta a livello divisa in contenitori chiusi e quanto resta in quello aperto. */
+function splitLevel(q: number): { closed: number; open: number } {
+  if (!(q > 1e-9)) return { closed: 0, open: 0 };
+  const closed = Math.max(0, Math.ceil(q - 1e-9) - 1);
+  const rem = q - closed;
+  return { closed, open: rem > 0.75 ? 1 : rem > 0.3 ? 0.5 : 0.1 };
 }
 
-function targetCount(med: DispenserView, size: Size, max: number) {
-  const { W, H } = DIMS[size];
-  const { step } = geo(med.shape, W);
-  if (!(med.qty > 0)) return 0;
-  const days = med.days === null ? max : med.days;
-  const lvl = (Math.min(days, max) / max) * (H - 6);
-  return Math.max(1, Math.min(Math.floor((H - 6) / step), Math.round(lvl / step)));
-}
-
-interface PillSlot {
-  id: number;
-  slot: number;
-  anim: "in" | "out" | null;
-  delay: number;
-}
-
-/** Compresse nel tubo: entrano dall'alto quando la scorta sale, escono dal basso quando scende. */
-function usePills(target: number) {
-  const [state, setState] = useState(() => ({
-    target,
-    nid: target,
-    pills: Array.from({ length: target }, (_, i): PillSlot => ({ id: i, slot: i, anim: null, delay: 0 })),
-  }));
-
-  // aggiornamento "derivato" durante il render (pattern consigliato da React)
-  if (state.target !== target) {
-    const live = state.pills.filter((p) => p.anim !== "out");
-    let pills = state.pills.map((p) => ({ ...p }));
-    let nid = state.nid;
-    if (target > live.length) {
-      for (let k = 0; k < target - live.length; k++) pills.push({ id: nid++, slot: live.length + k, anim: "in", delay: k * 45 });
-    } else {
-      const d = live.length - target;
-      pills = pills.map((p) => {
-        if (p.anim === "out") return p;
-        return p.slot < d ? { ...p, anim: "out" as const, delay: p.slot * 60 } : { ...p, slot: p.slot - d };
-      });
-    }
-    setState({ target, nid, pills });
-  }
-
-  const animating = state.pills.some((p) => p.anim);
-  useEffect(() => {
-    if (!animating) return;
-    const longest = Math.max(0, ...state.pills.map((p) => p.delay));
-    const t = setTimeout(() => {
-      setState((s) => ({ ...s, pills: s.pills.filter((p) => p.anim !== "out").map((p) => ({ ...p, anim: null })) }));
-    }, longest + 900);
-    return () => clearTimeout(t);
-  }, [animating, state.pills]);
-
-  return state.pills;
-}
-
-function Tube({ med, size, max }: { med: DispenserView; size: Size; max: number }) {
-  const { W, H } = DIMS[size];
-  const st = med.status;
-  const side = 36;
-  const TW = W + 4;
-  const B = 12;
-  const CAP = 10;
-  const days = med.days === null ? max : med.days;
-  const over = med.days === null || days >= max;
-  const fg = META[st].fg;
-  const lvl = (Math.min(days, max) / max) * (H - 6);
-  const { pw, ph, step, scale, p: pg } = geo(med.shape, W);
-  const pills = usePills(targetCount(med, size, max));
-  const ticks = med.asNeeded ? [] : [7, 14];
-
+function TubeFor({ med, size, max }: { med: DispenserView; size: Size; max: number }) {
+  const days = med.asNeeded ? Math.min(max, Math.round((med.qty / med.perPack) * 30)) : med.days;
   return (
-    <div aria-hidden="true" style={{ position: "relative", width: side * 2 + TW, height: H + B + CAP, flex: "none" }}>
-      <div style={{ position: "absolute", left: side - 10, width: TW + 20, bottom: 0, height: B, borderRadius: "3px 3px 7px 7px", background: "var(--px-surface-3)", border: "1.5px solid var(--px-line-strong)" }} />
-      <div
-        style={{
-          position: "absolute",
-          left: side,
-          bottom: B - 1,
-          width: TW,
-          height: H,
-          border: "2px solid var(--px-line-strong)",
-          borderTop: "none",
-          borderRadius: `0 0 ${W * 0.3}px ${W * 0.3}px`,
-          background: "var(--px-tube-bg)",
-          overflow: "hidden",
-        }}
-      >
-        {pills.map((p) => {
-          const j = p.id % 10;
-          const x = (W - pw) / 2 + ((JX[j] * (W - pw)) / 2) * 0.9;
-          const r = pg ? JR[j] * (pg.len > 0.8 ? 0.3 : 0.6) + (pg.h > pg.w ? 90 : 0) : med.shape === "tonda" ? JR[j] * 0.3 : JR[j];
-          const style: CSSProperties & { "--from": string } = {
-            position: "absolute",
-            left: x,
-            bottom: 3 + p.slot * step,
-            width: pw,
-            height: ph,
-            transition: "bottom 520ms cubic-bezier(.45,0,.55,1) 180ms",
-            animation:
-              p.anim === "in"
-                ? `pxDrop 620ms cubic-bezier(.5,0,.9,.6) ${p.delay}ms both`
-                : p.anim === "out"
-                  ? `pxOut 520ms cubic-bezier(.5,0,1,1) ${p.delay}ms both`
-                  : "none",
-            "--from": `${-(H - p.slot * step + 30)}px`,
-          };
-          return (
-            <div key={p.id} style={style}>
-              {pg && scale ? (
-                <PresidioSvg shape={med.shape} color={med.color} scale={scale} style={{ position: "absolute", left: (pw - pg.w * scale) / 2, top: (ph - pg.h * scale) / 2, transform: `rotate(${r}deg)` }} />
-              ) : (
-                <div style={{ ...pillStyle(med.color, med.shape, pw, ph), transform: `rotate(${r}deg)` }} />
-              )}
-            </div>
-          );
-        })}
-        {ticks.map((t) => {
-          const passed = days < t && st !== "ok";
-          return (
-            <div
-              key={`l${t}`}
-              style={{ position: "absolute", left: 0, right: 0, bottom: (t / max) * (H - 6), borderTop: passed ? `2px solid ${fg}` : "1px dashed var(--px-line-strong)", zIndex: 3 }}
-            />
-          );
-        })}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(90deg, rgba(255,255,255,0) 0%, var(--px-glass-hi) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, var(--px-glass-hi) 88%, rgba(255,255,255,0) 100%)",
-            pointerEvents: "none",
-            zIndex: 2,
-          }}
-        />
-        {over && !med.asNeeded && (
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: 8,
-              transform: "translateX(-50%)",
-              padding: "3px 6px",
-              borderRadius: 6,
-              background: "var(--px-ink)",
-              color: "var(--px-surface)",
-              font: "600 12px/1.2 var(--px-mono)",
-              zIndex: 4,
-            }}
-          >
-            {max}+
-          </div>
-        )}
-      </div>
-      <div style={{ position: "absolute", left: side - 5, width: TW + 10, bottom: B + H - 3, height: CAP, borderRadius: "5px 5px 2px 2px", background: "var(--px-surface-3)", border: "1.5px solid var(--px-line-strong)" }} />
-      {ticks.map((t) => {
-        const passed = days < t && st !== "ok";
-        const col = passed ? fg : "var(--px-ink-3)";
-        const y = B - 1 + (t / max) * (H - 6);
-        return (
-          <div
-            key={`t${t}`}
-            style={{ position: "absolute", left: side + TW - 1, bottom: y - 7, display: "flex", alignItems: "center", gap: 3, font: `${passed ? 650 : 500} 11px/14px var(--px-mono)`, color: col, whiteSpace: "nowrap" }}
-          >
-            <span style={{ width: 6, borderTop: `${passed ? 2 : 1.5}px solid ${col}` }} />
-            {t}g
-          </div>
-        );
-      })}
-      {!med.asNeeded && (
-        <div style={{ position: "absolute", left: side + TW + 8, bottom: B + H - 14, font: "500 11px/14px var(--px-mono)", color: "var(--px-ink-3)" }}>{max}g</div>
-      )}
-      {!over && days > 0 && !med.asNeeded && (
-        <div
-          style={{
-            position: "absolute",
-            right: side + TW + 1,
-            bottom: B - 1 + lvl - 7,
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-            font: "650 11px/14px var(--px-mono)",
-            color: st === "ok" ? "var(--px-ink-2)" : fg,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {days}g
-          <span style={{ width: 6, borderTop: `2px solid ${st === "ok" ? "var(--px-ink-2)" : fg}` }} />
-        </div>
-      )}
-    </div>
+    <Presidio
+      view="tube"
+      category={med.category}
+      pillShape={med.pillShape}
+      color={med.color}
+      size={size}
+      level={med.level}
+      days={days}
+      scaleMax={max}
+      status={med.status}
+      asNeeded={med.asNeeded}
+      hasStock={med.qty > 0}
+    />
   );
 }
 
@@ -269,19 +92,30 @@ export function Dispenser({
 }) {
   const [panel, setPanel] = useState<Panel>(null);
   const [n, setN] = useState(0);
+  const [closed, setClosed] = useState(0);
+  const [openPart, setOpenPart] = useState<number>(1);
   const meta = META[med.status];
   const recount = panel === "recount";
   const take = panel === "take";
+  const unit = (q: number) => (Math.abs(q - 1) < 1e-9 ? med.unitOne : med.unitMany);
+  // al bisogno nelle categorie a livello si toglie un contenitore intero («Finito un flacone»)
+  const wholeTake = defaultMode(med.category) === "livello";
 
   const open = (p: Panel) => {
     setPanel(p);
     if (p === "arrive") setN(1);
-    if (p === "recount") setN(med.qty);
+    if (p === "recount") {
+      setN(med.qty);
+      const sp = splitLevel(med.qty);
+      setClosed(sp.closed);
+      setOpenPart(sp.open);
+    }
     if (p === "take") setN(1);
   };
 
-  const step = take ? 0.5 : 1;
-  const aria = `${med.name} ${med.strength}, ${med.qtyText} ${unitWord(med.shape, med.qty)}, ${med.daysText ? `${med.daysText} ${med.daysWord}` : med.daysWord}, ${STATUS_LABEL[med.status].toLowerCase()}`;
+  const step = take && !wholeTake && med.category === "pillola" ? 0.5 : 1;
+  const stockText = med.level ? med.levelText : `${med.qtyText} ${unit(med.qty)}`;
+  const aria = `${med.name} ${med.strength}, ${med.categoryLabel}, ${stockText}, ${med.daysText ? `${med.daysText} ${med.daysWord}` : med.daysWord}, ${STATUS_LABEL[med.status].toLowerCase()}`;
 
   return (
     <div
@@ -292,17 +126,21 @@ export function Dispenser({
     >
       <div className="flex min-h-7 flex-wrap items-center justify-between gap-1.5">
         <StatusChip status={med.status} />
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-px-surface-2 px-2.5 text-[13px] font-semibold leading-none text-px-ink-2">
+          <CategoryGlyph category={med.category} size={16} />
+          {med.categoryLabel}
+        </span>
       </div>
       <div className="flex justify-center py-0.5">
         {size ? (
-          <Tube med={med} size={size} max={scaleMax} />
+          <TubeFor med={med} size={size} max={scaleMax} />
         ) : (
           <>
             <div className="min-[900px]:hidden">
-              <Tube med={med} size="s" max={scaleMax} />
+              <TubeFor med={med} size="s" max={scaleMax} />
             </div>
             <div className="hidden min-[900px]:block">
-              <Tube med={med} size="l" max={scaleMax} />
+              <TubeFor med={med} size="l" max={scaleMax} />
             </div>
           </>
         )}
@@ -315,13 +153,19 @@ export function Dispenser({
         </div>
       </div>
       <div className="flex flex-col gap-[3px] text-[16px] leading-[1.35] text-px-ink-2">
-        <div>
-          <span className="font-[650] text-px-ink">{med.qtyText}</span> {med.qtyWord}
-        </div>
-        <div>
-          {med.daysText && <span className="font-[650] text-px-ink">{med.daysText} </span>}
-          {med.daysWord}
-        </div>
+        {med.level ? (
+          <div className="font-[650] text-px-ink">{med.levelText}</div>
+        ) : (
+          <>
+            <div>
+              <span className="font-[650] text-px-ink">{med.qtyText}</span> {med.qtyWord}
+            </div>
+            <div>
+              {med.daysText && <span className="font-[650] text-px-ink">{med.daysText} </span>}
+              {med.daysWord}
+            </div>
+          </>
+        )}
         {med.endLabel && <div>{med.endLabel}</div>}
       </div>
       {med.reason && (
@@ -344,17 +188,17 @@ export function Dispenser({
               type="button"
               disabled={actions.busy || med.qty <= 0}
               onClick={() => actions.onTake(1)}
-              aria-label={`Presa una ${unitWord(med.shape, 1)} di ${med.name}: togli 1 ${unitWord(med.shape, 1)} dalle scorte`}
+              aria-label={wholeTake ? `${finishedOneLabel(med)} di ${med.name}: togli 1 ${med.unitOne} dalle scorte` : `Presa di ${med.name}: togli 1 ${med.unitOne} dalle scorte`}
               className="flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-px-ink bg-px-surface px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-ink"
             >
-              − Presa 1
+              {wholeTake ? finishedOneLabel(med) : "− Presa 1"}
             </button>
           )}
           <button
             type="button"
             disabled={actions.busy}
             onClick={() => actions.onArrive(1)}
-            aria-label={`Arrivata confezione di ${med.name}: aggiungi ${med.perPack} ${unitWord(med.shape, med.perPack)}`}
+            aria-label={`Arrivata confezione di ${med.name}: aggiungi ${med.perPack} ${unit(med.perPack)}`}
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border-none bg-px-primary px-2.5 py-2 text-[15px] font-semibold leading-[1.2] text-px-on-primary"
           >
             <IconPlus /> +1 confezione
@@ -396,36 +240,81 @@ export function Dispenser({
               className="flex flex-col gap-2 rounded-[12px] border border-px-line bg-px-surface-2 p-2.5"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (recount) actions.onRecount(n);
+                if (recount) actions.onRecount(med.level ? closed + openPart : n);
                 else if (take) actions.onTake(n);
                 else actions.onArrive(n);
                 setPanel(null);
               }}
             >
+              {recount && med.level ? (
+                <>
+                  <label htmlFor={`px-closed-${med.id}`} className="text-[15px] font-semibold leading-[1.3]">
+                    {med.unitMany.charAt(0).toUpperCase() + med.unitMany.slice(1)} chiusi
+                  </label>
+                  <div className="flex gap-1">
+                    <button type="button" aria-label={`Un ${med.unitOne} chiuso in meno`} onClick={() => setClosed((x) => Math.max(0, x - 1))} className={stepBtn}>
+                      −
+                    </button>
+                    <input
+                      id={`px-closed-${med.id}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={closed}
+                      onChange={(e) => setClosed(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                      className="h-11 min-w-0 flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[18px] font-[650] leading-none text-px-ink"
+                    />
+                    <button type="button" aria-label={`Un ${med.unitOne} chiuso in più`} onClick={() => setClosed((x) => x + 1)} className={stepBtn}>
+                      +
+                    </button>
+                  </div>
+                  <fieldset className="m-0 flex flex-col gap-1.5 border-none p-0">
+                    <legend className="mb-1.5 p-0 text-[15px] font-semibold leading-[1.3]">Quello aperto</legend>
+                    <div className="grid grid-cols-2 gap-1">
+                      {OPEN_OPTIONS.map((o) => (
+                        <button
+                          key={o.v}
+                          type="button"
+                          aria-pressed={openPart === o.v}
+                          onClick={() => setOpenPart(o.v)}
+                          className="min-h-11 rounded-[10px] text-[14px] font-semibold leading-[1.2]"
+                          style={{ border: `1.5px solid ${openPart === o.v ? "var(--px-ink)" : "var(--px-line-strong)"}`, background: openPart === o.v ? "var(--px-ink)" : "var(--px-surface)", color: openPart === o.v ? "var(--px-surface)" : "var(--px-ink)" }}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                </>
+              ) : (
+              <>
               <label htmlFor={`px-n-${med.id}`} className="text-[15px] font-semibold leading-[1.3]">
-                {recount ? `Quante ne hai in tutto${prepReminder ? ", comprese quelle nel portapillole" : ""}?` : take ? (isPresidio(med.shape) ? `Quante prese? (${unitWord(med.shape, 2)})` : "Quante compresse sono state prese?") : "Confezioni arrivate"}
+                {recount ? recountQuestion(med, prepReminder) : take ? (wholeTake ? `Quanti ${med.unitMany} sono finiti?` : `Quante prese? (${med.unitMany})`) : "Confezioni arrivate"}
               </label>
               <div className="flex gap-1">
-                <button type="button" aria-label={recount ? "Una in meno" : take ? "Mezza in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : take ? 0.5 : 1, x - step))} className={stepBtn}>
+                <button type="button" aria-label={recount ? "Una in meno" : take ? "Una in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : take ? step : 1, x - step))} className={stepBtn}>
                   −
                 </button>
                 <input
                   id={`px-n-${med.id}`}
                   type="number"
                   inputMode="decimal"
-                  min={recount ? 0 : take ? 0.5 : 1}
-                  step={recount || take ? 0.5 : 1}
+                  min={recount ? 0 : take ? step : 1}
+                  step={recount ? 0.5 : take ? step : 1}
                   value={Number.isFinite(n) ? n : 0}
                   onChange={(e) => setN(Math.max(0, Number(e.target.value.replace(",", ".")) || 0))}
                   className="h-11 min-w-0 flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[18px] font-[650] leading-none text-px-ink"
                 />
-                <button type="button" aria-label={recount ? "Una in più" : take ? "Mezza in più" : "Una confezione in più"} onClick={() => setN((x) => x + step)} className={stepBtn}>
+                <button type="button" aria-label={recount ? "Una in più" : take ? "Una in più" : "Una confezione in più"} onClick={() => setN((x) => x + step)} className={stepBtn}>
                   +
                 </button>
               </div>
+              </>
+              )}
               {!recount && !take && (
                 <span className="text-[14px] leading-[1.3] text-px-ink-2">
-                  = {n * med.perPack} {unitWord(med.shape, n * med.perPack)} ({med.perPack} per confezione)
+                  = {n * med.perPack} {unit(n * med.perPack)} ({med.perPack} per confezione)
                 </span>
               )}
               {take && <span className="text-[14px] leading-[1.3] text-px-ink-2">Escono dalle scorte di oggi. Ne restano {med.qtyText} prima della presa.</span>}

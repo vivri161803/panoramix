@@ -5,6 +5,7 @@ import { ROLE_LABEL } from "@/lib/roles";
 import { InvitesList } from "@/components/InvitesList";
 import { daysWord } from "@/lib/forecast";
 import { Pill } from "@/components/ui/Pill";
+import { Presidio } from "@/components/ui/Presidio";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { IconPlus } from "@/components/ui/icons";
 
@@ -87,7 +88,7 @@ export default async function PianiPage() {
                 <div className="flex min-h-[52px] w-full flex-wrap items-center gap-3 rounded-[12px] bg-px-surface-2 px-3.5 py-3">
                   {forecast.items.length === 0 && <span className="text-[15px] text-px-ink-3">Ancora nessun medicinale</span>}
                   {forecast.items.map((i) => (
-                    <Pill key={i.med.id} color={i.med.color} shape={i.med.shape} size={28} />
+                    <Presidio key={i.med.id} category={i.med.category} pillShape={i.med.shape} color={i.med.color} size={28} />
                   ))}
                 </div>
                 <div className="grid w-full grid-cols-2 gap-3">

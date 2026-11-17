@@ -5,7 +5,8 @@ import { formatLong, isoWeekday, WEEKDAYS_SHORT } from "@/lib/dates";
 import { formatQty, SLOT_LABEL, SLOTS } from "@/lib/forecast";
 import { resolveWeek, weekGrid } from "@/lib/week";
 import { PlanHeader } from "@/components/PlanHeader";
-import { Pill } from "@/components/ui/Pill";
+import { Presidio } from "@/components/ui/Presidio";
+import { categoryLabel, doseWord } from "@/lib/categories";
 import { IconBack, IconNext, IconPrint } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Calendario" };
@@ -70,7 +71,7 @@ export default async function CalendarioPage({ params, searchParams }: PageProps
             <div className="grid grid-cols-7 gap-[clamp(3px,.6vw,10px)]">
               {days.map((d) => {
                 const items = d.slots[slot];
-                const aria = `${formatLong(d.date)}, ${SLOT_LABEL[slot].toLowerCase()}: ${items.length ? items.map((it) => `${byId.get(it.medicationId)?.name} ${formatQty(it.qty)}`).join(", ") : "niente"}`;
+                const aria = `${formatLong(d.date)}, ${SLOT_LABEL[slot].toLowerCase()}: ${items.length ? items.map((it) => `${byId.get(it.medicationId)?.name} ${formatQty(it.qty)} ${doseWord(byId.get(it.medicationId)!, it.qty)}`).join(", ") : "niente"}`;
                 return (
                   <div key={d.date} role="group" aria-label={aria} className="flex min-h-16 flex-col items-stretch gap-2 rounded-[10px] bg-px-surface-2 px-1 py-2">
                     {items.map((it) => {
@@ -78,13 +79,15 @@ export default async function CalendarioPage({ params, searchParams }: PageProps
                       return (
                         <div key={it.medicationId} aria-hidden="true">
                           <div className="flex flex-col items-center gap-[3px] min-[900px]:hidden">
-                            <Pill color={m.color} shape={m.shape} size={22} />
+                            <Presidio category={m.category} pillShape={m.shape} color={m.color} size={22} />
                             <span className="font-mono text-[13px] font-[650] leading-none">×{formatQty(it.qty)}</span>
                           </div>
                           <div className="hidden items-center gap-2 px-1.5 min-[900px]:flex">
-                            <Pill color={m.color} shape={m.shape} size={24} />
-                            <span className="min-w-0 flex-1 overflow-hidden text-ellipsis text-[15px] font-medium leading-[1.2]">{m.name}</span>
-                            <span className="font-mono text-[15px] font-[650] leading-none">×{formatQty(it.qty)}</span>
+                            <Presidio category={m.category} pillShape={m.shape} color={m.color} size={24} />
+                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-medium leading-[1.2]">{m.name}</span>
+                              <span className="font-mono text-[14px] font-[650] leading-none">{formatQty(it.qty)} {doseWord(m, it.qty)}</span>
+                            </span>
                           </div>
                         </div>
                       );
@@ -100,9 +103,9 @@ export default async function CalendarioPage({ params, searchParams }: PageProps
       <div className="flex flex-wrap gap-x-6 gap-y-2.5">
         {legend.map((m) => (
           <div key={m.id} className="flex items-center gap-2.5">
-            <Pill color={m.color} shape={m.shape} size={26} />
+            <Presidio category={m.category} pillShape={m.shape} color={m.color} size={26} />
             <span className="text-[15px] font-semibold leading-[1.3]">
-              {m.name} <span className="font-normal text-px-ink-2">{m.strength}</span>
+              {m.name} <span className="font-normal text-px-ink-2">{[m.strength, categoryLabel(m.category)].filter(Boolean).join(" · ")}</span>
             </span>
           </div>
         ))}

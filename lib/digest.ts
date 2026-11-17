@@ -2,6 +2,7 @@
 
 import { addDays, formatShort, type ISODate } from "./dates";
 import type { Medication } from "./db-types";
+import { categoryLabel, doseWord, isLevel, levelPhrase } from "./categories";
 import { dosesAt, dosesBetween, dosesPhrase, hasEnded, totalPerDose, upcomingChanges, type DoseChange, type PlanForecast } from "./forecast";
 import type { ReminderItem, SummaryMed } from "./email/templates";
 
@@ -25,7 +26,8 @@ export function buildPrepReminderItems(meds: Medication[], prepDate: ISODate): R
         name: m.name,
         strength: m.strength,
         color: m.color,
-        phrase: dosesPhrase(dosesAt(m, prepDate)),
+        categoryLabel: categoryLabel(m.category),
+        phrase: dosesPhrase(dosesAt(m, prepDate), (n) => doseWord(m, n)),
         changeNote: change ? changeLabel(change) : undefined,
       };
     });
@@ -44,5 +46,9 @@ export function buildSummaryMeds(fc: PlanForecast<Medication>): SummaryMed[] {
       coverageDays: f.coverageDays,
       runOutDate: f.runOutDate,
       asNeeded: f.asNeeded,
+      category: med.category,
+      daysPerPack: med.daysPerPack ?? null,
+      frequencyType: med.frequencyType,
+      levelText: isLevel(med) ? levelPhrase(f.stock, f.coverageDays, med) : "",
     }));
 }

@@ -20,7 +20,7 @@ order, the stock dispenser grid and the ATC colour legend. Parent of all per-pla
 ## Invariants
 - All pages here load data through `getPlanBundle(id)`, which calls `requireProfile` and returns 404 (`notFound`) for a non-UUID id or a plan the user cannot read.
 - With no medications, shows an empty state; the "Aggiungi il primo medicinale" link appears only when `canEdit(b.role)`.
-- `DispenserGrid` is `readOnly` without edit rights.
+- `DispenserGrid` is `readOnly` without edit rights. Every Dispenser shows its category label; level meds (`view.level`) show a full band and `levelText`.
 
 ## Side Effects
 - Page reads only (Supabase via `getPlanBundle`); stock mutations are server actions in `DispenserGrid`.

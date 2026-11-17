@@ -3,7 +3,8 @@
 
 import { capitalize, formatDayMonth, formatDayMonthYear, formatLong, formatRelative, type ISODate } from "@/lib/dates";
 import { GMAIL_DAILY_LIMIT, type UsageStats } from "@/lib/usage-stats";
-import { daysWord, formatQty, type MedStatus } from "@/lib/forecast";
+import { daysWord, formatQty, type FrequencyType, type MedStatus } from "@/lib/forecast";
+import { categoryLabel, containerWord, leftWord, type Category } from "@/lib/categories";
 import { ROLE_LABEL, ROLE_SUB, type MemberRole } from "@/lib/roles";
 import { EMAIL_DISCLAIMER } from "./alert-template";
 import { esc, FONT, infoCard, noteBox, renderLayout } from "./layout";
@@ -54,7 +55,9 @@ export interface ReminderItem {
   name: string;
   strength: string;
   color: string;
-  /** "1 al mattino e ½ alla sera" (dosi del primo giorno) */
+  /** «Pillola», «Gocce» */
+  categoryLabel: string;
+  /** "1 compressa al mattino", "1 goccia alla sera" (dosi del primo giorno) */
   phrase: string;
   /** "Dal 18 nov: ½ al mattino" se la dose cambia durante la settimana */
   changeNote?: string;
@@ -84,6 +87,7 @@ export function renderPrepReminderEmail(d: ReminderEmailData): RenderedEmail {
         color: i.color,
         tone: "ok",
         rows: [
+          ["Categoria", i.categoryLabel],
           ["Dosi", i.phrase || "—"],
           ...(i.changeNote ? ([["Cambio di dose", i.changeNote]] as [string, string][]) : []),
         ],
@@ -127,7 +131,17 @@ export interface SummaryMed {
   coverageDays: number | null;
   runOutDate: ISODate | null;
   asNeeded: boolean;
+  category: Category;
+  daysPerPack: number | null;
+  frequencyType: FrequencyType;
+  /** a livello: «circa 18 giorni · 1 flacone e mezzo»; vuoto a pezzi */
+  levelText: string;
 }
+
+/** «Compresse rimaste», «Flaconi rimasti» */
+const leftLabel = (m: SummaryMed) => capitalize(leftWord(m, 2));
+/** a pezzi «26», a livello «circa 29 giorni · meno di un flacone» (0,967 flaconi non diventano 1) */
+const leftValue = (m: SummaryMed) => m.levelText || formatQty(m.qty);
 
 export interface SummaryEmailData {
   patientName: string;
@@ -171,7 +185,8 @@ export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
         tone: tone(m.status),
         chip: { label: STATUS_TEXT[m.status], tone: m.status },
         rows: [
-          ["Compresse in casa", formatQty(m.qty)],
+          ["Categoria", categoryLabel(m.category)],
+          [leftLabel(m), leftValue(m)],
           ["Copertura", coverage(m)],
           ...(m.runOutDate && !m.asNeeded ? ([["Finisce", formatLong(m.runOutDate)]] as [string, string][]) : []),
         ],
@@ -196,7 +211,7 @@ export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
     "",
     ...d.meds.map(
       (m) =>
-        `• ${m.name}${m.strength ? ` ${m.strength}` : ""} — ${STATUS_TEXT[m.status]}: ${formatQty(m.qty)} in casa, ${coverage(m)}${m.runOutDate && !m.asNeeded ? `, finisce ${formatLong(m.runOutDate)}` : ""}`,
+        `• ${m.name}${m.strength ? ` ${m.strength}` : ""} (${categoryLabel(m.category)}) — ${STATUS_TEXT[m.status]}: ${m.levelText ? `${m.levelText} in casa` : `${formatQty(m.qty)} ${containerWord(m, m.qty)} in casa`}, ${coverage(m)}${m.runOutDate && !m.asNeeded ? `, finisce ${formatLong(m.runOutDate)}` : ""}`,
     ),
     "",
     `Apri il piano: ${d.planUrl}`,

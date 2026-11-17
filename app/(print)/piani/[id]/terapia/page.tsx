@@ -6,6 +6,8 @@ import { EMAIL_DISCLAIMER } from "@/lib/email/alert-template";
 import { changeLabel } from "@/lib/digest";
 import { dosesAt, formatQty, frequencyPhrase, SLOTS, slotDose, upcomingChanges } from "@/lib/forecast";
 import { pillLook } from "@/lib/pills";
+import { categoryLabel, doseWord } from "@/lib/categories";
+import { Presidio } from "@/components/ui/Presidio";
 import { IconBack } from "@/components/ui/icons";
 import { PrintButton } from "../stampa/PrintButton";
 import "../stampa/print.css";
@@ -14,10 +16,6 @@ export const metadata: Metadata = { title: "Scheda terapia" };
 
 const cell = { padding: "10px 12px", borderTop: "1.5px solid #AEB8C2", verticalAlign: "top" as const };
 const head = { padding: "10px 12px", background: "#0E1620", color: "#fff", font: "600 16px/1.2 var(--px-font)", textAlign: "left" as const };
-
-function Dot({ color }: { color: string }) {
-  return <span aria-hidden="true" style={{ display: "inline-block", flex: "none", width: 16, height: 16, borderRadius: "50%", background: color, boxShadow: "inset 0 -2px 3px rgba(0,0,0,.2),0 0 0 1.5px rgba(0,0,0,.25)" }} />;
-}
 
 export default async function TerapiaPage({ params }: PageProps<"/piani/[id]/terapia">) {
   const { id } = await params;
@@ -84,19 +82,24 @@ export default async function TerapiaPage({ params }: PageProps<"/piani/[id]/ter
                       <tr key={m.id}>
                         <td style={cell}>
                           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                            <span style={{ paddingTop: 3 }}>
-                              <Dot color={m.color} />
-                            </span>
+                            <Presidio category={m.category} pillShape={m.shape} color={m.color} size={22} />
                             <span>
                               <strong style={{ font: "650 17px/1.25 var(--px-font)" }}>{m.name}</strong> {m.strength}
                               <br />
-                              <span style={{ color: "#44505C", fontSize: 14 }}>{pillLook(m.atcCode, m.shape)}</span>
+                              <span style={{ color: "#44505C", fontSize: 14 }}>{[categoryLabel(m.category), pillLook(m.atcCode, m.shape)].filter(Boolean).join(" · ")}</span>
                             </span>
                           </div>
                         </td>
                         {SLOTS.map((s) => (
                           <td key={s} style={{ ...cell, textAlign: "center", font: "700 20px/1.2 var(--px-font)", borderLeft: "1.5px solid #AEB8C2" }}>
-                            {slotDose(d, s) > 0 ? formatQty(slotDose(d, s)) : <span style={{ color: "#AEB8C2" }}>—</span>}
+                            {slotDose(d, s) > 0 ? (
+                              <>
+                                {formatQty(slotDose(d, s))}
+                                <span style={{ display: "block", font: "500 13px/1.2 var(--px-font)", color: "#44505C" }}>{doseWord(m, slotDose(d, s))}</span>
+                              </>
+                            ) : (
+                              <span style={{ color: "#AEB8C2" }}>—</span>
+                            )}
                           </td>
                         ))}
                         <td style={{ ...cell, borderLeft: "1.5px solid #AEB8C2", fontSize: 15 }}>
@@ -119,11 +122,9 @@ export default async function TerapiaPage({ params }: PageProps<"/piani/[id]/ter
                 <h2 style={{ margin: 0, font: "650 20px/1.2 var(--px-font)" }}>Al bisogno</h2>
                 {asNeeded.map((m) => (
                   <div key={m.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", font: "500 16px/1.4 var(--px-font)" }}>
-                    <span style={{ paddingTop: 3 }}>
-                      <Dot color={m.color} />
-                    </span>
+                    <Presidio category={m.category} pillShape={m.shape} color={m.color} size={22} />
                     <span>
-                      <strong>{m.name}</strong> {m.strength}
+                      <strong>{m.name}</strong> {m.strength} <span style={{ color: "#44505C" }}>· {categoryLabel(m.category)}</span>
                       {notes(m).length > 0 && <span style={{ color: "#44505C" }}> · {notes(m).join(" · ")}</span>}
                     </span>
                   </div>

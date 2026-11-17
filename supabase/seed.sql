@@ -52,15 +52,25 @@ begin
   values (v_owner, '[ESEMPIO] Nonna Anna', 'Piano di esempio creato da supabase/seed.sql', true, 7, true, false, true)
   returning id into v_plan;
 
-  -- colore = gruppo ATC (lib/atc.ts): C corallo, B turchese, A giallo
-  insert into public.medications (plan_id, name, strength, description, pills_per_pack, requires_prescription, color, shape,
-    aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, start_date, stock_qty, stock_as_of)
+  -- colore = gruppo ATC (lib/atc.ts): C corallo, B turchese, A giallo, R azzurro, D nocciola, N viola
+  -- un medicinale per categoria; sciroppo, collirio, inalatore e crema a livello (days_per_pack)
+  insert into public.medications (plan_id, name, strength, description, pills_per_pack, requires_prescription, color, category, shape,
+    days_per_pack, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, start_date, stock_qty, stock_as_of)
   values
-    (v_plan, 'Cardioaspirin', 'Acido acetilsalicilico 100 mg', 'Dopo pranzo', 30, true, '#12C2B0', 'tonda', '024840074', 'B01AC06', 0, 1, 0, 'daily', '{}', v_today, 5, v_today),
-    (v_plan, 'Ramipril Alter', 'Ramipril 5 mg', 'Pressione', 14, true, '#FF5E4D', 'tonda', '050238118', 'C09AA05', 1, 0, 0, 'daily', '{}', v_today, 16, v_today),
-    (v_plan, 'Acarbosio Aurobindo', 'Acarbosio 50 mg', 'Glicemia, a pranzo', 40, true, '#FFC020', 'tonda', '047612027', 'A10BF01', 0, 1, 0, 'daily', '{}', v_today, 22, v_today),
-    (v_plan, 'Atorvastatina', '20 mg', 'Colesterolo', 30, false, '#FF5E4D', 'ovale', null, 'C', 0, 0, 1, 'daily', '{}', v_today, 42, v_today),
-    (v_plan, 'Vitamina D', '25.000 UI', 'La domenica', 4, false, '#FFC020', 'capsula', null, 'A', 0, 1, 0, 'weekdays', '{7}', v_today, 3, v_today);
+    (v_plan, 'Cardioaspirin', 'Acido acetilsalicilico 100 mg', 'Dopo pranzo', 30, true, '#12C2B0', 'pillola', 'tonda', null, '024840074', 'B01AC06', 0, 1, 0, 'daily', '{}', v_today, 5, v_today),
+    (v_plan, 'Ramipril Alter', 'Ramipril 5 mg', 'Pressione', 14, true, '#FF5E4D', 'pillola', 'tonda', null, '050238118', 'C09AA05', 1, 0, 0, 'daily', '{}', v_today, 16, v_today),
+    (v_plan, 'Acarbosio Aurobindo', 'Acarbosio 50 mg', 'Glicemia, a pranzo', 40, true, '#FFC020', 'pillola', 'tonda', null, '047612027', 'A10BF01', 0, 1, 0, 'daily', '{}', v_today, 22, v_today),
+    (v_plan, 'Atorvastatina', '20 mg', 'Colesterolo', 30, false, '#FF5E4D', 'pillola', 'ovale', null, null, 'C', 0, 0, 1, 'daily', '{}', v_today, 42, v_today),
+    (v_plan, 'Vitamina D', '25.000 UI', 'La domenica', 4, false, '#FFC020', 'pillola', 'capsula', null, null, 'A', 0, 1, 0, 'weekdays', '{7}', v_today, 3, v_today),
+    (v_plan, 'Macrogol', '10 g', 'Sciolto in acqua', 20, false, '#FFC020', 'bustina', null, null, null, 'A', 1, 0, 0, 'daily', '{}', v_today, 9, v_today),
+    (v_plan, 'Lattulosio', '66,7 g/100 ml', 'Sciroppo', 1, false, '#FFC020', 'liquido', null, 15, null, 'A', 15, 0, 0, 'daily', '{}', v_today, 1, v_today),
+    (v_plan, 'Enoxaparina', '4000 UI', 'Sottocute', 6, true, '#12C2B0', 'iniezione', null, null, null, 'B', 0, 0, 1, 'daily', '{}', v_today, 12, v_today),
+    (v_plan, 'Timololo collirio', '0,5%', 'Una goccia per occhio', 1, true, '#4FC3F7', 'gocce', null, 30, null, 'S', 1, 0, 1, 'daily', '{}', v_today, 2, v_today),
+    (v_plan, 'Salmeterolo', '25 mcg', 'Due spruzzi', 1, true, '#4FC3F7', 'inalatore', null, 30, null, 'R', 2, 0, 2, 'daily', '{}', v_today, 1, v_today),
+    (v_plan, 'Fentanil cerotto', '25 mcg/h', 'Lunedì e giovedì', 5, true, '#8D5BF5', 'cerotto', null, null, null, 'N', 1, 0, 0, 'weekdays', '{1,4}', v_today, 7, v_today),
+    (v_plan, 'Diclofenac gel', '1%', 'Sul ginocchio', 1, false, '#FF5E4D', 'crema', null, 20, null, 'M', 0, 0, 1, 'daily', '{}', v_today, 1, v_today),
+    (v_plan, 'Tachipirina supposte', '1000 mg', 'Se febbre', 10, false, '#8D5BF5', 'supposta', null, null, null, 'N', 1, 0, 0, 'as_needed', '{}', v_today, 6, v_today),
+    (v_plan, 'Ausilio', '', 'Altro', 10, false, '#9AA1A9', 'altro', null, null, null, null, 1, 0, 0, 'daily', '{}', v_today, 3, v_today);
 
   for v_med in select id from public.medications where plan_id = v_plan loop
     insert into public.stock_events (medication_id, type, delta, qty_after, effective_date, meta, created_by)

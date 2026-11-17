@@ -7,7 +7,7 @@ on the Next.js 16 App Router (see `AGENTS.md` at the repository root). Almost
 every file here is a client component (`"use client"`). Each one renders one
 screen area (the dispenser grid, the medication and plan forms, the pharmacy
 list, sharing panels) and sends mutations to server actions in `@/lib/actions/*`.
-Domain logic (forecasting, dates, pill and presidio shapes, roles, pharmacy
+Domain logic (forecasting, dates, categories and pill shapes, roles, pharmacy
 text) lives in `@/lib/*`. Shared presentational primitives live in
 [`ui/`](./ui/README.md). User-facing text is in Italian.
 
@@ -26,9 +26,9 @@ text) lives in `@/lib/*`. Shared presentational primitives live in
 | `Dispenser.tsx` | `Dispenser({ med: DispenserView, size?, scaleMax = 60, actions?, historyHref?, prepReminder = false })`, `DispenserActions` (`onArrive`, `onOrdered`, `onRecount`, `onTake`, `historyHref`, `editHref`, `busy?`) | None. Pure UI that reports user intent through `actions` callbacks |
 | `DispenserGrid.tsx` | `DispenserGrid({ planId, meds, readOnly = false, prepReminder })` | `arrivePacks`, `recountStock`, `takeAsNeeded`, `toggleOrdered`, `undoStockEvent` (`@/lib/actions/stock`) |
 | `PharmacyList.tsx` | `PharmacyList({ planId, patientName, senderName, today, items, editable })` | `markOrdered` (`@/lib/actions/stock`). Also `navigator.share`, `navigator.clipboard.writeText`, `window.print` |
-| `MedicationForm.tsx` | `MedicationForm({ planId, planName, medicationId?, initial, settings, today, extra?, currentColor? })` | `createMedication`, `updateMedication`, `deleteMedication` (`@/lib/actions/medications`), `lookupAic` (`@/lib/actions/aifa`) |
+| `MedicationForm.tsx` | `MedicationForm({ planId, planName, medicationId?, initial: MedicationFormState, levelStockText?, settings, today, extra?, currentColor? })`, `MedicationFormState` (`category: Category \| null`) | `createMedication`, `updateMedication`, `deleteMedication` (`@/lib/actions/medications`), `lookupAic` (`@/lib/actions/aifa`) |
 | `BarcodeScanner.tsx` | `default BarcodeScanner({ onDetected(raw, format), onClose })` | `navigator.mediaDevices.getUserMedia`, native `BarcodeDetector` or the `barcode-detector/ponyfill` (zxing-wasm), `navigator.vibrate` |
-| `DoseChangesPanel.tsx` | `DoseChangesPanel({ planId, medicationId, today, endDate, current, changes })`, `DoseChangeView` | `addDoseChange`, `deleteDoseChange` (`@/lib/actions/medications`) |
+| `DoseChangesPanel.tsx` | `DoseChangesPanel({ planId, medicationId, today, endDate, current, changes, category, daysPerPack, frequencyType })`, `DoseChangeView` | `addDoseChange`, `deleteDoseChange` (`@/lib/actions/medications`) |
 | `PlanForm.tsx` | `PlanForm({ planId?, initial, managerEmail, medCount, extra? })` | `createPlan`, `updatePlan`, `deletePlan` (`@/lib/actions/plans`) |
 | `PlanHeader.tsx` | `PlanHeader({ plan: PlanRow, tab, role: PlanRole, ownerName })` | None. A server-compatible module with no `"use client"`. It renders `LeavePlanButton` |
 | `MembersPanel.tsx` | `MembersPanel({ planId, ownerEmail, members, invites })`, `MemberItem`, `InviteItem` | `inviteMember`, `changeAccess`, `removeMember`, `cancelInvite` (`@/lib/actions/sharing`) |
@@ -67,10 +67,21 @@ text) lives in `@/lib/*`. Shared presentational primitives live in
 - `BarcodeScanner` loads the zxing `.wasm` files from `/zxing/` (served from
   `public/zxing`, no CDN). If a `Permissions-Policy` header is ever added, it
   must include `camera=(self)` (comment in `BarcodeScanner.tsx`).
-- `Dispenser` draws stock on a shared 0 to `scaleMax` day scale (default 60).
-  Its tube geometry depends on `PRESIDIO_GEO` from `ui/Presidio.tsx`.
-- `MedicationForm.setType` rounds half doses up to whole units when the new
-  shape has `doseStep(shape) === 1`, because presidi cannot be split.
+- `Dispenser` draws stock on a shared 0 to `scaleMax` day scale (default 60)
+  with `Presidio view="tube"`: stacked icons for pieces, a full band for
+  level meds (`view.level`), «60+» beyond the scale. It shows the category
+  label, `levelText` for level meds, the level recount (closed containers +
+  the open one: pieno 1, metà 0,5, quasi finito 0,1, nessuno 0), and
+  «Finito un {contenitore}» for as-needed meds whose `defaultMode` is
+  `livello` (they are never `isLevel`).
+- `MedicationForm` shows a 5×2 category picker (`CategoryGlyph`,
+  `aria-pressed`); the rest of the form appears after the choice (or after a
+  scan, which also sets the starting mode from `AicLookup.mode`). Questions
+  come from `perPackQuestion`, `daysQuestion`, `doseQuestion`; «Conta a
+  pezzi» / «Conta a giorni» switches mode. A level med being edited shows its
+  stock read-only (`levelStockText`) with a «Riconta» link; a mode change asks
+  for the stock in the new mode. Choosing a category with `doseStep === 1`
+  rounds half doses up. Doses go up to 999 with a numeric field next to ±.
 - Client-side email checks in `PlanForm.addRecipient` and
   `MembersPanel.invite` use `/^[^@\s]+@[^@\s]+\.[^@\s]+$/` on the
   lowercased, trimmed input. They are a convenience only, and the server

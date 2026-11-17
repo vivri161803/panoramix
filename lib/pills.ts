@@ -43,10 +43,11 @@ export function colorName(hex: string): string {
 /**
  * Descrizione per la stampa: gruppo e forma, "Cuore e circolazione · tonda".
  * Il colore non descrive la compressa vera (è quello del gruppo), quindi non si scrive.
- * Medicinale senza gruppo (non ancora aggiornato o "Non so"): solo la forma.
+ * Medicinale senza gruppo (non ancora aggiornato o "Non so"): solo la forma; senza forma (non pillole) solo il gruppo.
  */
-export function pillLook(atcCode: string | null, shape: string): string {
+export function pillLook(atcCode: string | null, shape: string | null): string {
   const group = atcGroup(atcCode);
+  if (!shape) return group?.label ?? "";
   return group ? `${group.label} · ${shape}` : shape;
 }
 

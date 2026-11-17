@@ -6,7 +6,7 @@ import { loadAvailability, type AifaStatusRow, type MedAvailability } from "@/li
 import { formatDayMonthYear } from "@/lib/dates";
 import { canEdit } from "@/lib/roles";
 import { PlanHeader } from "@/components/PlanHeader";
-import { Pill } from "@/components/ui/Pill";
+import { Presidio } from "@/components/ui/Presidio";
 import { IconCheckCircle } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Disponibilità" };
@@ -168,7 +168,7 @@ export default async function DisponibilitaPage({ params }: PageProps<"/piani/[i
             <section key={a.med.id} aria-labelledby={`px-av-${a.med.id}`} className="px-card flex flex-col gap-4 p-5">
               <div className="flex items-center gap-3">
                 <span className="grid h-12 w-12 flex-none place-items-center rounded-[12px] bg-px-surface-2">
-                  <Pill color={a.med.color} shape={a.med.shape} size={30} rotate={-14} />
+                  <Presidio category={a.med.category} pillShape={a.med.shape} color={a.med.color} size={30} rotate={-14} />
                 </span>
                 <div className="flex min-w-0 flex-col">
                   <h3 id={`px-av-${a.med.id}`} className="m-0 text-[18px] font-[650] leading-[1.3] [overflow-wrap:anywhere]">

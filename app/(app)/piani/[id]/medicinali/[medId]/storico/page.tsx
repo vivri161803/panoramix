@@ -5,7 +5,8 @@ import { getPlanBundle, getStockEvents } from "@/lib/data";
 import { capitalize, dateOfTimestampRome, formatLong, formatShort, formatTimeRome } from "@/lib/dates";
 import { formatQty } from "@/lib/forecast";
 import type { StockEventRow } from "@/lib/db-types";
-import { Pill } from "@/components/ui/Pill";
+import { Presidio } from "@/components/ui/Presidio";
+import { containerWord, isLevel, levelQuantity } from "@/lib/categories";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { IconBack } from "@/components/ui/icons";
 
@@ -19,7 +20,12 @@ const FILTERS = [
   { id: "prese", label: "Prese" },
 ] as const;
 
-function describe(e: StockEventRow): { icon: string; title: string; note: string } {
+/** A pezzi «12½»; a livello la scorta è in contenitori e si mostra con 3 decimali al massimo («0,967»). */
+function qtyFormatter(level: boolean) {
+  return (n: number) => (level ? n.toLocaleString("it-IT", { maximumFractionDigits: 3 }) : formatQty(n));
+}
+
+function describe(e: StockEventRow, fmt: (n: number) => string): { icon: string; title: string; note: string } {
   const meta = e.meta ?? {};
   switch (e.type) {
     case "arrival": {
@@ -29,8 +35,8 @@ function describe(e: StockEventRow): { icon: string; title: string; note: string
     case "count": {
       if (meta.initial) return { icon: "•", title: "Conteggio iniziale", note: "" };
       const prev = meta.previous;
-      const why = meta.reason === "mode_change" ? " · cambio di modalità" : meta.source === "edit" ? " · dalla modifica" : "";
-      const was = prev !== undefined ? ` · risultavano ${formatQty(Number(prev))}` : "";
+      const why = meta.reason === "mode_change" ? " · cambio del modo di conteggio" : meta.source === "edit" ? " · dalla modifica" : "";
+      const was = prev !== undefined ? ` · risultavano ${fmt(Number(prev))}` : "";
       return { icon: "=", title: "Ricontrolla conteggio", note: `${why}${was}` };
     }
     case "prep":
@@ -61,10 +67,11 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
   if (!item) notFound();
   const { med, forecast: f } = item;
   const { events: all, authors } = await getStockEvents(med.id);
+  const fmt = qtyFormatter(isLevel(med));
   const events = all.filter((e) => matches(filter, e));
   const by = (e: { created_by: string | null }) => (e.created_by === b.profile.id ? "da te" : e.created_by && authors.get(e.created_by) ? `da ${authors.get(e.created_by)}` : "");
   const summary = [
-    `${formatQty(f.stock)} compresse`,
+    isLevel(med) ? levelQuantity(f.stock, med) : `${formatQty(f.stock)} ${containerWord(med, f.stock)}`,
     f.coverageDays !== null ? `${f.coverageDays} giorni di copertura` : f.asNeeded ? "al bisogno" : "basta fino alla fine",
     f.runOutDate ? `finisce ${formatShort(f.runOutDate)}` : "",
   ].filter(Boolean);
@@ -78,7 +85,7 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
         </Link>
         <div className="flex flex-wrap items-center gap-3.5">
           <div className="grid h-14 w-14 place-items-center rounded-[14px] bg-px-surface-2">
-            <Pill color={med.color} shape={med.shape} size={36} />
+            <Presidio category={med.category} pillShape={med.shape} color={med.color} size={36} />
           </div>
           <div className="flex min-w-[200px] flex-1 flex-col gap-1">
             <h1 className="m-0 text-[clamp(26px,3.4vw,34px)] font-[650] leading-[1.1] tracking-[-0.02em]">
@@ -110,7 +117,7 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
       ) : (
         <ol className="m-0 list-none overflow-hidden rounded-[18px] border border-px-line bg-px-surface p-0">
           {events.map((e, i) => {
-            const d = describe(e);
+            const d = describe(e, fmt);
             const delta = Number(e.delta);
             const day = dateOfTimestampRome(e.created_at);
             const date = day === b.today ? "Oggi" : capitalize(formatLong(day));
@@ -129,8 +136,8 @@ export default async function StoricoPage({ params, searchParams }: PageProps<"/
                   </span>
                 </div>
                 <div className="flex flex-col items-end gap-0.5">
-                  <span className="font-mono text-[18px] font-[650] leading-[1.2]">{isInitial ? formatQty(delta) : delta > 0 ? `+${formatQty(delta)}` : delta < 0 ? `−${formatQty(-delta)}` : "±0"}</span>
-                  <span className="text-[14px] leading-[1.3] text-px-ink-3">Restano {formatQty(Number(e.qty_after))}</span>
+                  <span className="font-mono text-[18px] font-[650] leading-[1.2]">{isInitial ? fmt(delta) : delta > 0 ? `+${fmt(delta)}` : delta < 0 ? `−${fmt(-delta)}` : "±0"}</span>
+                  <span className="text-[14px] leading-[1.3] text-px-ink-3">Restano {fmt(Number(e.qty_after))} {containerWord(med, Number(e.qty_after))}</span>
                 </div>
               </li>
             );

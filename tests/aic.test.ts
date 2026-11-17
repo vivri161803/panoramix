@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildStrength, formFromAifa, NO_AIC_MESSAGE, packToForm, parseGs1, parseScan, strengthFromDescription, titleCase } from "@/lib/aic";
+import { buildStrength, NO_AIC_MESSAGE, packToForm, parseGs1, parseScan, strengthFromDescription, titleCase } from "@/lib/aic";
+import { categoryFromAifa } from "@/lib/categories";
 import { SAMPLE_INGREDIENTS, SAMPLE_PACKS } from "./helpers/aifa-sample";
 import { doseUnitsFromDescription } from "../scripts/aifa/parse.mjs";
 
@@ -103,8 +104,9 @@ describe("packToForm", () => {
       strength: "Amlodipina 10 mg + Valsartan 160 mg",
       pills_per_pack: 28,
       atc_code: "C09DB01",
-      form: "compressa",
+      category: "pillola",
       shape: null,
+      mode: "pezzi",
       requires_prescription: true,
       pack_description: pack("044091039").pack_description,
     });
@@ -114,14 +116,18 @@ describe("packToForm", () => {
     expect(packToForm({ ...pack("026783098"), dose_units: null }, ing("026783098"))).toMatchObject({ shape: "capsula", pills_per_pack: 14 });
   });
 
-  it("tipo e forma dei presidi dalla forma farmaceutica e dalla confezione", () => {
-    expect(formFromAifa("Collirio, soluzione", "0,5% COLLIRIO, SOLUZIONE - FLACONE 5 ML")).toEqual({ form: "collirio", shape: "flacone" });
-    expect(formFromAifa("Collirio, soluzione", "20 CONTENITORI MONODOSE DA 0,3 ML")).toEqual({ form: "collirio", shape: "monodose" });
-    expect(formFromAifa("Soluzione iniettabile", "100 U/ML - 5 PENNE PRERIEMPITE DA 3 ML")).toEqual({ form: "iniezione", shape: "penna" });
-    expect(formFromAifa("Soluzione iniettabile", "4000 UI - 6 SIRINGHE PRERIEMPITE")).toEqual({ form: "iniezione", shape: "siringa" });
-    expect(formFromAifa("Soluzione per infusione", "1 FLACONCINO IN VETRO DA 50 ML")).toEqual({ form: "iniezione", shape: "fiala" });
-    expect(formFromAifa("Cerotto transdermico", "25 MCG/H - 5 CEROTTI IN BUSTINA")).toEqual({ form: "cerotto", shape: "bustina" });
-    expect(formFromAifa("Gocce orali, soluzione", "FLACONE DA 30 ML")).toEqual({ form: null, shape: null });
+  it("categoria e modo dalla forma farmaceutica e dalla confezione", () => {
+    expect(categoryFromAifa("Collirio, soluzione", "0,5% COLLIRIO, SOLUZIONE - FLACONE 5 ML")).toEqual({ category: "gocce", shape: null, mode: "livello" });
+    expect(categoryFromAifa("Collirio, soluzione", "20 CONTENITORI MONODOSE DA 0,3 ML")).toEqual({ category: "gocce", shape: null, mode: "pezzi" });
+    expect(categoryFromAifa("Soluzione iniettabile", "100 U/ML - 5 PENNE PRERIEMPITE DA 3 ML")).toEqual({ category: "iniezione", shape: null, mode: "livello" });
+    expect(categoryFromAifa("Soluzione iniettabile", "4000 UI - 6 SIRINGHE PRERIEMPITE")).toEqual({ category: "iniezione", shape: null, mode: "pezzi" });
+    expect(categoryFromAifa("Soluzione per infusione", "1 FLACONCINO IN VETRO DA 50 ML")).toEqual({ category: "iniezione", shape: null, mode: "pezzi" });
+    expect(categoryFromAifa("Cerotto transdermico", "25 MCG/H - 5 CEROTTI IN BUSTINA")).toEqual({ category: "cerotto", shape: null, mode: "pezzi" });
+    expect(categoryFromAifa("Gocce orali, soluzione", "FLACONE DA 30 ML")).toEqual({ category: "gocce", shape: null, mode: "livello" });
+  });
+
+  it("packToForm porta categoria e modo", () => {
+    expect(packToForm({ ...pack("044091039"), form: "Gocce orali, soluzione", pack_description: "FLACONE DA 30 ML" }, [])).toMatchObject({ category: "gocce", shape: null, mode: "livello" });
   });
 
   it("pezzi per confezione anche per i presidi", () => {

@@ -11,6 +11,7 @@ import {
   WEEKDAYS_SHORT,
   type ISODate,
 } from "./dates";
+import { isLevel, type Category } from "./categories";
 
 // ——— Tipi ———
 
@@ -56,8 +57,9 @@ export interface MedicationData extends Schedule {
   stockQty: number;
   stockAsOf: ISODate;
   orderedAt: string | null;
-  /** flacone di collirio: non si conta a gocce, il promemoria arriva dopo questi giorni dal conteggio */
-  reorderDays?: number | null;
+  category: Category;
+  /** a livello: giorni di uso per contenitore (la scorta è in contenitori); null = a pezzi */
+  daysPerPack?: number | null;
 }
 
 export interface PlanSettings {
@@ -175,10 +177,6 @@ export function formatQty(n: number): string {
   return half ? `${whole}½` : String(whole);
 }
 
-export function pillsWord(n: number): string {
-  return Math.abs(n - 1) < EPS ? "compressa" : "compresse";
-}
-
 export function daysWord(n: number): string {
   return n === 1 ? "giorno" : "giorni";
 }
@@ -191,9 +189,14 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}`;
 }
 
-/** "1 al mattino e ½ alla sera" */
-export function dosesPhrase(s: Doses): string {
-  return joinList(SLOTS.filter((k) => slotDose(s, k) > 0).map((k) => `${formatQty(slotDose(s, k))} ${SLOT_PHRASE[k]}`));
+/** "1 al mattino e ½ alla sera"; con la parola della dose "5 ml al mattino", "1 goccia alla sera". */
+export function dosesPhrase(s: Doses, word?: (n: number) => string): string {
+  return joinList(
+    SLOTS.filter((k) => slotDose(s, k) > 0).map((k) => {
+      const q = slotDose(s, k);
+      return `${formatQty(q)}${word ? ` ${word(q)}` : ""} ${SLOT_PHRASE[k]}`;
+    }),
+  );
 }
 
 export function frequencyPhrase(s: Schedule): string {
@@ -233,15 +236,34 @@ export function hasEnded(s: Schedule, today: ISODate): boolean {
 }
 
 /**
- * Scorta in casa oggi: riferimento − dosi previste dal giorno del riferimento a ieri compreso
+ * Consumo della scorta in un giorno. A pezzi: le dosi del giorno. A livello: 1 / daysPerPack nei giorni
+ * con almeno una dose (giorni di uso), qualunque sia la dose; niente nei giorni senza dose.
+ */
+export function consumptionOn(med: Schedule & Pick<MedicationData, "daysPerPack">, date: ISODate): number {
+  const doses = dosesOn(med, date);
+  if (isLevel(med)) return doses > 0 ? 1 / med.daysPerPack! : 0;
+  return doses;
+}
+
+/** Consumo da `from` a `to` compresi. */
+export function consumptionBetween(med: Schedule & Pick<MedicationData, "daysPerPack">, from: ISODate, to: ISODate): number {
+  if (to < from) return 0;
+  let total = 0;
+  const days = diffDays(from, to);
+  for (let i = 0; i <= days; i++) total += consumptionOn(med, addDays(from, i));
+  return total;
+}
+
+/**
+ * Scorta in casa oggi: riferimento − consumo previsto dal giorno del riferimento a ieri compreso
  * (il conteggio si considera fatto a inizio giornata). Se il riferimento è nel futuro
  * (dosi già nel portapillole preparato, dopo la migrazione delle scorte giorno per giorno)
  * vale il riferimento.
  */
 export function currentStock(med: MedicationData, today: ISODate): number {
-  if (med.frequencyType === "as_needed" || med.reorderDays) return med.stockQty;
+  if (med.frequencyType === "as_needed") return med.stockQty;
   if (med.stockAsOf >= today) return med.stockQty;
-  const used = dosesBetween(med, med.stockAsOf, addDays(today, -1));
+  const used = consumptionBetween(med, med.stockAsOf, addDays(today, -1));
   return Math.max(0, med.stockQty - used);
 }
 
@@ -257,8 +279,6 @@ export interface Forecast {
   lastPack: boolean;
   ended: boolean;
   asNeeded: boolean;
-  /** flacone: coverageDays sono i giorni al promemoria di riordino */
-  reorder?: boolean;
   triggered: AlertType[];
   status: MedStatus;
 }
@@ -268,13 +288,13 @@ export interface ForecastContext {
   today: ISODate;
 }
 
-/** Giorni consecutivi coperti partendo da `start` con `stock` compresse. null = nessun esaurimento. */
-function coveredDaysFrom(s: Schedule, stock: number, start: ISODate): number | null {
+/** Giorni consecutivi coperti partendo da `start` con la scorta `stock` (pezzi o contenitori). null = nessun esaurimento. */
+function coveredDaysFrom(med: MedicationData, stock: number, start: ISODate): number | null {
   let rem = stock;
   for (let i = 0; i < HORIZON_DAYS; i++) {
     const day = addDays(start, i);
-    if (s.endDate && day > s.endDate) return null;
-    const need = dosesOn(s, day);
+    if (med.endDate && day > med.endDate) return null;
+    const need = consumptionOn(med, day);
     if (need > rem + EPS) return i;
     rem -= need;
   }
@@ -297,19 +317,6 @@ export function forecastMedication(med: MedicationData, ctx: ForecastContext): F
     const triggered: AlertType[] = plan.alertLastPack && lastPack ? ["last_pack"] : [];
     const status: MedStatus = stock <= EPS ? "out" : ordered ? "ordered" : triggered.length ? "order" : "ok";
     return { stock, coverageDays: null, runOutDate: null, lastPack, ended, asNeeded, triggered, status };
-  }
-
-  if (med.reorderDays) {
-    // flacone di collirio: si sa solo quando riordinare, X giorni dopo il conteggio (o l'arrivo)
-    const left = Math.max(0, med.reorderDays - diffDays(med.stockAsOf, today));
-    const reminderDate = addDays(today, left);
-    if (med.endDate && reminderDate > med.endDate) {
-      return { stock, coverageDays: null, runOutDate: null, lastPack: false, ended, asNeeded, reorder: true, triggered: [], status: "ok" };
-    }
-    // il promemoria l'ha chiesto chi ha inserito il collirio: vale anche se gli avvisi del piano sono spenti
-    const triggered: AlertType[] = left === 0 ? ["under_14"] : [];
-    const status: MedStatus = left > 0 ? "ok" : ordered ? "ordered" : "order";
-    return { stock, coverageDays: left, runOutDate: reminderDate, lastPack: false, ended, asNeeded, reorder: true, triggered, status };
   }
 
   // Con stock_as_of nel futuro i giorni fino a quella data sono già nel portapillole: contano come coperti.
@@ -341,7 +348,6 @@ export function statusReason(f: Forecast, endDate: ISODate | null): string {
   }
   if (f.status === "ordered") return "Ordinata, in arrivo";
   if (f.status === "order") {
-    if (f.reorder) return "È ora di riordinare il flacone";
     const onlyLastPack = f.triggered.length === 1 && f.triggered[0] === "last_pack";
     if (onlyLastPack || f.coverageDays === null) return "È rimasta l’ultima confezione";
     return `Restano ${f.coverageDays} ${daysWord(f.coverageDays)}: è ora di ordinare`;

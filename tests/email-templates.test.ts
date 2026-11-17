@@ -29,8 +29,8 @@ describe("promemoria del portapillole", () => {
       prepDate: "2026-11-15",
       today: "2026-11-14",
       items: [
-        { name: "Ramipril", strength: "5 mg", color: "#FFC020", phrase: "1 al mattino" },
-        { name: "Cardioaspirina", strength: "100 mg", color: "#FF5E4D", phrase: "1 a pranzo", changeNote: "Dal mer 18 nov: ½ a pranzo" },
+        { name: "Ramipril", strength: "5 mg", color: "#FFC020", categoryLabel: "Pillola", phrase: "1 compressa al mattino" },
+        { name: "Cardioaspirina", strength: "100 mg", color: "#FF5E4D", categoryLabel: "Pillola", phrase: "1 compressa a pranzo", changeNote: "Dal mer 18 nov: ½ a pranzo" },
       ],
       planUrl: `${appUrl}/piani/p1`,
       settingsUrl: `${appUrl}/piani/p1/modifica`,
@@ -38,8 +38,9 @@ describe("promemoria del portapillole", () => {
     });
     expect(e.subject).toBe("Appoteca · Nonna Anna: domani si prepara il portapillole");
     expect(e.text).toContain("Domenica 15 novembre è il giorno di preparazione. Ecco le dosi dei 7 giorni da mettere nel portapillole.");
-    expect(e.text).toContain("• Ramipril 5 mg: 1 al mattino");
-    expect(e.text).toContain("• Cardioaspirina 100 mg: 1 a pranzo · Dal mer 18 nov: ½ a pranzo");
+    expect(e.text).toContain("• Ramipril 5 mg: 1 compressa al mattino");
+    expect(e.text).toContain("• Cardioaspirina 100 mg: 1 compressa a pranzo · Dal mer 18 nov: ½ a pranzo");
+    expect(e.html).toContain("Pillola");
     for (const out of ["Portapillole preparato", "Da mettere", "In casa c’è tutto", "mancano"]) {
       expect(e.text).not.toContain(out);
       expect(e.html).not.toContain(out);
@@ -48,7 +49,7 @@ describe("promemoria del portapillole", () => {
 });
 
 describe("riepilogo settimanale", () => {
-  const base: SummaryMed = { name: "Ramipril", strength: "5 mg", color: "#FFC020", status: "ok", qty: 40, coverageDays: 40, runOutDate: "2026-12-26", asNeeded: false };
+  const base: SummaryMed = { name: "Ramipril", strength: "5 mg", color: "#FFC020", status: "ok", qty: 40, coverageDays: 40, runOutDate: "2026-12-26", asNeeded: false, category: "pillola", daysPerPack: null, frequencyType: "daily", levelText: "" };
 
   it("tutto in ordine", () => {
     expect(summaryHeadline([base])).toEqual({ text: "Tutto in ordine: nessuna medicina da ordinare.", tone: "ok" });
@@ -63,8 +64,18 @@ describe("riepilogo settimanale", () => {
     const e = renderWeeklySummaryEmail({ patientName: "Nonna Anna", today: "2026-11-16", meds: [base, { ...base, name: "Paracetamolo", asNeeded: true, coverageDays: null, runOutDate: null, qty: 5 }], planUrl: `${appUrl}/piani/p1`, settingsUrl: `${appUrl}/piani/p1/modifica`, appUrl });
     expect(e.subject).toBe("Appoteca · Nonna Anna: riepilogo della settimana");
     expect(e.text).not.toContain("Prossima preparazione");
-    expect(e.text).toContain("• Ramipril 5 mg — In ordine: 40 in casa, 40 giorni, finisce sabato 26 dicembre");
-    expect(e.text).toContain("• Paracetamolo 5 mg — In ordine: 5 in casa, al bisogno");
+    expect(e.text).toContain("• Ramipril 5 mg (Pillola) — In ordine: 40 compresse in casa, 40 giorni, finisce sabato 26 dicembre");
+    expect(e.text).toContain("• Paracetamolo 5 mg (Pillola) — In ordine: 5 compresse in casa, al bisogno");
+    expect(e.html).toContain("Compresse rimaste");
+  });
+
+  it("a livello mostra levelText e «Flaconi rimasti» al posto di «Compresse in casa»", () => {
+    const syrup: SummaryMed = { ...base, name: "Lattulosio", strength: "", category: "liquido", daysPerPack: 15, qty: 29 / 30, coverageDays: 14, levelText: "circa 14 giorni · meno di un flacone" };
+    const e = renderWeeklySummaryEmail({ patientName: "Nonna Anna", today: "2026-11-16", meds: [syrup], planUrl: `${appUrl}/piani/p1`, settingsUrl: `${appUrl}/piani/p1/modifica`, appUrl });
+    expect(e.html).toContain("Flaconi rimasti");
+    expect(e.html).toContain("circa 14 giorni · meno di un flacone");
+    expect(e.html).not.toContain("Compresse in casa");
+    expect(e.text).toContain("• Lattulosio (Liquido) — In ordine: circa 14 giorni · meno di un flacone in casa");
   });
 });
 

@@ -76,6 +76,7 @@ describe("normalizzatori", () => {
     expect(doseUnitsFromDescription("20 MG CAPSULE RIGIDE GASTRORESISTENTI- 14 CAPSULE")).toBe(14);
     expect(doseUnitsFromDescription("100 mg/ml gocce orali, soluzione> flacone da 30 ml")).toBeNull();
     expect(doseUnitsFromDescription("500 MG COMPRESSE")).toBeNull();
+    expect(doseUnitsFromDescription("1000 MG SUPPOSTE - 10 SUPPOSTE")).toBe(10);
   });
 
   it("regime di fornitura → ricetta", () => {

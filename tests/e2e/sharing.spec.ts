@@ -52,6 +52,7 @@ test("piano condiviso: il proprietario aggiorna, chi ha sola lettura guarda", as
 
   // medicinale al bisogno con 6 compresse in casa
   await ownerPage.getByRole("link", { name: "Aggiungi il primo medicinale" }).click();
+  await ownerPage.getByRole("button", { name: "Pillola", exact: true }).click();
   await ownerPage.getByLabel("Nome", { exact: true }).fill("Paracetamolo");
   await ownerPage.getByRole("radio", { name: "Al bisogno" }).click();
   await ownerPage.getByLabel("A cosa serve").selectOption({ label: "Sistema nervoso" });
@@ -60,7 +61,7 @@ test("piano condiviso: il proprietario aggiorna, chi ha sola lettura guarda", as
   await expect(ownerPage).toHaveURL(planUrl);
 
   // presa al bisogno: 6 → 5
-  await ownerPage.getByRole("button", { name: /Presa una compressa di Paracetamolo/ }).click();
+  await ownerPage.getByRole("button", { name: /Presa di Paracetamolo/ }).click();
   await expect(ownerPage.getByText("Paracetamolo: presa 1 compressa, ne restano 5")).toBeVisible();
 
   // lista per la farmacia
@@ -84,7 +85,7 @@ test("piano condiviso: il proprietario aggiorna, chi ha sola lettura guarda", as
   await expect(viewerPage).toHaveURL(planUrl);
   await expect(viewerPage.getByText("Piano condiviso da Carlo E2E")).toBeVisible();
   await expect(viewerPage.getByText("5", { exact: true }).first()).toBeVisible();
-  await expect(viewerPage.getByRole("button", { name: /Presa una compressa/ })).toHaveCount(0);
+  await expect(viewerPage.getByRole("button", { name: /Presa di / })).toHaveCount(0);
   await expect(viewerPage.getByRole("button", { name: /Arrivata confezione/ })).toHaveCount(0);
   await expect(viewerPage.getByRole("link", { name: "Impostazioni piano" })).toHaveCount(0);
 

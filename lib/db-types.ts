@@ -1,7 +1,7 @@
 // Righe delle tabelle (vedi supabase/migrations) e conversione verso i tipi di dominio.
 
 import type { FrequencyType, MedicationData, PlanSettings } from "./forecast";
-import type { MedForm } from "./presidi";
+import type { Category } from "./categories";
 import type { MemberRole } from "./roles";
 
 export interface ProfileRow {
@@ -74,9 +74,11 @@ export interface MedicationRow {
   pills_per_pack: number;
   requires_prescription: boolean;
   color: string;
-  form: string;
-  shape: string;
-  reorder_days: number | null;
+  category: Category;
+  /** solo per le pillole: tonda, ovale, capsula */
+  shape: string | null;
+  /** a livello: giorni di uso per contenitore */
+  days_per_pack: number | null;
   aic: string | null;
   atc_code: string | null;
   dose_morning: number | string;
@@ -112,7 +114,7 @@ export interface StockEventRow {
 }
 
 export const MEDICATION_COLUMNS =
-  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, form, shape, reorder_days, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
+  "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, category, shape, days_per_pack, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
 
 export const PLAN_COLUMNS =
   "id, owner_id, patient_name, notes, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
@@ -125,9 +127,8 @@ export interface Medication extends MedicationData {
   description: string;
   requiresPrescription: boolean;
   color: string;
-  /** compressa / iniezione / cerotto / collirio (lib/presidi.ts) */
-  form: MedForm;
-  shape: string;
+  /** forma della pillola (tonda, ovale, capsula); null per le altre categorie */
+  shape: string | null;
   /** codice AIC della confezione (9 cifre), se noto */
   aic: string | null;
   /** codice ATC completo o solo la lettera del gruppo, se noto */
@@ -152,8 +153,8 @@ export function toMedication(r: MedicationRow): Medication {
     description: r.description,
     requiresPrescription: r.requires_prescription,
     color: r.color,
-    form: (r.form ?? "compressa") as MedForm,
-    shape: r.shape,
+    category: r.category ?? "altro",
+    shape: r.shape ?? null,
     aic: r.aic ?? null,
     atcCode: r.atc_code ?? null,
     pillsPerPack: Number(r.pills_per_pack),
@@ -169,7 +170,7 @@ export function toMedication(r: MedicationRow): Medication {
     endDate: r.end_date,
     stockQty: Number(r.stock_qty),
     stockAsOf: r.stock_as_of,
-    reorderDays: r.reorder_days ?? null,
+    daysPerPack: r.days_per_pack ?? null,
     orderedAt: r.ordered_at,
     doseChanges: changes,
   };

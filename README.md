@@ -51,7 +51,7 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 
 ### Medicinali dall'anagrafica AIFA
 
-- Nel modulo del medicinale si inquadra il codice sulla scatola (DataMatrix o bollino con la A) oppure si scrivono le 9 cifre del codice AIC. Nome, dosaggio per principio attivo, compresse per confezione, ricetta e forma si compilano dall'anagrafica AIFA e restano modificabili.
+- Nel modulo del medicinale si inquadra il codice sulla scatola (DataMatrix o bollino con la A) oppure si scrivono le 9 cifre del codice AIC. Nome, dosaggio per principio attivo, pezzi per confezione, ricetta, categoria e modo di conteggio si compilano dall'anagrafica AIFA e restano modificabili.
 - Il colore della compressa dice a cosa serve il farmaco: dipende dal gruppo anatomico del codice ATC (14 gruppi in parole semplici, più «Non so» in grigio). Medicine dello stesso gruppo hanno lo stesso colore; sotto il dispenser c'è la legenda.
 - Scheda «Disponibilità»: per ogni medicina, se è nell'elenco AIFA dei farmaci carenti (con date, motivo e indicazioni) e le confezioni equivalenti della lista di trasparenza, con prezzo al pubblico e differenza dal prezzo di riferimento SSN.
 - Dati AIFA aperti, licenza [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.it), importati ogni notte (vedi [`scripts/aifa/README.md`](scripts/aifa/README.md)).
@@ -59,8 +59,10 @@ Ogni medicina ha uno di quattro stati, con gli stessi colori dell'app:
 ### Scorte
 
 - Le scorte scendono giorno per giorno, dose per dose, in tutti i piani. Il portapillole è solo un promemoria facoltativo: la sera prima del giorno di preparazione arriva un'email con le dosi dei 7 giorni, e le scorte non cambiano.
+- Dieci categorie (pillola, bustina, liquido, iniezione, gocce, inalatore, cerotto, crema, supposta, altro), ricavate dalla forma farmaceutica AIFA quando si scansiona la scatola, ognuna con la sua icona e le sue parole («12 siringhe», «circa 18 giorni · 1 flacone»).
+- Due modi di contare: a pezzi (compresse, siringhe, cerotti…) oppure a livello per sciroppi, colliri, inalatori e creme. A livello si dice per quanti giorni di uso dura un contenitore, e la scorta scende di una frazione di contenitore per ogni giorno con una dose.
 - Un dispenser grafico mostra a colpo d'occhio quanto resta di ogni medicina, con lo storico di arrivi, conteggi e prese.
-- Per i medicinali al bisogno il pulsante «Presa 1» scala le scorte e si può annullare.
+- Per i medicinali al bisogno il pulsante «Presa 1» (o «Finito un flacone» per liquidi, gocce, inalatori e creme) scala le scorte e si può annullare.
 
 ### Avvisi e promemoria via email
 

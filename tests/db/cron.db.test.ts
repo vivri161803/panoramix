@@ -48,7 +48,7 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     await admin.from("plan_recipients").insert({ plan_id: planId, email: "badante@test.localhost" });
     const { data: med } = await admin
       .from("medications")
-      .insert({ plan_id: planId, name: "Prednisone", pills_per_pack: 20, color: "#FF5E4D", shape: "tonda", dose_morning: 2, frequency_type: "daily", start_date: SAT, stock_qty: 9, stock_as_of: SAT })
+      .insert({ plan_id: planId, name: "Prednisone", pills_per_pack: 20, color: "#FF5E4D", category: "pillola", shape: "tonda", dose_morning: 2, frequency_type: "daily", start_date: SAT, stock_qty: 9, stock_as_of: SAT })
       .select("id")
       .single();
     await admin.from("dose_changes").insert({ medication_id: med!.id, effective_date: addDays(SUN, 3), dose_morning: 1 });
@@ -58,7 +58,7 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     quietPlanId = quiet!.id;
     await admin
       .from("medications")
-      .insert({ plan_id: quietPlanId, name: "Ramipril", pills_per_pack: 28, color: "#FF5E4D", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: SAT, stock_qty: 100, stock_as_of: SAT });
+      .insert({ plan_id: quietPlanId, name: "Ramipril", pills_per_pack: 28, color: "#FF5E4D", category: "pillola", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: SAT, stock_qty: 100, stock_as_of: SAT });
   });
 
   afterAll(cleanup);
@@ -124,6 +124,61 @@ describe.skipIf(!enabled)("controlli automatici", () => {
   });
 });
 
+// Categorie a livello: scorta in contenitori, senza arrotondamenti nel database.
+describe.skipIf(!enabled)("medicinali a livello", () => {
+  let admin: SupabaseClient;
+  let owner: TestUser;
+  let planId: string;
+  const DAY = "2035-01-10";
+
+  beforeAll(async () => {
+    admin = adminClient();
+    owner = await makeUser("Livello");
+    const { data: plan } = await admin.from("plans").insert({ owner_id: owner.id, patient_name: "Nonna Sciroppo", alert_under_14: true, alert_last_pack: true }).select("id").single();
+    planId = plan!.id;
+  });
+
+  afterAll(cleanup);
+
+  const syrup = (over: Record<string, unknown> = {}) => ({
+    plan_id: planId, name: "Lattulosio", pills_per_pack: 1, color: "#FFC020", category: "liquido", shape: null, days_per_pack: 30,
+    dose_morning: 15, frequency_type: "daily", start_date: DAY, stock_qty: 0.4, stock_as_of: DAY, ...over,
+  });
+
+  it("riceve «meno di 14 giorni» e «ultima confezione»", async () => {
+    const { data: med, error } = await admin.from("medications").insert(syrup()).select("id").single();
+    expect(error).toBeNull();
+    sent.length = 0;
+    const r = await runDailyAlerts(admin, DAY);
+    expect(r.plans.find((p) => p.planId === planId)).toMatchObject({ outcome: "sent", medications: ["Lattulosio"] });
+    const { data: eps } = await admin.from("alert_log").select("alert_type").eq("medication_id", med!.id).is("closed_at", null);
+    expect((eps ?? []).map((e) => e.alert_type).sort()).toEqual(["last_pack", "under_14"]);
+  });
+
+  it("dosi fino a 999 e scorta 29/30 accettate e rilette uguali", async () => {
+    const { data, error } = await admin
+      .from("medications")
+      .insert(syrup({ name: "Insulina", category: "iniezione", dose_morning: 999, stock_qty: 29 / 30 }))
+      .select("dose_morning, stock_qty")
+      .single();
+    expect(error).toBeNull();
+    expect(Number(data!.dose_morning)).toBe(999);
+    expect(Number(data!.stock_qty)).toBe(29 / 30);
+  });
+
+  it("days_per_pack con un medicinale al bisogno è rifiutato", async () => {
+    const { error } = await admin.from("medications").insert(syrup({ frequency_type: "as_needed" }));
+    expect(error?.code).toBe("23514");
+  });
+
+  it("shape solo per le pillole", async () => {
+    const { error } = await admin.from("medications").insert(syrup({ shape: "tonda" }));
+    expect(error?.code).toBe("23514");
+    const { error: noShape } = await admin.from("medications").insert(syrup({ category: "pillola", shape: null, days_per_pack: null }));
+    expect(noShape?.code).toBe("23514");
+  });
+});
+
 // Supabase restituisce al massimo 1000 righe per richiesta: il controllo deve leggerle tutte.
 describe.skipIf(!enabled)("controlli automatici con molti dati", () => {
   let admin: SupabaseClient;
@@ -142,7 +197,7 @@ describe.skipIf(!enabled)("controlli automatici con molti dati", () => {
       .select("id");
     if (error || !plans) throw new Error(`piani: ${error?.message}`);
     const med = (planId: string, name: string, stock: number) => ({
-      plan_id: planId, name, pills_per_pack: 20, color: "#FF5E4D", shape: "tonda", dose_morning: 1,
+      plan_id: planId, name, pills_per_pack: 20, color: "#FF5E4D", category: "pillola", shape: "tonda", dose_morning: 1,
       frequency_type: "daily", start_date: DAY, stock_qty: stock, stock_as_of: DAY,
     });
     const meds = plans.flatMap((p, i) => Array.from({ length: MEDS_PER_PLAN }, (_, j) => med(p.id, `Med ${i}-${j}`, 1000)));
@@ -202,7 +257,7 @@ describe.skipIf(!enabled)("riepilogo di utilizzo", () => {
     await admin.from("plan_invites").insert({ plan_id: plan!.id, email: "nuova@test.localhost", role: "viewer" });
     const { data: med } = await admin
       .from("medications")
-      .insert({ plan_id: plan!.id, name: "Uso", pills_per_pack: 20, color: "#FF5E4D", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: DAY, stock_qty: 10, stock_as_of: DAY })
+      .insert({ plan_id: plan!.id, name: "Uso", pills_per_pack: 20, color: "#FF5E4D", category: "pillola", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: DAY, stock_qty: 10, stock_as_of: DAY })
       .select("id")
       .single();
     await admin.from("stock_events").insert({ medication_id: med!.id, type: "count", delta: 0, qty_after: 10, effective_date: DAY, created_by: b.id });

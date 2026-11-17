@@ -2,7 +2,8 @@
 // Funzioni pure, usate sia dal server sia dal browser.
 
 import { addDays, formatDayMonthYear, maxDate, type ISODate } from "./dates";
-import { dosesAt, dosesBetween, dosesPhrase, type Forecast, type MedicationData, type MedStatus } from "./forecast";
+import { consumptionBetween, dosesAt, dosesPhrase, type Forecast, type FrequencyType, type MedicationData, type MedStatus } from "./forecast";
+import { containerWord, doseWord, type Category } from "./categories";
 
 /** Giorni di terapia da coprire con l'ordine. */
 export const ORDER_TARGET_DAYS = 30;
@@ -12,7 +13,12 @@ export interface PharmacyItem {
   name: string;
   strength: string;
   color: string;
-  shape: string;
+  category: Category;
+  /** forma della pillola, per l'icona */
+  shape: string | null;
+  daysPerPack: number | null;
+  frequencyType: FrequencyType;
+  /** unità di scorta per confezione: pezzi, o contenitori a livello */
   pillsPerPack: number;
   rx: boolean;
   status: MedStatus;
@@ -21,12 +27,12 @@ export interface PharmacyItem {
   selected: boolean;
   /** confezioni suggerite */
   packs: number;
-  /** "1 al mattino" (vuoto per i medicinali al bisogno) */
+  /** "1 compressa al mattino", "5 ml al mattino" (vuoto per i medicinali al bisogno) */
   phrase: string;
 }
 
 /**
- * Confezioni per coprire `targetDays` di terapia da `start` oltre le compresse già in casa.
+ * Confezioni per coprire `targetDays` di terapia da `start` oltre la scorta già in casa (pezzi o contenitori).
  * `start` è max(oggi, stock_as_of): i giorni prima di stock_as_of sono già nel portapillole. Almeno 1.
  */
 export function suggestedPacks(
@@ -36,7 +42,7 @@ export function suggestedPacks(
   targetDays = ORDER_TARGET_DAYS,
 ): number {
   if (f.asNeeded) return 1;
-  const need = dosesBetween(med, start, addDays(start, targetDays - 1));
+  const need = consumptionBetween(med, start, addDays(start, targetDays - 1));
   const missing = need - f.stock;
   return Math.max(1, Math.ceil(missing / med.pillsPerPack - 1e-9));
 }
@@ -45,7 +51,7 @@ export interface PharmacyMed extends MedicationData {
   name: string;
   strength: string;
   color: string;
-  shape: string;
+  shape: string | null;
   requiresPrescription: boolean;
 }
 
@@ -58,14 +64,17 @@ export function buildPharmacyItems<M extends PharmacyMed>(items: { med: M; forec
       name: med.name,
       strength: med.strength,
       color: med.color,
+      category: med.category,
       shape: med.shape,
+      daysPerPack: med.daysPerPack ?? null,
+      frequencyType: med.frequencyType,
       pillsPerPack: med.pillsPerPack,
       rx: med.requiresPrescription,
       status: f.status,
       ordered: !!med.orderedAt,
       selected: (f.status === "out" || f.status === "order") && !med.orderedAt,
       packs: suggestedPacks(med, f, maxDate(today, med.stockAsOf)),
-      phrase: f.asNeeded ? "" : dosesPhrase(dosesAt(med, today)),
+      phrase: f.asNeeded ? "" : dosesPhrase(dosesAt(med, today), (n) => doseWord(med, n)),
     }));
 }
 
@@ -76,10 +85,14 @@ export interface PharmacyLine {
   pillsPerPack: number;
   rx: boolean;
   phrase: string;
+  category: Category;
+  daysPerPack: number | null;
+  frequencyType: FrequencyType;
 }
 
 const label = (l: PharmacyLine) => `${l.name}${l.strength ? ` ${l.strength}` : ""}`;
-const packsText = (l: PharmacyLine) => `${l.packs} ${l.packs === 1 ? "confezione" : "confezioni"} da ${l.pillsPerPack}`;
+/** «2 confezioni da 30 compresse», «1 confezione da 1 flacone» */
+const packsText = (l: PharmacyLine) => `${l.packs} ${l.packs === 1 ? "confezione" : "confezioni"} da ${l.pillsPerPack} ${containerWord(l, l.pillsPerPack)}`;
 
 /** Testo per la farmacia, diviso tra medicine con e senza ricetta. */
 export function pharmacyText(patientName: string, lines: PharmacyLine[], today: ISODate): string {

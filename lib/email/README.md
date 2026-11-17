@@ -14,13 +14,13 @@ Outgoing email for Appoteca. It has two parts: a provider abstraction that sends
   - `FONT`, `esc(s)` (HTML escape), `interface LayoutData`, `renderLayout(d)` (full HTML document with logo, banner, title, intro, body, CTA, and footer)
   - `infoCard(opts)` (two-column label/value card with a tone and an optional chip), `noteBox(text, tone)`
 - `alert-template.ts` (daily stock alert)
-  - `interface AlertEmailMed`, `interface AlertEmailData`, `EMAIL_DISCLAIMER`
+  - `interface AlertEmailMed` (with `category`, `daysPerPack`, `frequencyType`, `levelText`, `unit` from `containerWord`), `interface AlertEmailData`, `EMAIL_DISCLAIMER`. Each med shows the colour dot, the category name (no SVG: mail clients strip it) and «{Contenitori} rimasti/e».
   - `alertSubject(d)` (adds a `[Prova] ` prefix when `test`), `doctorText(d)` (prescription-request text for meds with `requiresPrescription`, or `null`), `renderAlertEmail(d)`
 - `templates.ts` (other emails; all return `RenderedEmail`)
   - `interface RenderedEmail { subject; html; text }`
   - `InviteEmailData` / `renderInviteEmail(d)`: plan invitation
-  - `ReminderItem` (name, strength, color, `phrase`, `changeNote?`), `ReminderEmailData` / `renderPrepReminderEmail(d)`: pillbox preparation reminder with the doses of the 7 days (no quantities to deduct and no "missing" note)
-  - `SummaryMed`, `SummaryEmailData`, `summaryHeadline(meds)` / `renderWeeklySummaryEmail(d)`: Monday summary (no next pillbox preparation)
+  - `ReminderItem` (name, strength, color, `categoryLabel`, `phrase` with the dose word, `changeNote?`), `ReminderEmailData` / `renderPrepReminderEmail(d)`: pillbox preparation reminder with the doses of the 7 days (no quantities to deduct and no "missing" note)
+  - `SummaryMed` (with `category`, `daysPerPack`, `frequencyType`, `levelText`), `SummaryEmailData`, `summaryHeadline(meds)` / `renderWeeklySummaryEmail(d)`: Monday summary (no next pillbox preparation). Each med shows the category name and «{Contenitori} rimasti/e» (`formatQty` for pieces, `levelText` for level meds, never rounded to whole containers).
   - `renderOpsEmail({ title, problems, appUrl, when })`: technical alert for the ops address. The intro changes when every problem starts with `"Dati AIFA"`.
   - `renderUsageEmail(stats, { from, to, appUrl })`: weekly usage report. A warning note appears when `recipientsPerDay >= GMAIL_DAILY_LIMIT * 0.8`.
 

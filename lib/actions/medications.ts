@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlanBundle } from "@/lib/data";
 import { currentStock, dosesPhrase, totalPerDose } from "@/lib/forecast";
 import { formatShort, maxDate } from "@/lib/dates";
-import { doseChangeSchema, medicationSchema, type DoseChangeInput, type MedicationInput } from "@/lib/schemas";
+import { doseChangeSchema, levelQtySchema, medicationSchema, qtySchema, type DoseChangeInput, type MedicationInput } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
 import { atcColor, ATC_UNKNOWN_VALUE } from "@/lib/atc";
-import { usesReorderDays } from "@/lib/presidi";
+import { isLevel } from "@/lib/categories";
 import { dbError, fail, flash, zodFail, type ActionResult } from "./common";
 
 type ParsedMedication = ReturnType<typeof medicationSchema.parse>;
@@ -38,9 +38,10 @@ function medFields(m: ParsedMedication, atcCode: string | null) {
     atc_code: atcCode,
     // il colore dipende dal gruppo ATC: grigio per "Non so"
     color: atcColor(atcCode),
-    form: m.form,
-    shape: m.shape,
-    reorder_days: usesReorderDays(m.shape) ? (m.reorder_days ?? null) : null,
+    category: m.category,
+    shape: m.category === "pillola" ? m.shape : null,
+    // a livello: giorni di uso per contenitore; al bisogno si conta sempre a pezzi
+    days_per_pack: f === "as_needed" ? null : (m.days_per_pack ?? null),
     dose_morning: m.dose_morning,
     dose_noon: m.dose_noon,
     dose_evening: m.dose_evening,
@@ -54,12 +55,23 @@ function medFields(m: ParsedMedication, atcCode: string | null) {
   };
 }
 
+const STOCK_MISSING = "Indica quanto c’è in casa.";
+
+/** Scorta indicata nel modulo, nel modo del medicinale: a pezzi multipli di ½, a livello chiusi + aperto. */
+function checkStock(qty: number, level: boolean): string | null {
+  const r = (level ? levelQtySchema : qtySchema).safeParse(qty);
+  return r.success ? null : r.error.issues[0].message;
+}
+
 export async function createMedication(planId: string, input: MedicationInput, another = false): Promise<ActionResult> {
   const bundle = await getPlanBundle(planId);
   if (!canEdit(bundle.role)) return fail(READ_ONLY_MESSAGE);
   const parsed = medicationSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   const m = parsed.data;
+  if (m.stock_qty == null) return fail(STOCK_MISSING, { stock_qty: STOCK_MISSING });
+  const stockErr = checkStock(m.stock_qty, m.frequency_type !== "as_needed" && m.days_per_pack != null);
+  if (stockErr) return fail(stockErr, { stock_qty: stockErr });
   const supabase = await createClient();
   const atc = await resolveAtc(supabase, m);
   const { data, error } = await supabase
@@ -89,14 +101,27 @@ export async function updateMedication(planId: string, medicationId: string, inp
   const parsed = medicationSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   const m = parsed.data;
+
+  // Modo di conteggio: la scorta vecchia è in un'altra unità (pezzi o contenitori) e non passa mai da
+  // un modo all'altro. Con un cambio di modo serve la scorta nel modo nuovo, registrata come conteggio.
+  const newLevel = m.frequency_type !== "as_needed" && m.days_per_pack != null;
+  const modeChanged = newLevel !== isLevel(med);
+  if (modeChanged && m.stock_qty == null) {
+    const msg = "Hai cambiato il modo di conteggio: indica quanto c’è in casa nel nuovo modo.";
+    return fail(msg, { stock_qty: msg });
+  }
+  if (m.stock_qty != null && (modeChanged || !newLevel)) {
+    const stockErr = checkStock(m.stock_qty, newLevel);
+    if (stockErr) return fail(stockErr, { stock_qty: stockErr });
+  }
   const supabase = await createClient();
 
   // Il consumo fino a ieri segue il vecchio schema: si "ribasa" il riferimento a oggi
   // prima di salvare il nuovo schema. Una scorta scritta nel modulo conta anche il portapillole
   // e vale da oggi; altrimenti, con stock_as_of nel futuro (dosi già nel portapillole), il
-  // riferimento resta a quel giorno.
+  // riferimento resta a quel giorno. A livello, senza cambio di modo, la scorta non arriva dal modulo.
   const now = currentStock(med, bundle.today);
-  const recounted = Math.abs(m.stock_qty - now) > 1e-9;
+  const recounted = modeChanged || (!newLevel && m.stock_qty != null && Math.abs(m.stock_qty - now) > 1e-9);
   const asOf = recounted ? bundle.today : maxDate(bundle.today, med.stockAsOf);
   const atc = await resolveAtc(supabase, m);
   const { data: updated, error } = await supabase
@@ -117,18 +142,20 @@ export async function updateMedication(planId: string, medicationId: string, inp
     if (dcErr) return fail(dbError(dcErr, "Medicinale salvato, ma non riesco ad aggiornare i cambi di dose."));
   }
 
-  // scorta modificata a mano nel modulo = nuovo conteggio
+  // scorta modificata a mano nel modulo, o nel modo nuovo = nuovo conteggio
   if (recounted) {
+    const qty = m.stock_qty!;
     const { error: cErr } = await supabase.rpc("record_stock_event", {
       p_medication_id: medicationId,
       p_type: "count",
-      p_delta: m.stock_qty - now,
-      p_qty_after: m.stock_qty,
+      // dopo un cambio di modo la scorta di prima è in un'altra unità: il conteggio riparte da zero
+      p_delta: modeChanged ? qty : qty - now,
+      p_qty_after: qty,
       p_effective_date: bundle.today,
       p_expected_qty: now,
       p_expected_as_of: asOf,
       p_clear_ordered: false,
-      p_meta: { source: "edit" },
+      p_meta: modeChanged ? { source: "edit", reason: "mode_change", previous: now } : { source: "edit" },
     });
     if (cErr) return fail(dbError(cErr, "Medicinale salvato, ma non riesco a registrare il nuovo conteggio."));
   }

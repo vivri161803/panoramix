@@ -74,7 +74,7 @@ describe.skipIf(!enabled)("dati AIFA", () => {
 
   it("il medicinale accetta AIC a 9 cifre e ATC completo o solo la lettera", async () => {
     const { data: plan } = await admin.from("plans").insert({ owner_id: user.id, patient_name: "Nonno AIFA" }).select("id").single();
-    const base = { plan_id: plan!.id, name: "Triatec", pills_per_pack: 14, shape: "tonda", dose_morning: 1, frequency_type: "daily" };
+    const base = { plan_id: plan!.id, name: "Triatec", pills_per_pack: 14, category: "pillola", shape: "tonda", dose_morning: 1, frequency_type: "daily" };
     const ok1 = await admin.from("medications").insert({ ...base, color: "#FF5E4D", aic: "027161064", atc_code: "C09AA05" });
     expect(ok1.error).toBeNull();
     const ok2 = await admin.from("medications").insert({ ...base, color: "#9AA1A9", atc_code: "C" });

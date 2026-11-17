@@ -19,9 +19,10 @@ via Row Level Security (RLS).
 | `20261109000100_sharing.sql` | `plan_members`, `plan_invites`, role helpers, replaces owner-only policies with role-aware ones |
 | `20261109000200_features.sql` | `use` stock event type, `dose_changes`, `notification_runs`, `plans.prep_reminder` / `weekly_summary`, `cron_runs.kind` |
 | `20261110000100_aifa.sql` | `aifa_*` reference tables, `aifa_status()`, `aifa_finish_import()`, `medications.aic` / `atc_code`, extended color palette |
-| `20261114000100_presidi.sql` | `medications.form` (`compressa`, `iniezione`, `cerotto`, `collirio`) and form-dependent `shape` check |
-| `20261115000100_reorder_days.sql` | `medications.reorder_days`, required exactly when `shape = 'flacone'` (backfilled to 30) |
+| `20261114000100_presidi.sql` | `medications.form` (`compressa`, `iniezione`, `cerotto`, `collirio`) and form-dependent `shape` check (replaced by `20261118000100`) |
+| `20261115000100_reorder_days.sql` | `medications.reorder_days`, required exactly when `shape = 'flacone'` (backfilled to 30; renamed `days_per_pack` by `20261118000100`) |
 | `20261117000100_daily_stock.sql` | Daily stock in every plan: drops `apply_prep`, `undo_prep`, `change_stock_mode`, `prep_runs`, `plans.stock_mode` / `mode_since`; moves `stock_as_of` of weekly plans' non-bottle meds to the day their prepared pillbox runs out; keeps `prep_reminder` only on weekly plans that had it, default `false` |
+| `20261118000100_categories.sql` | Ten categories: `medications.category`, `days_per_pack` (was `reorder_days`), `shape` only for pills, `form` dropped, doses up to 999, `stock_qty` / `stock_events` quantities as `numeric` without scale |
 
 ## Interface
 
@@ -32,7 +33,7 @@ via Row Level Security (RLS).
 - `plan_recipients` - extra alert email recipients per plan, unique `(plan_id, email)`.
 - `plan_members` - shared access, PK `(plan_id, user_id)`, `role` `viewer|editor`, `invited_by`.
 - `plan_invites` - pending invites by email, unique `(plan_id, email)`, `role` `viewer|editor`.
-- `medications` - per-plan medication: dosage (`dose_morning`, `dose_noon`, `dose_evening`), `frequency_type` (`daily`, `weekdays`, `every_n_days`, `cycle`, `as_needed`) with `weekdays` / `interval_days` / `cycle_on` / `cycle_off`, stock reference (`stock_qty`, `stock_as_of`), `ordered_at`, `archived`, `color`, `form`, `shape`, `aic`, `atc_code`, `reorder_days`, `pills_per_pack`, `requires_prescription`.
+- `medications` - per-plan medication: dosage (`dose_morning`, `dose_noon`, `dose_evening`), `frequency_type` (`daily`, `weekdays`, `every_n_days`, `cycle`, `as_needed`) with `weekdays` / `interval_days` / `cycle_on` / `cycle_off`, stock reference (`stock_qty`, `stock_as_of`), `ordered_at`, `archived`, `color`, `category` (`pillola`, `bustina`, `liquido`, `iniezione`, `gocce`, `inalatore`, `cerotto`, `crema`, `supposta`, `altro`), `shape` (only for `pillola`), `days_per_pack` (level meds: days of use per container), `aic`, `atc_code`, `pills_per_pack` (stock units per box: pieces, or containers for level meds), `requires_prescription`.
 - `stock_events` - append-only stock ledger; `type` in `count`, `arrival`, `prep`, `prep_undo`, `adjust`, `use`; `delta`, `qty_after`, `effective_date`, `meta`.
 - `dose_changes` - scheduled dose changes per medication, unique `(medication_id, effective_date)`; total dose 0 means suspension.
 - `alert_log` - alert episodes per medication and `alert_type` (`under_14`, `under_7`, `last_pack`), `episode_start`, `sent_at`, `closed_at`.
@@ -73,7 +74,7 @@ via Row Level Security (RLS).
 - `record_stock_event` uses optimistic concurrency: the medication row must still match `p_expected_qty` and `p_expected_as_of`, otherwise SQLSTATE `40001`, `hint = 'stale_stock'`.
 - `stock_events.type` still accepts `prep` and `prep_undo`, so the history of past pillbox preparations stays readable; no code writes them any more.
 - At most one open `alert_log` episode per `(medication_id, alert_type)` (`alert_log_open_episode`); `alert_runs` / `notification_runs` uniqueness makes daily sends idempotent.
-- `medications` checks: doses in 0.5 steps between 0 and 20 with a positive total; `stock_qty >= 0` in 0.5 steps; `end_date >= start_date`; frequency parameters present for their `frequency_type`; `shape` must belong to `form`; `reorder_days` set if and only if `shape = 'flacone'`; `color` restricted to a fixed 15-color palette (color is computed server side from ATC, `lib/atc.ts`); `aic` is 9 digits; `atc_code` is a full or partial ATC code.
+- `medications` checks: doses `numeric(5,1)` in 0.5 steps between 0 and 999 with a positive total (same for `dose_changes`); `stock_qty numeric >= 0` with no scale and no step (a level stock like 29/30 is stored as is); `pills_per_pack` 1–10000; `end_date >= start_date`; frequency parameters present for their `frequency_type`; `category` in the 10 values; `shape` set if and only if `category = 'pillola'` (`tonda`, `ovale`, `capsula`); `days_per_pack` 1–365 and null for `as_needed` (`medications_days_per_pack_as_needed`); `color` restricted to a fixed 15-color palette (color is computed server side from ATC, `lib/atc.ts`); `aic` is 9 digits; `atc_code` is a full or partial ATC code.
 - All functions set `search_path = ''`. New migrations must be added as new timestamped files; existing files are history and should not be edited.
 
 ## Side Effects
@@ -84,6 +85,7 @@ via Row Level Security (RLS).
 - `accept_plan_invite` upserts `plan_members` and deletes the invite.
 - `aifa_finish_import` bulk-deletes stale rows from the `aifa_*` table of the import's source and updates `aifa_imports`. Writes to `aifa_*` come from `scripts/import-aifa.mjs` with the service role (file formats in `scripts/aifa/README.md`).
 - `20261115000100_reorder_days.sql` backfills `reorder_days = 30` on existing `flacone` medications.
+- `20261118000100_categories.sql` fills `category` from the 11 old `(form, shape)` pairs, renames `reorder_days` to `days_per_pack`, sets old bottles to `stock_qty = 1`, `pills_per_pack = 1` (same run-out date, `days_per_pack = null` if as-needed), clears `shape` outside pills, drops `form`, and widens doses/stock types. `stock_events.delta` / `qty_after` become `numeric` without scale.
 
 ## Verification
 
