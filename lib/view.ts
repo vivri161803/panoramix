@@ -4,7 +4,7 @@ import { formatShort, type ISODate } from "./dates";
 import { changeLabel } from "./digest";
 import type { Medication } from "./db-types";
 import { leftWord } from "./presidi";
-import { daysWord, formatQty, pillsWord, statusReason, upcomingChanges, type Forecast, type MedStatus, type StockMode } from "./forecast";
+import { daysWord, formatQty, pillsWord, statusReason, upcomingChanges, type Forecast, type MedStatus } from "./forecast";
 
 export interface DispenserView {
   id: string;
@@ -30,7 +30,7 @@ export interface DispenserView {
   nextChange: string;
 }
 
-export function dispenserView(med: Medication, f: Forecast, mode: StockMode, today: ISODate): DispenserView {
+export function dispenserView(med: Medication, f: Forecast, today: ISODate): DispenserView {
   const next = f.asNeeded || f.ended ? undefined : upcomingChanges(med, today)[0];
   let daysText = "";
   let dWord = "";
@@ -54,7 +54,7 @@ export function dispenserView(med: Medication, f: Forecast, mode: StockMode, tod
       endLabel = f.coverageDays === 0 ? "Promemoria di riordino: oggi" : `Promemoria di riordino ${formatShort(f.runOutDate!)}`;
     }
   }
-  let reason = statusReason(f, mode, med.endDate);
+  let reason = statusReason(f, med.endDate);
   if (f.status === "out" && med.orderedAt) reason = `${reason} · già ordinata`;
   return {
     id: med.id,

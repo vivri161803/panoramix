@@ -7,13 +7,11 @@ import {
   PLAN_COLUMNS,
   toMedication,
   toPlanSettings,
-  toPrepRun,
   type MedicationRow,
   type PlanRow,
   type InviteRow,
   type MemberRow,
   type MyInviteRow,
-  type PrepRunRow,
   type ProfileRow,
   type RecipientRow,
   type StockEventRow,
@@ -83,17 +81,15 @@ export async function listPlans() {
   if (planRows.length === 0) return [];
   const ids = planRows.map((p) => p.id);
   const roleOf = new Map(((memberships ?? []) as { plan_id: string; role: MemberRole }[]).map((m) => [m.plan_id, m.role]));
-  const [{ data: meds }, { data: runs }, names] = await Promise.all([
+  const [{ data: meds }, names] = await Promise.all([
     supabase.from("medications").select(MEDICATION_COLUMNS).in("plan_id", ids).eq("archived", false).order("created_at"),
-    supabase.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").in("plan_id", ids).is("undone_at", null).order("week_start", { ascending: false }),
     profileNames(planRows.filter((p) => p.owner_id !== profile.id).map((p) => p.owner_id)),
   ]);
   const today = todayInRome();
   return planRows.map((p) => {
     const m = ((meds ?? []) as MedicationRow[]).filter((x) => x.plan_id === p.id).map(toMedication);
-    const r = ((runs ?? []) as PrepRunRow[]).filter((x) => x.plan_id === p.id).slice(0, 5).map(toPrepRun);
     const role: PlanRole = p.owner_id === profile.id ? "owner" : (roleOf.get(p.id) ?? "viewer");
-    return { plan: p, role, ownerName: role === "owner" ? "" : (names.get(p.owner_id) ?? ""), forecast: forecastPlan(toPlanSettings(p), m, r, today) };
+    return { plan: p, role, ownerName: role === "owner" ? "" : (names.get(p.owner_id) ?? ""), forecast: forecastPlan(toPlanSettings(p), m, today) };
   });
 }
 
@@ -116,9 +112,8 @@ export const getPlanBundle = cache(async (planId: string) => {
   if (!plan) notFound();
   const planRow = plan as PlanRow;
   const owner = planRow.owner_id === profile.id;
-  const [{ data: meds }, { data: runs }, { data: recipients }, { data: membership }, { data: members }, { data: invites }, names] = await Promise.all([
+  const [{ data: meds }, { data: recipients }, { data: membership }, { data: members }, { data: invites }, names] = await Promise.all([
     supabase.from("medications").select(MEDICATION_COLUMNS).eq("plan_id", planId).eq("archived", false).order("created_at"),
-    supabase.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").eq("plan_id", planId).order("week_start", { ascending: false }).limit(10),
     owner ? supabase.from("plan_recipients").select("id, plan_id, email").eq("plan_id", planId).order("created_at") : Promise.resolve({ data: [] }),
     owner ? Promise.resolve({ data: null }) : supabase.from("plan_members").select("role").eq("plan_id", planId).eq("user_id", profile.id).maybeSingle(),
     owner
@@ -132,7 +127,6 @@ export const getPlanBundle = cache(async (planId: string) => {
     owner ? Promise.resolve(new Map<string, string>()) : profileNames([planRow.owner_id]),
   ]);
   const role: PlanRole = owner ? "owner" : ((membership as { role: MemberRole } | null)?.role ?? "viewer");
-  const runRows = (runs ?? []) as PrepRunRow[];
   const medications = ((meds ?? []) as MedicationRow[]).map(toMedication);
   const today = todayInRome();
   return {
@@ -142,12 +136,11 @@ export const getPlanBundle = cache(async (planId: string) => {
     plan: planRow,
     settings: toPlanSettings(planRow),
     medications,
-    runRows,
     recipients: (recipients ?? []) as RecipientRow[],
     members: (members ?? []) as unknown as MemberRow[],
     invites: (invites ?? []) as InviteRow[],
     today,
-    forecast: forecastPlan(toPlanSettings(planRow), medications, runRows.map(toPrepRun), today),
+    forecast: forecastPlan(toPlanSettings(planRow), medications, today),
   };
 });
 

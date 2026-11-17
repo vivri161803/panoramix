@@ -6,7 +6,6 @@ import {
   diffDays,
   isoWeekday,
   maxDate,
-  onOrAfterWeekday,
   onOrBeforeWeekday,
   WEEKDAYS_LONG,
   WEEKDAYS_SHORT,
@@ -16,7 +15,6 @@ import {
 // ——— Tipi ———
 
 export type FrequencyType = "daily" | "weekdays" | "every_n_days" | "cycle" | "as_needed";
-export type StockMode = "daily" | "weekly";
 export type Slot = "morning" | "noon" | "evening";
 export type AlertType = "under_14" | "under_7" | "last_pack";
 export type MedStatus = "out" | "order" | "ordered" | "ok";
@@ -63,21 +61,13 @@ export interface MedicationData extends Schedule {
 }
 
 export interface PlanSettings {
-  stockMode: StockMode;
   /** giorno ISO della preparazione del portapillole */
   prepWeekday: number;
-  /** giorno da cui vale la modalità attuale */
-  modeSince: ISODate;
+  /** promemoria del portapillole acceso: la sera prima di prepWeekday arriva l'email con le dosi */
+  prepReminder: boolean;
   alertUnder14: boolean;
   alertUnder7: boolean;
   alertLastPack: boolean;
-}
-
-export interface PrepRunData {
-  id: string;
-  weekStart: ISODate;
-  deductions: Record<string, number>;
-  undoneAt: string | null;
 }
 
 const EPS = 1e-9;
@@ -243,85 +233,16 @@ export function hasEnded(s: Schedule, today: ISODate): boolean {
 }
 
 /**
- * Scorta in casa oggi.
- * Giorno per giorno: riferimento − dosi previste dal giorno del riferimento a ieri compreso
- * (il conteggio si considera fatto a inizio giornata).
- * Portapillole settimanale: le compresse escono solo con la preparazione, quindi vale il riferimento.
+ * Scorta in casa oggi: riferimento − dosi previste dal giorno del riferimento a ieri compreso
+ * (il conteggio si considera fatto a inizio giornata). Se il riferimento è nel futuro
+ * (dosi già nel portapillole preparato, dopo la migrazione delle scorte giorno per giorno)
+ * vale il riferimento.
  */
-export function currentStock(med: MedicationData, mode: StockMode, today: ISODate): number {
-  if (mode === "weekly" || med.frequencyType === "as_needed" || med.reorderDays) return med.stockQty;
+export function currentStock(med: MedicationData, today: ISODate): number {
+  if (med.frequencyType === "as_needed" || med.reorderDays) return med.stockQty;
   if (med.stockAsOf >= today) return med.stockQty;
   const used = dosesBetween(med, med.stockAsOf, addDays(today, -1));
   return Math.max(0, med.stockQty - used);
-}
-
-/** Preparazioni attive che valgono per la modalità attuale, dalla più recente. */
-function relevantRuns(plan: PlanSettings, runs: PrepRunData[]): PrepRunData[] {
-  return runs
-    .filter((r) => !r.undoneAt && addDays(r.weekStart, 6) >= plan.modeSince)
-    .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
-}
-
-export function latestActiveRun(plan: PlanSettings, runs: PrepRunData[]): PrepRunData | null {
-  return relevantRuns(plan, runs)[0] ?? null;
-}
-
-/**
- * Prossima preparazione dovuta (modalità settimanale).
- * Dopo una preparazione: il giorno di preparazione successivo.
- * Senza preparazioni: il primo giorno di preparazione da quando vale la modalità
- * (si assume che il portapillole fosse già pieno fino a quel giorno).
- * Può essere nel passato: in quel caso la preparazione è in ritardo.
- */
-export function nextPrepDue(plan: PlanSettings, runs: PrepRunData[]): ISODate {
-  const last = latestActiveRun(plan, runs);
-  if (last) return onOrAfterWeekday(addDays(last.weekStart, 1), plan.prepWeekday);
-  return onOrAfterWeekday(plan.modeSince, plan.prepWeekday);
-}
-
-/**
- * Settimana che verrebbe preparata premendo "Portapillole preparato" oggi:
- * quella dovuta, oppure — se si è saltata più di una settimana — l'ultima iniziata.
- */
-export function prepWeekStart(plan: PlanSettings, runs: PrepRunData[], today: ISODate): ISODate {
-  const due = nextPrepDue(plan, runs);
-  if (due > today) return due;
-  return maxDate(due, onOrBeforeWeekday(today, plan.prepWeekday));
-}
-
-export interface PrepItem {
-  medicationId: string;
-  need: number;
-  take: number;
-  /** compresse che mancano per la settimana */
-  missing: number;
-}
-
-/** Calcola cosa togliere dalle scorte per i 7 giorni da `weekStart`. */
-export function computePrep(meds: MedicationData[], weekStart: ISODate): PrepItem[] {
-  const weekEnd = addDays(weekStart, 6);
-  return meds
-    .filter((m) => m.frequencyType !== "as_needed" && !m.reorderDays)
-    .map((m) => {
-      const need = dosesBetween(m, weekStart, weekEnd);
-      const take = Math.min(m.stockQty, need);
-      return { medicationId: m.id, need, take, missing: Math.max(0, need - take) };
-    })
-    .filter((i) => i.need > 0);
-}
-
-/** Applica una preparazione alle scorte (versione pura di apply_prep). */
-export function applyPrep(stock: Record<string, number>, items: PrepItem[]): Record<string, number> {
-  const out = { ...stock };
-  for (const i of items) out[i.medicationId] = (out[i.medicationId] ?? 0) - i.take;
-  return out;
-}
-
-/** Annulla una preparazione: restituisce esattamente quanto tolto. */
-export function undoPrep(stock: Record<string, number>, deductions: Record<string, number>): Record<string, number> {
-  const out = { ...stock };
-  for (const [id, take] of Object.entries(deductions)) if (id in out) out[id] += take;
-  return out;
 }
 
 // ——— Copertura, esaurimento, stato (§5, §7) ———
@@ -333,10 +254,6 @@ export interface Forecast {
   coverageDays: number | null;
   /** primo giorno non coperto; null se non si esaurisce */
   runOutDate: ISODate | null;
-  /** solo modalità settimanale: giorni coperti dalle scorte in casa a partire dalla prossima preparazione */
-  homeDays: number | null;
-  /** solo modalità settimanale: compresse necessarie per la prossima preparazione */
-  nextPrepNeed: number | null;
   lastPack: boolean;
   ended: boolean;
   asNeeded: boolean;
@@ -349,8 +266,6 @@ export interface Forecast {
 export interface ForecastContext {
   plan: PlanSettings;
   today: ISODate;
-  /** solo modalità settimanale */
-  nextPrep?: ISODate;
 }
 
 /** Giorni consecutivi coperti partendo da `start` con `stock` compresse. null = nessun esaurimento. */
@@ -368,21 +283,20 @@ function coveredDaysFrom(s: Schedule, stock: number, start: ISODate): number | n
 
 export function forecastMedication(med: MedicationData, ctx: ForecastContext): Forecast {
   const { plan, today } = ctx;
-  const weekly = plan.stockMode === "weekly";
-  const stock = currentStock(med, plan.stockMode, today);
+  const stock = currentStock(med, today);
   const lastPack = stock <= med.pillsPerPack + EPS;
   const ended = hasEnded(med, today);
   const asNeeded = med.frequencyType === "as_needed";
   const ordered = !!med.orderedAt;
 
   if (ended) {
-    return { stock, coverageDays: null, runOutDate: null, homeDays: null, nextPrepNeed: null, lastPack, ended, asNeeded, triggered: [], status: "ok" };
+    return { stock, coverageDays: null, runOutDate: null, lastPack, ended, asNeeded, triggered: [], status: "ok" };
   }
 
   if (asNeeded) {
     const triggered: AlertType[] = plan.alertLastPack && lastPack ? ["last_pack"] : [];
     const status: MedStatus = stock <= EPS ? "out" : ordered ? "ordered" : triggered.length ? "order" : "ok";
-    return { stock, coverageDays: null, runOutDate: null, homeDays: null, nextPrepNeed: null, lastPack, ended, asNeeded, triggered, status };
+    return { stock, coverageDays: null, runOutDate: null, lastPack, ended, asNeeded, triggered, status };
   }
 
   if (med.reorderDays) {
@@ -390,28 +304,18 @@ export function forecastMedication(med: MedicationData, ctx: ForecastContext): F
     const left = Math.max(0, med.reorderDays - diffDays(med.stockAsOf, today));
     const reminderDate = addDays(today, left);
     if (med.endDate && reminderDate > med.endDate) {
-      return { stock, coverageDays: null, runOutDate: null, homeDays: null, nextPrepNeed: null, lastPack: false, ended, asNeeded, reorder: true, triggered: [], status: "ok" };
+      return { stock, coverageDays: null, runOutDate: null, lastPack: false, ended, asNeeded, reorder: true, triggered: [], status: "ok" };
     }
     // il promemoria l'ha chiesto chi ha inserito il collirio: vale anche se gli avvisi del piano sono spenti
     const triggered: AlertType[] = left === 0 ? ["under_14"] : [];
     const status: MedStatus = left > 0 ? "ok" : ordered ? "ordered" : "order";
-    return { stock, coverageDays: left, runOutDate: reminderDate, homeDays: null, nextPrepNeed: null, lastPack: false, ended, asNeeded, reorder: true, triggered, status };
+    return { stock, coverageDays: left, runOutDate: reminderDate, lastPack: false, ended, asNeeded, reorder: true, triggered, status };
   }
 
-  let coverageDays: number | null;
-  let homeDays: number | null = null;
-  let nextPrepNeed: number | null = null;
-
-  if (weekly) {
-    const nextPrep = ctx.nextPrep ?? today;
-    // giorni già nel portapillole (negativo se la preparazione è in ritardo)
-    const inPillbox = diffDays(today, nextPrep);
-    homeDays = coveredDaysFrom(med, stock, nextPrep);
-    coverageDays = homeDays === null ? null : Math.max(0, inPillbox + homeDays);
-    nextPrepNeed = dosesBetween(med, nextPrep, addDays(nextPrep, 6));
-  } else {
-    coverageDays = coveredDaysFrom(med, stock, today);
-  }
+  // Con stock_as_of nel futuro i giorni fino a quella data sono già nel portapillole: contano come coperti.
+  const from = maxDate(today, med.stockAsOf);
+  const covered = coveredDaysFrom(med, stock, from);
+  const coverageDays = covered === null ? null : diffDays(today, from) + covered;
 
   const runOutDate = coverageDays === null ? null : addDays(today, coverageDays);
 
@@ -423,20 +327,16 @@ export function forecastMedication(med: MedicationData, ctx: ForecastContext): F
     if (plan.alertLastPack && lastPack) triggered.push("last_pack");
   }
 
-  const notEnoughForPrep = weekly && nextPrepNeed !== null && nextPrepNeed > stock + EPS;
-  const out = coverageDays === 0 || notEnoughForPrep;
+  const out = coverageDays === 0;
   const status: MedStatus = out ? "out" : ordered ? "ordered" : triggered.length ? "order" : "ok";
 
-  return { stock, coverageDays, runOutDate, homeDays, nextPrepNeed, lastPack, ended, asNeeded, triggered, status };
+  return { stock, coverageDays, runOutDate, lastPack, ended, asNeeded, triggered, status };
 }
 
 /** Testo breve che spiega lo stato (sotto il dispenser). */
-export function statusReason(f: Forecast, mode: StockMode, endDate: ISODate | null): string {
+export function statusReason(f: Forecast, endDate: ISODate | null): string {
   if (f.ended) return endDate ? "Terapia conclusa" : "";
   if (f.status === "out") {
-    if (f.nextPrepNeed !== null && f.nextPrepNeed > f.stock + EPS && f.coverageDays !== 0) {
-      return `Ne mancano ${formatQty(f.nextPrepNeed - f.stock)} per la prossima preparazione`;
-    }
     return f.stock <= EPS ? "Scorta finita" : "Non basta per oggi";
   }
   if (f.status === "ordered") return "Ordinata, in arrivo";
@@ -444,10 +344,6 @@ export function statusReason(f: Forecast, mode: StockMode, endDate: ISODate | nu
     if (f.reorder) return "È ora di riordinare il flacone";
     const onlyLastPack = f.triggered.length === 1 && f.triggered[0] === "last_pack";
     if (onlyLastPack || f.coverageDays === null) return "È rimasta l’ultima confezione";
-    if (mode === "weekly" && f.homeDays !== null) {
-      const after = Math.max(0, f.homeDays - 7);
-      return `Dopo la preparazione restano ${after} ${daysWord(after)}`;
-    }
     return `Restano ${f.coverageDays} ${daysWord(f.coverageDays)}: è ora di ordinare`;
   }
   return "";
@@ -508,9 +404,9 @@ export interface CalendarDay {
   slots: Record<Slot, CalendarItem[]>;
 }
 
-/** Inizio della settimana del calendario: giorno di preparazione (settimanale) o lunedì. */
-export function calendarWeekStart(date: ISODate, plan: Pick<PlanSettings, "stockMode" | "prepWeekday">): ISODate {
-  return onOrBeforeWeekday(date, plan.stockMode === "weekly" ? plan.prepWeekday : 1);
+/** Inizio della settimana del calendario e del foglio A4: giorno di preparazione (con il promemoria acceso) o lunedì. */
+export function calendarWeekStart(date: ISODate, plan: Pick<PlanSettings, "prepReminder" | "prepWeekday">): ISODate {
+  return onOrBeforeWeekday(date, plan.prepReminder ? plan.prepWeekday : 1);
 }
 
 export function buildWeek(meds: (Schedule & { id: string })[], weekStart: ISODate): CalendarDay[] {
@@ -531,14 +427,6 @@ export function buildWeek(meds: (Schedule & { id: string })[], weekStart: ISODat
 
 export interface PlanForecast<M extends MedicationData = MedicationData> {
   today: ISODate;
-  /** solo modalità settimanale */
-  nextPrep: ISODate | null;
-  prepOverdue: boolean;
-  latestRun: PrepRunData | null;
-  /** settimana che si preparerebbe premendo ora il pulsante */
-  prepWeek: ISODate | null;
-  /** cosa si toglierebbe premendo ora il pulsante */
-  prepPreview: PrepItem[];
   items: { med: M; forecast: Forecast }[];
   /** medicine da ordinare (esaurite o sotto soglia, non ancora ordinate) */
   toOrder: M[];
@@ -548,27 +436,17 @@ export interface PlanForecast<M extends MedicationData = MedicationData> {
 export function forecastPlan<M extends MedicationData>(
   plan: PlanSettings,
   meds: M[],
-  runs: PrepRunData[],
   today: ISODate,
 ): PlanForecast<M> {
-  const weekly = plan.stockMode === "weekly";
-  const nextPrep = weekly ? nextPrepDue(plan, runs) : null;
-  const ctx: ForecastContext = { plan, today, nextPrep: nextPrep ?? undefined };
+  const ctx: ForecastContext = { plan, today };
   const items = meds
     .map((med) => ({ med, forecast: forecastMedication(med, ctx) }))
     .sort((a, b) => STATUS_RANK[a.forecast.status] - STATUS_RANK[b.forecast.status]);
-  const prepWeek = weekly ? prepWeekStart(plan, runs, today) : null;
-  const active = items.filter((i) => !i.forecast.ended).map((i) => i.med);
   const toOrder = items
     .filter((i) => (i.forecast.status === "out" || i.forecast.status === "order") && !i.med.orderedAt)
     .map((i) => i.med);
   return {
     today,
-    nextPrep,
-    prepOverdue: !!nextPrep && nextPrep < today,
-    latestRun: weekly ? latestActiveRun(plan, runs) : null,
-    prepWeek,
-    prepPreview: prepWeek ? computePrep(active, prepWeek) : [],
     items,
     toOrder,
     worst: items[0]?.forecast.status ?? "ok",

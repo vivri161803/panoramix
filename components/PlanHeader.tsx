@@ -6,7 +6,7 @@ import { IconBack, IconPlus } from "@/components/ui/icons";
 import { LeavePlanButton } from "@/components/LeavePlanButton";
 
 export function PlanHeader({ plan, tab, role, ownerName }: { plan: PlanRow; tab: "dispenser" | "calendario" | "disponibilita"; role: PlanRole; ownerName: string }) {
-  const mode = plan.stock_mode === "weekly" ? `Portapillole settimanale · preparazione ${plan.prep_weekday === 7 ? "la" : "il"} ${WEEKDAYS_LONG[plan.prep_weekday - 1]}` : "Scorte giorno per giorno";
+  const reminder = plan.prep_reminder ? `Promemoria del portapillole ${plan.prep_weekday === 7 ? "la" : "il"} ${WEEKDAYS_LONG[plan.prep_weekday - 1]}` : null;
   const tabCls = (sel: boolean) =>
     `flex h-11 min-w-0 flex-1 items-center justify-center rounded-[10px] px-1 text-[14px] font-semibold min-[400px]:text-[15px] leading-none no-underline ${sel ? "bg-px-surface text-px-ink shadow-[0_1px_2px_rgba(14,22,32,.12)]" : "bg-transparent text-px-ink-2"} hover:text-px-ink`;
   return (
@@ -26,7 +26,7 @@ export function PlanHeader({ plan, tab, role, ownerName }: { plan: PlanRow; tab:
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="t-display m-0 [overflow-wrap:anywhere]">{plan.patient_name}</h1>
-          <p className="m-0 text-px-ink-2">{mode}</p>
+          {reminder && <p className="m-0 text-px-ink-2">{reminder}</p>}
           {plan.notes && <p className="m-0 max-w-[640px] whitespace-pre-line text-[15px] text-px-ink-3">{plan.notes}</p>}
         </div>
         <div className="flex flex-wrap gap-2">

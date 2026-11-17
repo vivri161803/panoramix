@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
-import { toPlanSettings, toPrepRun, type Medication, type PlanRow, type ProfileRow } from "@/lib/db-types";
+import { toPlanSettings, type Medication, type PlanRow, type ProfileRow } from "@/lib/db-types";
 import { loadCronData, planAudience } from "@/lib/cron-data";
 import { dosesAt, dosesPhrase, evaluateAlerts, forecastPlan, type AlertType, type Forecast, type PlanForecast } from "@/lib/forecast";
 import { getEmailProvider } from "@/lib/email/provider";
@@ -44,7 +44,6 @@ export function buildPlanEmail(opts: {
     managerFullName: `${owner.first_name} ${owner.last_name}`.trim() || owner.email,
     planUrl: `${env.appUrl()}/piani/${plan.id}`,
     settingsUrl: `${env.appUrl()}/piani/${plan.id}/modifica`,
-    nextPrep: forecast.nextPrep,
     today,
     test: opts.test,
     meds: meds.map((m) => toEmailMed(m, byId.get(m.id)!, today)),
@@ -86,7 +85,6 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
   const { plans: planRows } = data;
   const openEpisodes = data.meds.length ? await loadOpenEpisodes(admin) : [];
   const medsByPlan = groupBy(data.meds, (m) => m.planId);
-  const runsByPlan = groupBy(data.runs, (r) => r.plan_id);
   const episodesByMed = groupBy(openEpisodes, (e) => e.medication_id);
 
   const provider = dryRun ? null : getEmailProvider({ pooled: true });
@@ -96,12 +94,7 @@ export async function runDailyAlerts(admin: SupabaseClient, today: ISODate, dryR
     try {
       const owner = data.profiles.get(plan.owner_id);
       if (!owner?.email) return;
-      const fc = forecastPlan(
-        toPlanSettings(plan),
-        medsByPlan.get(plan.id) ?? [],
-        (runsByPlan.get(plan.id) ?? []).map(toPrepRun),
-        today,
-      );
+      const fc = forecastPlan(toPlanSettings(plan), medsByPlan.get(plan.id) ?? [], today);
 
       const toSend: { med: Medication; episodeIds: string[] }[] = [];
       for (const { med, forecast } of fc.items) {

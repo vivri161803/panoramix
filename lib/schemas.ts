@@ -18,18 +18,13 @@ export const planSchema = z
   .object({
     patient_name: z.string().trim().min(1, "Scrivi il nome della persona.").max(80, "Al massimo 80 caratteri."),
     notes: z.string().trim().max(2000, "Al massimo 2000 caratteri."),
-    stock_mode: z.enum(["daily", "weekly"], "Scegli la modalità delle scorte."),
     prep_weekday: z.number().int().min(1).max(7),
     alert_under_14: z.boolean(),
     alert_under_7: z.boolean(),
     alert_last_pack: z.boolean(),
-    prep_reminder: z.boolean().default(true),
+    prep_reminder: z.boolean().default(false),
     weekly_summary: z.boolean().default(false),
     recipients: z.array(emailField).max(5, "Al massimo 5 destinatari aggiuntivi."),
-    /** obbligatori se cambia la modalità: nuovo conteggio di ogni medicinale */
-    counts: z
-      .array(z.object({ medication_id: z.uuid(), qty: halfStep("Conteggio", 100000) }))
-      .optional(),
   })
   .refine((p) => new Set(p.recipients).size === p.recipients.length, { message: "Un indirizzo è ripetuto.", path: ["recipients"] });
 

@@ -256,6 +256,7 @@ export function Dispenser({
   scaleMax = 60,
   actions,
   historyHref,
+  prepReminder = false,
 }: {
   med: DispenserView;
   size?: Size;
@@ -263,6 +264,8 @@ export function Dispenser({
   actions?: DispenserActions;
   /** link allo storico quando non ci sono azioni (sola lettura) */
   historyHref?: string;
+  /** il piano ha il promemoria del portapillole: il riconteggio comprende anche il portapillole */
+  prepReminder?: boolean;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
   const [n, setN] = useState(0);
@@ -400,7 +403,7 @@ export function Dispenser({
               }}
             >
               <label htmlFor={`px-n-${med.id}`} className="text-[15px] font-semibold leading-[1.3]">
-                {recount ? "Quante ne conti adesso?" : take ? (isPresidio(med.shape) ? `Quante prese? (${unitWord(med.shape, 2)})` : "Quante compresse sono state prese?") : "Confezioni arrivate"}
+                {recount ? `Quante ne hai in tutto${prepReminder ? ", comprese quelle nel portapillole" : ""}?` : take ? (isPresidio(med.shape) ? `Quante prese? (${unitWord(med.shape, 2)})` : "Quante compresse sono state prese?") : "Confezioni arrivate"}
               </label>
               <div className="flex gap-1">
                 <button type="button" aria-label={recount ? "Una in meno" : take ? "Mezza in meno" : "Una confezione in meno"} onClick={() => setN((x) => Math.max(recount ? 0 : take ? 0.5 : 1, x - step))} className={stepBtn}>

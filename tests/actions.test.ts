@@ -72,9 +72,9 @@ vi.mock("@/lib/data", () => ({
   fullName: (p: { first_name?: string; last_name?: string } | null, fallback = "") => `${p?.first_name ?? ""} ${p?.last_name ?? ""}`.trim() || fallback,
 }));
 
-import { arrivePacks, markOrdered, preparePillbox, recountStock, takeAsNeeded, undoStockEvent } from "@/lib/actions/stock";
+import { arrivePacks, markOrdered, recountStock, takeAsNeeded, undoStockEvent } from "@/lib/actions/stock";
 import { addDoseChange, createMedication, deleteDoseChange, updateMedication } from "@/lib/actions/medications";
-import { deletePlan, updatePlan } from "@/lib/actions/plans";
+import { createPlan, deletePlan, updatePlan } from "@/lib/actions/plans";
 import { inviteMember, leavePlan } from "@/lib/actions/sharing";
 import { sendTestEmail } from "@/lib/actions/email";
 
@@ -83,8 +83,6 @@ const PLAN: PlanRow = {
   owner_id: "owner",
   patient_name: "Nonna Anna",
   notes: "",
-  stock_mode: "daily",
-  mode_since: "2026-11-02",
   prep_weekday: 7,
   alert_under_14: true,
   alert_under_7: false,
@@ -103,12 +101,11 @@ function setBundle(role: PlanRole, meds: Medication[], extra: Record<string, unk
     plan: PLAN,
     settings,
     medications: meds,
-    runRows: [],
     recipients: [],
     members: [],
     invites: [],
     today: MON,
-    forecast: forecastPlan(settings, meds, [], MON),
+    forecast: forecastPlan(settings, meds, MON),
     ...extra,
   };
 }
@@ -151,13 +148,12 @@ beforeEach(() => {
 describe("sola lettura", () => {
   beforeEach(() => setBundle("viewer", [daily, prn]));
 
-  it("chi ha sola lettura non cambia scorte, medicinali né portapillole", async () => {
+  it("chi ha sola lettura non cambia scorte né medicinali", async () => {
     const results = await Promise.all([
       arrivePacks(PLAN.id, daily.id, 1),
       recountStock(PLAN.id, daily.id, 3),
       takeAsNeeded(PLAN.id, prn.id, 1),
       markOrdered(PLAN.id, [daily.id]),
-      preparePillbox(PLAN.id),
       createMedication(PLAN.id, validMed),
       addDoseChange(PLAN.id, daily.id, { effective_date: "2026-11-20", dose_morning: 0.5, dose_noon: 0, dose_evening: 0 }),
       deleteDoseChange(PLAN.id, daily.id, "dc"),
@@ -172,7 +168,7 @@ describe("solo il proprietario", () => {
   beforeEach(() => setBundle("editor", [daily]));
 
   it("chi può modificare non cambia impostazioni, persone né elimina il piano", async () => {
-    const input = { patient_name: "X", notes: "", stock_mode: "daily" as const, prep_weekday: 7, alert_under_14: true, alert_under_7: false, alert_last_pack: true, recipients: [] };
+    const input = { patient_name: "X", notes: "", prep_weekday: 7, alert_under_14: true, alert_under_7: false, alert_last_pack: true, recipients: [] };
     for (const r of await Promise.all([updatePlan(PLAN.id, input), deletePlan(PLAN.id), inviteMember(PLAN.id, { email: "a@b.it", role: "viewer" }), sendTestEmail(PLAN.id)])) {
       expect(r).toMatchObject({ ok: false, error: OWNER_ONLY_MESSAGE });
     }
@@ -231,6 +227,70 @@ describe("presa al bisogno", () => {
     const r = await undoStockEvent(PLAN.id, prn.id, "ev-9");
     expect(r.ok).toBe(true);
     expect(db.rpc[0][1]).toMatchObject({ p_type: "adjust", p_delta: 1, p_qty_after: 7, p_meta: { undo_of: "ev-9" } });
+  });
+});
+
+describe("piano nuovo", () => {
+  beforeEach(() => setBundle("owner", []));
+  const inserted = () => db.calls.find((c) => c.table === "plans")!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;
+  const initial = { patient_name: "Nonno Piero", notes: "", prep_weekday: 7, alert_under_14: true, alert_under_7: false, alert_last_pack: true, prep_reminder: false, weekly_summary: false, recipients: [] };
+
+  it("con i valori iniziali del modulo parte senza promemoria del portapillole", async () => {
+    db.results.plans = [{ data: { id: "new" } }];
+    await expect(createPlan(initial)).rejects.toThrow("REDIRECT /piani/new");
+    expect(inserted()).toMatchObject({ patient_name: "Nonno Piero", prep_reminder: false, owner_id: "owner" });
+    expect(Object.keys(inserted()).sort()).toEqual(["alert_last_pack", "alert_under_14", "alert_under_7", "notes", "owner_id", "patient_name", "prep_reminder", "prep_weekday", "weekly_summary"]);
+    expect(db.rpc).toEqual([]);
+  });
+
+  it("senza prep_reminder il default è spento", async () => {
+    db.results.plans = [{ data: { id: "new" } }];
+    const { prep_reminder: _omit, ...rest } = initial;
+    void _omit;
+    await expect(createPlan(rest)).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ prep_reminder: false });
+  });
+});
+
+describe("stock_as_of nel futuro (dosi già nel portapillole)", () => {
+  // dopo la migrazione delle scorte giorno per giorno: 10 in casa, il portapillole copre fino a giovedì
+  const THU = "2026-11-12";
+  const filled = medication({ id: "filled", name: "Ramipril", stockQty: 10, stockAsOf: THU });
+  beforeEach(() => setBundle("owner", [filled]));
+
+  it("un riconteggio conta anche il portapillole e si salva a oggi", async () => {
+    await recountStock(PLAN.id, filled.id, 13);
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "count", p_delta: 3, p_qty_after: 13, p_effective_date: MON, p_expected_as_of: THU });
+  });
+
+  it("un arrivo cambia la scorta in casa e resta alla data di stock_as_of", async () => {
+    await arrivePacks(PLAN.id, filled.id, 1);
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "arrival", p_delta: 30, p_qty_after: 40, p_effective_date: THU, p_expected_as_of: THU });
+  });
+
+  it("l'annullamento di un arrivo resta alla data di stock_as_of, quello di un conteggio a oggi", async () => {
+    db.results.stock_events = [{ data: { id: "ev-a", type: "arrival", delta: 30, meta: {} } }];
+    await undoStockEvent(PLAN.id, filled.id, "ev-a");
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "adjust", p_qty_after: 0, p_effective_date: THU });
+    db.results.stock_events = [{ data: { id: "ev-c", type: "count", delta: 2, meta: {} } }];
+    await undoStockEvent(PLAN.id, filled.id, "ev-c");
+    expect(db.rpc[1][1]).toMatchObject({ p_type: "adjust", p_qty_after: 8, p_effective_date: MON });
+  });
+
+  it("salvando il medicinale senza cambiare la scorta il riferimento resta a stock_as_of", async () => {
+    db.results.medications = [{ data: [{ id: "filled" }] }];
+    await expect(updateMedication(PLAN.id, filled.id, { ...validMed, name: "Ramipril", stock_qty: 10 })).rejects.toThrow("REDIRECT");
+    const up = db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "update")![1][0] as Record<string, unknown>;
+    expect(up).toMatchObject({ stock_qty: 10, stock_as_of: THU });
+    expect(db.rpc).toEqual([]);
+  });
+
+  it("una scorta scritta nel modulo vale da oggi", async () => {
+    db.results.medications = [{ data: [{ id: "filled" }] }];
+    await expect(updateMedication(PLAN.id, filled.id, { ...validMed, name: "Ramipril", stock_qty: 14 })).rejects.toThrow("REDIRECT");
+    const up = db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "update")![1][0] as Record<string, unknown>;
+    expect(up).toMatchObject({ stock_as_of: MON });
+    expect(db.rpc[0][1]).toMatchObject({ p_type: "count", p_qty_after: 14, p_effective_date: MON, p_expected_qty: 10, p_expected_as_of: MON });
   });
 });
 

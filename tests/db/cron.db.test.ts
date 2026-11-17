@@ -33,13 +33,14 @@ describe.skipIf(!enabled)("controlli automatici", () => {
   const MON = addDays(SAT, 2);
   let owner: TestUser, member: TestUser;
   let planId: string;
+  let quietPlanId: string;
 
   beforeAll(async () => {
     admin = adminClient();
     [owner, member] = await Promise.all([makeUser("Proprietario"), makeUser("Membro")]);
     const { data: plan } = await admin
       .from("plans")
-      .insert({ owner_id: owner.id, patient_name: "Nonno Cron", stock_mode: "weekly", prep_weekday: 7, mode_since: SAT, weekly_summary: true, prep_reminder: true })
+      .insert({ owner_id: owner.id, patient_name: "Nonno Cron", prep_weekday: 7, weekly_summary: true, prep_reminder: true })
       .select("id")
       .single();
     planId = plan!.id;
@@ -51,6 +52,13 @@ describe.skipIf(!enabled)("controlli automatici", () => {
       .select("id")
       .single();
     await admin.from("dose_changes").insert({ medication_id: med!.id, effective_date: addDays(SUN, 3), dose_morning: 1 });
+    // stesso giorno di preparazione, senza promemoria (il default dei piani nuovi)
+    const { data: quiet } = await admin.from("plans").insert({ owner_id: owner.id, patient_name: "Nonna Quieta", prep_weekday: 7 }).select("id, prep_reminder").single();
+    expect(quiet!.prep_reminder).toBe(false);
+    quietPlanId = quiet!.id;
+    await admin
+      .from("medications")
+      .insert({ plan_id: quietPlanId, name: "Ramipril", pills_per_pack: 28, color: "#FF5E4D", shape: "tonda", dose_morning: 1, frequency_type: "daily", start_date: SAT, stock_qty: 100, stock_as_of: SAT });
   });
 
   afterAll(cleanup);
@@ -69,6 +77,14 @@ describe.skipIf(!enabled)("controlli automatici", () => {
     // non è la vigilia: niente promemoria
     const other = await runPrepReminders(admin, addDays(SAT, -1));
     expect(other.plans.find((p) => p.planId === planId)).toBeUndefined();
+  });
+
+  it("niente promemoria per i piani con prep_reminder spento", async () => {
+    sent.length = 0;
+    const r = await runPrepReminders(admin, addDays(SAT, 7));
+    expect(r.plans.find((p) => p.planId === quietPlanId)).toBeUndefined();
+    expect(r.plans.find((p) => p.planId === planId)?.outcome).toBe("sent");
+    expect(sent.filter((m) => m.subject.includes("Nonna Quieta"))).toEqual([]);
   });
 
   it("avviso di scorta bassa al proprietario, ai destinatari e alle persone con accesso", async () => {

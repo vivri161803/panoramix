@@ -44,9 +44,8 @@ export function medication(over: Partial<Medication> = {}): Medication {
 
 export function planSettings(over: Partial<PlanSettings> = {}): PlanSettings {
   return {
-    stockMode: "daily",
     prepWeekday: 7,
-    modeSince: "2026-11-02",
+    prepReminder: false,
     alertUnder14: true,
     alertUnder7: false,
     alertLastPack: true,

@@ -3,7 +3,7 @@
 
 import { capitalize, formatDayMonth, formatDayMonthYear, formatLong, formatRelative, type ISODate } from "@/lib/dates";
 import { GMAIL_DAILY_LIMIT, type UsageStats } from "@/lib/usage-stats";
-import { daysWord, formatQty, pillsWord, type MedStatus } from "@/lib/forecast";
+import { daysWord, formatQty, type MedStatus } from "@/lib/forecast";
 import { ROLE_LABEL, ROLE_SUB, type MemberRole } from "@/lib/roles";
 import { EMAIL_DISCLAIMER } from "./alert-template";
 import { esc, FONT, infoCard, noteBox, renderLayout } from "./layout";
@@ -54,10 +54,6 @@ export interface ReminderItem {
   name: string;
   strength: string;
   color: string;
-  /** compresse da mettere nel portapillole per i 7 giorni */
-  need: number;
-  /** compresse che mancano in casa */
-  missing: number;
   /** "1 al mattino e ½ alla sera" (dosi del primo giorno) */
   phrase: string;
   /** "Dal 18 nov: ½ al mattino" se la dose cambia durante la settimana */
@@ -78,36 +74,29 @@ export interface ReminderEmailData {
 export function renderPrepReminderEmail(d: ReminderEmailData): RenderedEmail {
   const when = formatRelative(d.prepDate, d.today).toLowerCase();
   const day = formatLong(d.prepDate);
-  const missing = d.items.filter((i) => i.missing > 0);
   const subject = `Appoteca · ${d.patientName}: ${when} si prepara il portapillole`;
   const title = `${capitalize(when)} si prepara il portapillole di ${d.patientName}`;
-  const intro = `${capitalize(day)} è il giorno di preparazione. Ecco cosa serve per i 7 giorni: quando hai finito premi «Portapillole preparato» nell’app, così le scorte si aggiornano.`;
-  const total = d.items.reduce((s, i) => s + i.need, 0);
+  const intro = `${capitalize(day)} è il giorno di preparazione. Ecco le dosi dei 7 giorni da mettere nel portapillole.`;
   const cards = d.items
     .map((i) =>
       infoCard({
         title: `${i.name}${i.strength ? ` ${i.strength}` : ""}`,
         color: i.color,
-        tone: i.missing > 0 ? "out" : "ok",
-        chip: i.missing > 0 ? { label: `Ne mancano ${formatQty(i.missing)}`, tone: "out" } : undefined,
+        tone: "ok",
         rows: [
-          ["Da mettere", `${formatQty(i.need)} ${pillsWord(i.need)}`],
           ["Dosi", i.phrase || "—"],
           ...(i.changeNote ? ([["Cambio di dose", i.changeNote]] as [string, string][]) : []),
         ],
       }),
     )
     .join("");
-  const status = missing.length
-    ? noteBox(`Attenzione: ${missing.map((i) => `mancano ${formatQty(i.missing)} ${i.name}`).join(", ")}. Conviene procurarle prima della preparazione.`, "warn")
-    : noteBox(`In casa c’è tutto: ${formatQty(total)} ${pillsWord(total)} in tutto.`, "ok");
   const footer = [EMAIL_DISCLAIMER, `Ricevi questo promemoria perché segui il piano di ${d.patientName}. Puoi disattivarlo dalle impostazioni del piano: ${d.settingsUrl}`];
   const html = renderLayout({
     subject,
     preheader: intro,
     title,
     intro,
-    body: status + cards,
+    body: cards,
     cta: { url: d.planUrl, label: "Apri il piano" },
     footer,
     appUrl: d.appUrl,
@@ -117,9 +106,7 @@ export function renderPrepReminderEmail(d: ReminderEmailData): RenderedEmail {
     "",
     intro,
     "",
-    missing.length ? `ATTENZIONE: ${missing.map((i) => `mancano ${formatQty(i.missing)} ${i.name}`).join(", ")}.` : `In casa c’è tutto: ${formatQty(total)} ${pillsWord(total)} in tutto.`,
-    "",
-    ...d.items.map((i) => `• ${i.name}${i.strength ? ` ${i.strength}` : ""}: ${formatQty(i.need)} ${pillsWord(i.need)} (${i.phrase || "—"})${i.changeNote ? ` · ${i.changeNote}` : ""}${i.missing > 0 ? ` · ne mancano ${formatQty(i.missing)}` : ""}`),
+    ...d.items.map((i) => `• ${i.name}${i.strength ? ` ${i.strength}` : ""}: ${i.phrase || "—"}${i.changeNote ? ` · ${i.changeNote}` : ""}`),
     "",
     `Apri il piano: ${d.planUrl}`,
     "",
@@ -145,7 +132,6 @@ export interface SummaryMed {
 export interface SummaryEmailData {
   patientName: string;
   today: ISODate;
-  nextPrep: ISODate | null;
   meds: SummaryMed[];
   planUrl: string;
   settingsUrl: string;
@@ -175,7 +161,7 @@ export function renderWeeklySummaryEmail(d: SummaryEmailData): RenderedEmail {
   const head = summaryHeadline(d.meds);
   const subject = `Appoteca · ${d.patientName}: riepilogo della settimana`;
   const title = `Le scorte di ${d.patientName} questa settimana`;
-  const intro = `${head.text}${d.nextPrep ? ` Prossima preparazione del portapillole: ${formatLong(d.nextPrep)}.` : ""}`;
+  const intro = head.text;
   const tone = (s: MedStatus) => (s === "out" ? "out" : s === "order" ? "order" : "ok");
   const cards = d.meds
     .map((m) =>

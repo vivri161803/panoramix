@@ -1,6 +1,6 @@
 // Righe delle tabelle (vedi supabase/migrations) e conversione verso i tipi di dominio.
 
-import type { FrequencyType, MedicationData, PlanSettings, PrepRunData, StockMode } from "./forecast";
+import type { FrequencyType, MedicationData, PlanSettings } from "./forecast";
 import type { MedForm } from "./presidi";
 import type { MemberRole } from "./roles";
 
@@ -16,8 +16,6 @@ export interface PlanRow {
   owner_id: string;
   patient_name: string;
   notes: string;
-  stock_mode: StockMode;
-  mode_since: string;
   prep_weekday: number;
   alert_under_14: boolean;
   alert_under_7: boolean;
@@ -113,20 +111,11 @@ export interface StockEventRow {
   created_at: string;
 }
 
-export interface PrepRunRow {
-  id: string;
-  plan_id: string;
-  week_start: string;
-  deductions: Record<string, number | string>;
-  created_at: string;
-  undone_at: string | null;
-}
-
 export const MEDICATION_COLUMNS =
   "id, plan_id, name, strength, description, pills_per_pack, requires_prescription, color, form, shape, reorder_days, aic, atc_code, dose_morning, dose_noon, dose_evening, frequency_type, weekdays, interval_days, cycle_on, cycle_off, start_date, end_date, stock_qty, stock_as_of, ordered_at, archived, created_at, dose_changes(id, effective_date, dose_morning, dose_noon, dose_evening)";
 
 export const PLAN_COLUMNS =
-  "id, owner_id, patient_name, notes, stock_mode, mode_since, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
+  "id, owner_id, patient_name, notes, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, prep_reminder, weekly_summary, created_at";
 
 /** Medicinale pronto per la logica di dominio e per l'interfaccia. */
 export interface Medication extends MedicationData {
@@ -188,20 +177,10 @@ export function toMedication(r: MedicationRow): Medication {
 
 export function toPlanSettings(r: PlanRow): PlanSettings {
   return {
-    stockMode: r.stock_mode,
     prepWeekday: r.prep_weekday,
-    modeSince: r.mode_since,
+    prepReminder: r.prep_reminder,
     alertUnder14: r.alert_under_14,
     alertUnder7: r.alert_under_7,
     alertLastPack: r.alert_last_pack,
-  };
-}
-
-export function toPrepRun(r: PrepRunRow): PrepRunData {
-  return {
-    id: r.id,
-    weekStart: r.week_start,
-    deductions: Object.fromEntries(Object.entries(r.deductions ?? {}).map(([k, v]) => [k, Number(v)])),
-    undoneAt: r.undone_at,
   };
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Lista per la farmacia" };
 export default async function FarmaciaPage({ params }: PageProps<"/piani/[id]/farmacia">) {
   const { id } = await params;
   const b = await getPlanBundle(id);
-  const items = buildPharmacyItems(b.forecast.items, b.today, b.forecast.nextPrep);
+  const items = buildPharmacyItems(b.forecast.items, b.today);
   return (
     <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4">
       <Link href={`/piani/${id}`} className="px-back print:hidden">

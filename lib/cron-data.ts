@@ -7,7 +7,6 @@ import {
   type Medication,
   type MedicationRow,
   type PlanRow,
-  type PrepRunRow,
   type ProfileRow,
 } from "@/lib/db-types";
 import { uniqueEmails, type MemberRole } from "@/lib/roles";
@@ -20,7 +19,6 @@ export interface CronData {
   recipients: { plan_id: string; email: string }[];
   members: { plan_id: string; user_id: string; role: MemberRole }[];
   meds: Medication[];
-  runs: PrepRunRow[];
 }
 
 /**
@@ -31,17 +29,14 @@ export interface CronData {
  */
 export async function loadCronData(admin: SupabaseClient): Promise<CronData> {
   const planRows = await selectAll<PlanRow>("piani", (from, to) => admin.from("plans").select(PLAN_COLUMNS).order("id").range(from, to));
-  if (!planRows.length) return { plans: [], profiles: new Map(), recipients: [], members: [], meds: [], runs: [] };
+  if (!planRows.length) return { plans: [], profiles: new Map(), recipients: [], members: [], meds: [] };
 
-  const [recipients, members, medRows, runs, profiles] = await Promise.all([
+  const [recipients, members, medRows, profiles] = await Promise.all([
     selectAll<CronData["recipients"][number]>("destinatari", (from, to) => admin.from("plan_recipients").select("plan_id, email").order("id").range(from, to)),
     selectAll<CronData["members"][number]>("membri", (from, to) =>
       admin.from("plan_members").select("plan_id, user_id, role").order("plan_id").order("user_id").range(from, to),
     ),
     selectAll<MedicationRow>("medicinali", (from, to) => admin.from("medications").select(MEDICATION_COLUMNS).eq("archived", false).order("id").range(from, to)),
-    selectAll<PrepRunRow>("preparazioni", (from, to) =>
-      admin.from("prep_runs").select("id, plan_id, week_start, deductions, created_at, undone_at").is("undone_at", null).order("id").range(from, to),
-    ),
     selectAll<ProfileRow>("profili", (from, to) => admin.from("profiles").select("id, email, first_name, last_name").order("id").range(from, to)),
   ]);
 
@@ -51,7 +46,6 @@ export async function loadCronData(admin: SupabaseClient): Promise<CronData> {
     recipients,
     members,
     meds: medRows.map(toMedication),
-    runs,
   };
 }
 

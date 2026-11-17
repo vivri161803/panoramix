@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPlanBundle } from "@/lib/data";
 import { currentStock, dosesPhrase, totalPerDose } from "@/lib/forecast";
-import { formatShort } from "@/lib/dates";
+import { formatShort, maxDate } from "@/lib/dates";
 import { doseChangeSchema, medicationSchema, type DoseChangeInput, type MedicationInput } from "@/lib/schemas";
 import { canEdit, READ_ONLY_MESSAGE } from "@/lib/roles";
 import { atcColor, ATC_UNKNOWN_VALUE } from "@/lib/atc";
@@ -92,12 +92,16 @@ export async function updateMedication(planId: string, medicationId: string, inp
   const supabase = await createClient();
 
   // Il consumo fino a ieri segue il vecchio schema: si "ribasa" il riferimento a oggi
-  // prima di salvare il nuovo schema.
-  const now = currentStock(med, bundle.settings.stockMode, bundle.today);
+  // prima di salvare il nuovo schema. Una scorta scritta nel modulo conta anche il portapillole
+  // e vale da oggi; altrimenti, con stock_as_of nel futuro (dosi già nel portapillole), il
+  // riferimento resta a quel giorno.
+  const now = currentStock(med, bundle.today);
+  const recounted = Math.abs(m.stock_qty - now) > 1e-9;
+  const asOf = recounted ? bundle.today : maxDate(bundle.today, med.stockAsOf);
   const atc = await resolveAtc(supabase, m);
   const { data: updated, error } = await supabase
     .from("medications")
-    .update({ ...medFields(m, atc), stock_qty: now, stock_as_of: bundle.today })
+    .update({ ...medFields(m, atc), stock_qty: now, stock_as_of: asOf })
     .eq("id", medicationId)
     .eq("stock_qty", med.stockQty)
     .eq("stock_as_of", med.stockAsOf)
@@ -114,7 +118,7 @@ export async function updateMedication(planId: string, medicationId: string, inp
   }
 
   // scorta modificata a mano nel modulo = nuovo conteggio
-  if (Math.abs(m.stock_qty - now) > 1e-9) {
+  if (recounted) {
     const { error: cErr } = await supabase.rpc("record_stock_event", {
       p_medication_id: medicationId,
       p_type: "count",
@@ -122,7 +126,7 @@ export async function updateMedication(planId: string, medicationId: string, inp
       p_qty_after: m.stock_qty,
       p_effective_date: bundle.today,
       p_expected_qty: now,
-      p_expected_as_of: bundle.today,
+      p_expected_as_of: asOf,
       p_clear_ordered: false,
       p_meta: { source: "edit" },
     });

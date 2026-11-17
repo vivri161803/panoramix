@@ -48,7 +48,7 @@ describe("cambi di dose programmati", () => {
   it("la scorta di oggi scala con le dosi in vigore giorno per giorno", () => {
     const m = { ...taper, stockQty: 20, stockAsOf: "2026-11-10" };
     // dal 10 al 13 compresi: 2 + 2 + 1,5 + 1,5 = 7
-    expect(currentStock(m, "daily", "2026-11-14")).toBe(13);
+    expect(currentStock(m, "2026-11-14")).toBe(13);
   });
 
   it("la copertura tiene conto della riduzione futura (terapia a scalare)", () => {

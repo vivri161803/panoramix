@@ -7,7 +7,7 @@ import type { DispenserView } from "@/lib/view";
 import { Dispenser } from "@/components/Dispenser";
 import { useToast } from "@/components/Toast";
 
-export function DispenserGrid({ planId, meds, readOnly = false }: { planId: string; meds: DispenserView[]; readOnly?: boolean }) {
+export function DispenserGrid({ planId, meds, readOnly = false, prepReminder }: { planId: string; meds: DispenserView[]; readOnly?: boolean; prepReminder: boolean }) {
   const toast = useToast();
   const [pending, start] = useTransition();
 
@@ -32,6 +32,7 @@ export function DispenserGrid({ planId, meds, readOnly = false }: { planId: stri
           key={m.id}
           med={m}
           historyHref={`/piani/${planId}/medicinali/${m.id}/storico`}
+          prepReminder={prepReminder}
           actions={readOnly ? undefined : {
             busy: pending,
             historyHref: `/piani/${planId}/medicinali/${m.id}/storico`,

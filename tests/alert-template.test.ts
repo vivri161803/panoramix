@@ -21,7 +21,6 @@ const base: AlertEmailData = {
   managerFullName: "Carlo Bianchi",
   planUrl: "https://panoramix.example/piani/abc",
   settingsUrl: "https://panoramix.example/piani/abc/modifica",
-  nextPrep: null,
   today: "2026-11-08",
   meds: [med],
 };
@@ -37,9 +36,9 @@ describe("email di avviso", () => {
     expect(text).toContain("Ciao Carlo, questa medicina è sotto soglia: è il momento di ordinarla.");
   });
 
-  it("plurale e portapillole: ordinarle, preparazione in minuscolo", () => {
-    const { text } = renderAlertEmail({ ...base, nextPrep: "2026-11-15", meds: [med, { ...med, name: "Metformina" }] });
-    expect(text).toContain("Ciao Carlo, la prossima preparazione del portapillole è");
-    expect(text).toContain("Queste medicine sono sotto soglia: è il momento di ordinarle.");
+  it("plurale: ordinarle, senza la prossima preparazione del portapillole", () => {
+    const { text } = renderAlertEmail({ ...base, meds: [med, { ...med, name: "Metformina" }] });
+    expect(text).toContain("Ciao Carlo, queste medicine sono sotto soglia: è il momento di ordinarle.");
+    expect(text).not.toContain("preparazione");
   });
 });

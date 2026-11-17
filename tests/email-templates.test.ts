@@ -22,25 +22,28 @@ describe("email di invito", () => {
 });
 
 describe("promemoria del portapillole", () => {
-  it("domani, con l'avviso per le compresse che mancano", () => {
+  it("domani, con le dosi dei 7 giorni e senza conteggi da scalare", () => {
     const e = renderPrepReminderEmail({
       patientName: "Nonna Anna",
       managerName: "Carlo",
       prepDate: "2026-11-15",
       today: "2026-11-14",
       items: [
-        { name: "Ramipril", strength: "5 mg", color: "#FFC020", need: 7, missing: 3, phrase: "1 al mattino" },
-        { name: "Cardioaspirina", strength: "100 mg", color: "#FF5E4D", need: 7, missing: 0, phrase: "1 a pranzo", changeNote: "Dal mer 18 nov: ½ a pranzo" },
+        { name: "Ramipril", strength: "5 mg", color: "#FFC020", phrase: "1 al mattino" },
+        { name: "Cardioaspirina", strength: "100 mg", color: "#FF5E4D", phrase: "1 a pranzo", changeNote: "Dal mer 18 nov: ½ a pranzo" },
       ],
       planUrl: `${appUrl}/piani/p1`,
       settingsUrl: `${appUrl}/piani/p1/modifica`,
       appUrl,
     });
     expect(e.subject).toBe("Appoteca · Nonna Anna: domani si prepara il portapillole");
-    expect(e.text).toContain("Domenica 15 novembre è il giorno di preparazione.");
-    expect(e.text).toContain("ATTENZIONE: mancano 3 Ramipril.");
-    expect(e.text).toContain("• Cardioaspirina 100 mg: 7 compresse (1 a pranzo) · Dal mer 18 nov: ½ a pranzo");
-    expect(e.html).toContain("Ne mancano 3");
+    expect(e.text).toContain("Domenica 15 novembre è il giorno di preparazione. Ecco le dosi dei 7 giorni da mettere nel portapillole.");
+    expect(e.text).toContain("• Ramipril 5 mg: 1 al mattino");
+    expect(e.text).toContain("• Cardioaspirina 100 mg: 1 a pranzo · Dal mer 18 nov: ½ a pranzo");
+    for (const out of ["Portapillole preparato", "Da mettere", "In casa c’è tutto", "mancano"]) {
+      expect(e.text).not.toContain(out);
+      expect(e.html).not.toContain(out);
+    }
   });
 });
 
@@ -57,9 +60,9 @@ describe("riepilogo settimanale", () => {
   });
 
   it("elenca ogni medicina con scorta e copertura", () => {
-    const e = renderWeeklySummaryEmail({ patientName: "Nonna Anna", today: "2026-11-16", nextPrep: "2026-11-22", meds: [base, { ...base, name: "Paracetamolo", asNeeded: true, coverageDays: null, runOutDate: null, qty: 5 }], planUrl: `${appUrl}/piani/p1`, settingsUrl: `${appUrl}/piani/p1/modifica`, appUrl });
+    const e = renderWeeklySummaryEmail({ patientName: "Nonna Anna", today: "2026-11-16", meds: [base, { ...base, name: "Paracetamolo", asNeeded: true, coverageDays: null, runOutDate: null, qty: 5 }], planUrl: `${appUrl}/piani/p1`, settingsUrl: `${appUrl}/piani/p1/modifica`, appUrl });
     expect(e.subject).toBe("Appoteca · Nonna Anna: riepilogo della settimana");
-    expect(e.text).toContain("Prossima preparazione del portapillole: domenica 22 novembre.");
+    expect(e.text).not.toContain("Prossima preparazione");
     expect(e.text).toContain("• Ramipril 5 mg — In ordine: 40 in casa, 40 giorni, finisce sabato 26 dicembre");
     expect(e.text).toContain("• Paracetamolo 5 mg — In ordine: 5 in casa, al bisogno");
   });

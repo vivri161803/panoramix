@@ -30,7 +30,6 @@ export interface AlertEmailData {
   planUrl: string;
   settingsUrl: string;
   /** solo modalità settimanale */
-  nextPrep: ISODate | null;
   today: ISODate;
   meds: AlertEmailMed[];
   test?: boolean;
@@ -81,10 +80,9 @@ function logoUrl(d: AlertEmailData): string {
 
 function intro(d: AlertEmailData): string {
   const hello = `Ciao ${d.managerFirstName || ""}`.trim() + ",";
-  const prep = d.nextPrep ? ` la prossima preparazione del portapillole è ${formatLong(d.nextPrep)}.` : "";
   const n = d.meds.length;
   const below = n === 1 ? "Questa medicina è sotto soglia: è il momento di ordinarla." : "Queste medicine sono sotto soglia: è il momento di ordinarle.";
-  return prep ? `${hello}${prep} ${below}` : `${hello} ${below[0].toLowerCase()}${below.slice(1)}`;
+  return `${hello} ${below[0].toLowerCase()}${below.slice(1)}`;
 }
 
 export function renderAlertEmail(d: AlertEmailData): { subject: string; html: string; text: string } {

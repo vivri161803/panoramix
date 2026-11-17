@@ -48,8 +48,8 @@ begin
     raise exception 'Nessun profilo per %: accedi prima all''app con questa email', v_email;
   end if;
 
-  insert into public.plans (owner_id, patient_name, notes, stock_mode, prep_weekday, alert_under_14, alert_under_7, alert_last_pack, mode_since)
-  values (v_owner, '[ESEMPIO] Nonna Anna', 'Piano di esempio creato da supabase/seed.sql', 'weekly', 7, true, false, true, v_today)
+  insert into public.plans (owner_id, patient_name, notes, prep_reminder, prep_weekday, alert_under_14, alert_under_7, alert_last_pack)
+  values (v_owner, '[ESEMPIO] Nonna Anna', 'Piano di esempio creato da supabase/seed.sql', true, 7, true, false, true)
   returning id into v_plan;
 
   -- colore = gruppo ATC (lib/atc.ts): C corallo, B turchese, A giallo

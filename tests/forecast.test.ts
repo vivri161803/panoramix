@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { addDays, diffDays, isoWeekday, todayInRome } from "@/lib/dates";
 import {
-  applyPrep,
   buildWeek,
   calendarWeekStart,
-  computePrep,
   currentStock,
   dosesOn,
   evaluateAlerts,
@@ -12,18 +10,14 @@ import {
   forecastPlan,
   formatQty,
   isScheduledOn,
-  nextPrepDue,
-  prepWeekStart,
   recountClearsOrdered,
   scheduleSummary,
   statusReason,
-  undoPrep,
   weeklyNeed,
   type AlertType,
   type MedicationData,
   type OpenEpisode,
   type PlanSettings,
-  type PrepRunData,
 } from "@/lib/forecast";
 
 // Domenica 8 novembre 2026
@@ -53,9 +47,8 @@ function med(over: Partial<MedicationData> = {}): MedicationData {
 
 function plan(over: Partial<PlanSettings> = {}): PlanSettings {
   return {
-    stockMode: "daily",
     prepWeekday: 7,
-    modeSince: "2026-11-02",
+    prepReminder: false,
     alertUnder14: true,
     alertUnder7: false,
     alertLastPack: true,
@@ -115,15 +108,15 @@ describe("dosi e frequenze", () => {
     const m = med({ frequencyType: "as_needed", stockQty: 10, stockAsOf: "2026-11-01" });
     expect(dosesOn(m, SUN)).toBe(0);
     expect(buildWeek([m], MON).every((d) => d.slots.morning.length === 0)).toBe(true);
-    expect(currentStock(m, "daily", SUN)).toBe(10);
+    expect(currentStock(m, SUN)).toBe(10);
   });
 });
 
 describe("scorte giorno per giorno", () => {
   it("scorta di oggi = riferimento − dosi dal riferimento a ieri compreso", () => {
     const m = med({ stockQty: 10, stockAsOf: "2026-11-05" });
-    expect(currentStock(m, "daily", "2026-11-05")).toBe(10);
-    expect(currentStock(m, "daily", SUN)).toBe(7); // 5, 6, 7 novembre
+    expect(currentStock(m, "2026-11-05")).toBe(10);
+    expect(currentStock(m, SUN)).toBe(7); // 5, 6, 7 novembre
   });
 
   it("criterio 2: 5 compresse, 1 al giorno → copertura 5 giorni e avviso dei 7 giorni", () => {
@@ -200,76 +193,37 @@ describe("scorte giorno per giorno", () => {
   });
 });
 
-describe("portapillole settimanale", () => {
-  const weekly = plan({ stockMode: "weekly", prepWeekday: 7, modeSince: "2026-11-02" });
-
-  it("prima preparazione: il primo giorno di preparazione dalla modalità", () => {
-    expect(nextPrepDue(weekly, [])).toBe(SUN);
-    expect(prepWeekStart(weekly, [], "2026-11-07")).toBe(SUN); // in anticipo di un giorno
+describe("scorte giorno per giorno in tutti i piani", () => {
+  it("la scorta scende ogni giorno anche con il promemoria del portapillole acceso", () => {
+    const m = med({ stockQty: 20, stockAsOf: SUN });
+    const today = "2026-11-12";
+    const off = forecastMedication(m, daily(today));
+    const on = forecastMedication(m, daily(today, { prepReminder: true }));
+    expect(currentStock(m, today)).toBe(16); // 8, 9, 10, 11 novembre
+    expect(on).toEqual(off);
+    expect(off.coverageDays).toBe(16);
+    expect(off.runOutDate).toBe("2026-11-28");
   });
 
-  it("criterio 4: scala esattamente 7 giorni di dosi e l'annullamento le restituisce", () => {
-    const meds = [
-      med({ id: "a", stockQty: 20 }),
-      med({ id: "b", doseMorning: 0.5, doseEvening: 1, stockQty: 30 }),
-      med({ id: "c", frequencyType: "weekdays", weekdays: [7], stockQty: 4 }),
-      med({ id: "d", frequencyType: "as_needed", stockQty: 10 }),
-    ];
-    const items = computePrep(meds, SUN);
-    expect(items.map((i) => [i.medicationId, i.take])).toEqual([
-      ["a", 7],
-      ["b", 10.5],
-      ["c", 1],
-    ]);
-    const before = { a: 20, b: 30, c: 4, d: 10 };
-    const after = applyPrep(before, items);
-    expect(after).toEqual({ a: 13, b: 19.5, c: 3, d: 10 });
-    const deductions = Object.fromEntries(items.map((i) => [i.medicationId, i.take]));
-    expect(undoPrep(after, deductions)).toEqual(before);
+  it("stock_as_of nel futuro: i giorni fino a quella data sono già nel portapillole e contano come coperti", () => {
+    const now = forecastMedication(med({ stockQty: 10, stockAsOf: SUN }), daily(SUN));
+    const later = forecastMedication(med({ stockQty: 10, stockAsOf: addDays(SUN, 3) }), daily(SUN));
+    expect(later.stock).toBe(10);
+    expect(later.coverageDays).toBe(now.coverageDays! + 3);
+    expect(later.runOutDate).toBe(addDays(now.runOutDate!, 3));
   });
 
-  it("se le scorte non bastano toglie quello che c'è e segna cosa manca", () => {
-    const [item] = computePrep([med({ stockQty: 5 })], SUN);
-    expect(item).toMatchObject({ need: 7, take: 5, missing: 2 });
+  it("stock_as_of nel futuro e scorta in casa finita: coperto solo fino a stock_as_of", () => {
+    const f = forecastMedication(med({ stockQty: 0, stockAsOf: addDays(SUN, 4) }), daily(SUN));
+    expect(f.coverageDays).toBe(4);
+    expect(f.status).not.toBe("out");
+    expect(statusReason(f, null)).toBe("Restano 4 giorni: è ora di ordinare");
   });
 
-  it("copertura = giorni nel portapillole + giorni coperti dalle scorte in casa", () => {
-    const runs: PrepRunData[] = [{ id: "r1", weekStart: SUN, deductions: { m1: 7 }, undoneAt: null }];
-    expect(nextPrepDue(weekly, runs)).toBe("2026-11-15");
-    const m = med({ stockQty: 13 });
-    const pf = forecastPlan(weekly, [m], runs, "2026-11-10");
-    const f = pf.items[0].forecast;
-    expect(f.homeDays).toBe(13);
-    expect(f.coverageDays).toBe(5 + 13); // 10–14 nel portapillole, poi 13 giorni
-    expect(f.status).toBe("order"); // ultima confezione
-    expect(statusReason(f, "weekly", null)).toBe("È rimasta l’ultima confezione");
-  });
-
-  it("esaurita se non basta per la prossima preparazione", () => {
-    const pf = forecastPlan(weekly, [med({ stockQty: 5 })], [], "2026-11-06");
-    expect(pf.items[0].forecast.coverageDays).toBe(2 + 5);
-    expect(pf.items[0].forecast.status).toBe("out");
-    expect(statusReason(pf.items[0].forecast, "weekly", null)).toBe("Ne mancano 2 per la prossima preparazione");
-  });
-
-  it("preparazione passata senza conferma: la segnala senza scalare nulla", () => {
-    const m = med({ stockQty: 20 });
-    const pf = forecastPlan(weekly, [m], [], "2026-11-10");
-    expect(pf.prepOverdue).toBe(true);
-    expect(pf.items[0].forecast.stock).toBe(20);
-    expect(pf.prepWeek).toBe(SUN);
-    // più settimane saltate: si prepara l'ultima iniziata
-    expect(prepWeekStart(weekly, [], "2026-11-25")).toBe("2026-11-22");
-  });
-
-  it("annullata l'ultima preparazione, torna dovuta la stessa settimana", () => {
-    const runs: PrepRunData[] = [{ id: "r1", weekStart: SUN, deductions: {}, undoneAt: "2026-11-08T11:00:00Z" }];
-    expect(nextPrepDue(weekly, runs)).toBe(SUN);
-  });
-
-  it("le preparazioni precedenti a un cambio di modalità non contano", () => {
-    const runs: PrepRunData[] = [{ id: "r0", weekStart: "2026-10-04", deductions: {}, undoneAt: null }];
-    expect(nextPrepDue(weekly, runs)).toBe(SUN);
+  it("forecastPlan non dipende più dalle preparazioni", () => {
+    const pf = forecastPlan(plan({ prepReminder: true }), [med({ stockQty: 13 })], "2026-11-10");
+    expect(pf.items[0].forecast.coverageDays).toBe(11);
+    expect(Object.keys(pf).sort()).toEqual(["items", "toOrder", "today", "worst"]);
   });
 });
 
@@ -330,9 +284,9 @@ describe("calendario", () => {
     expect(week.map((d) => d.slots.noon.length)).toEqual([1, 1, 1, 0, 0, 1, 1]);
   });
 
-  it("la settimana parte dal lunedì, o dal giorno di preparazione in modalità settimanale", () => {
-    expect(calendarWeekStart("2026-11-11", { stockMode: "daily", prepWeekday: 7 })).toBe(MON);
-    expect(calendarWeekStart("2026-11-11", { stockMode: "weekly", prepWeekday: 7 })).toBe(SUN);
+  it("la settimana parte dal lunedì, o dal giorno di preparazione con il promemoria acceso", () => {
+    expect(calendarWeekStart("2026-11-11", { prepReminder: false, prepWeekday: 7 })).toBe(MON);
+    expect(calendarWeekStart("2026-11-11", { prepReminder: true, prepWeekday: 7 })).toBe(SUN);
   });
 });
 
@@ -354,7 +308,7 @@ describe("ora legale e fuso Europe/Rome", () => {
     expect(addDays("2026-03-29", 1)).toBe("2026-03-30");
     expect(diffDays("2026-10-24", "2026-10-26")).toBe(2);
     const m = med({ stockQty: 10, stockAsOf: "2026-03-26", startDate: "2026-03-01" });
-    expect(currentStock(m, "daily", "2026-03-31")).toBe(5);
+    expect(currentStock(m, "2026-03-31")).toBe(5);
     expect(forecastMedication(m, daily("2026-03-26")).runOutDate).toBe("2026-04-05");
   });
 });
@@ -376,12 +330,11 @@ describe("flacone di collirio: promemoria di riordino dopo X giorni", () => {
     expect(f.coverageDays).toBe(0);
     expect(f.triggered).toEqual(["under_14"]);
     expect(f.status).toBe("order");
-    expect(statusReason(f, "daily", null)).toBe("È ora di riordinare il flacone");
+    expect(statusReason(f, null)).toBe("È ora di riordinare il flacone");
     expect(forecastMedication(drops({ orderedAt: "2026-12-08T08:00:00Z" }), daily(addDays(SUN, 31))).status).toBe("ordered");
   });
 
-  it("un flacone nuovo fa ripartire il conto; nel portapillole non entra", () => {
+  it("un flacone nuovo fa ripartire il conto", () => {
     expect(forecastMedication(drops({ stockAsOf: addDays(SUN, 31) }), daily(addDays(SUN, 31))).coverageDays).toBe(30);
-    expect(computePrep([drops()], MON)).toEqual([]);
   });
 });

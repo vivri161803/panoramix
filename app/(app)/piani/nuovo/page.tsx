@@ -9,17 +9,15 @@ export default async function NuovoPianoPage() {
   return (
     <PlanForm
       managerEmail={profile.email}
-      meds={[]}
       medCount={0}
       initial={{
         patient_name: "",
         notes: "",
-        stock_mode: "daily",
         prep_weekday: 7,
         alert_under_14: true,
         alert_under_7: false,
         alert_last_pack: true,
-        prep_reminder: true,
+        prep_reminder: false,
         weekly_summary: false,
         recipients: [],
       }}
