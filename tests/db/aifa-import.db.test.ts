@@ -126,7 +126,7 @@ describe.skipIf(!enabled)("pipeline di import AIFA", () => {
   });
 
   const shortageRows = async () =>
-    ((await admin.from("aifa_shortages").select("*").order("aic")).data ?? []).map(({ import_id: _i, ...r }) => r);
+    ((await admin.from("aifa_shortages").select("*").order("aic")).data ?? []).map(({ import_id: _i, id: _id, ...r }) => r);
   const carenzeAsUtf8 = (dir: string, edit: (t: string) => string = (t) => t) => {
     const f = join(dir, "elenco_medicinali_carenti.csv");
     writeFileSync(f, Buffer.from(edit(new TextDecoder("windows-1252").decode(readFileSync(f))), "utf8"));

@@ -23,6 +23,8 @@ Accettazione:
 Fuori scope: segnalare nel log la codifica usata (T2); altre codifiche oltre a UTF-8 e Windows-1252; salvare la codifica in `aifa_imports`.
 Registro:
 - base: 256a43aa0278af36bae16b876a01f697371ca561
+- caratterizzazione: cc1cd63 — snapshot di parseSource sulle cinque fixture (tests/aifa-parse.test.ts, tests/__snapshots__/)
+- primo congelamento: d1cd698 — T1-A1 e T1-A2 (db) confrontavano anche la colonna `id` generata dal database: vedi D1
 
 ## T2 · Il log dice quando AIFA ha cambiato codifica   [todo]
 Tipo: fetta verticale
@@ -54,4 +56,10 @@ Registro: —
 - —
 
 ## Deviazioni
-(compilata da implement)
+
+### D1 · T1 · I test sul database confrontavano anche l'id generato   [accettata]
+Il design dice: §2.4, stesse righe nelle tabelle qualunque sia la codifica.
+La realtà: i test congelati T1-A1 e T1-A2 in tests/db/aifa-import.db.test.ts confrontavano le righe di `aifa_shortages` inclusa la colonna `id` (identity), che cambia a ogni import perché `carenze` reinserisce le righe. Con l'implementazione il resto delle righe coincide.
+Proposta: escludere `id` dal confronto, come già `import_id`.
+Impatto: solo i test di T1.
+Decisione (utente, 2026-11-24): correggere i test e ricongelarli.
