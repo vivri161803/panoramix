@@ -2,8 +2,8 @@
 
 Design doc: docs/designs/codifica-aifa.md (non ancora versionato)
 Criteri approvati: sì (2026-11-24)
-Comando test: <lo compila implement>
-Branch: <lo compila implement>
+Comando test: `npm test && npm run test:db` (il secondo richiede Supabase locale in Docker; se la shell non ha ancora il gruppo docker: `sg docker -c "npm run test:db"`)
+Branch: feat/codifica-aifa
 
 Stati: `todo` · `in-corso` · `attesa-umano` · `fatto` · `bloccato`
 
