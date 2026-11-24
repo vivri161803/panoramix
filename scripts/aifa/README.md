@@ -16,6 +16,12 @@ Formati verificati il 9 novembre 2026 sui file veri.
 - Testo in maiuscolo come nel file: nel database resta così, l'app lo sistema per la vista.
 - Le intestazioni vengono confrontate esattamente (dopo aver tolto spazi ai lati): se AIFA cambia
   le colonne l'import si ferma con un errore e non scrive nulla.
+- **Codifica riconosciuta da sola**, per tutte e cinque le sorgenti: il file si legge prima come
+  UTF-8 stretto (un byte non valido è un errore) e, se non è UTF-8 valido, come Windows-1252. Per i
+  file ASCII le due letture coincidono. `SOURCES[*].encoding` è la codifica **attesa**: se il file
+  arriva in un'altra, la riga di riepilogo lo dice (`carenze: 2525 righe, dati al 2026-11-24, 6 s
+  (letto come UTF-8, atteso Windows-1252)`) e l'import resta riuscito. Il 21–23 novembre 2026 AIFA
+  ha pubblicato l'elenco dei carenti in UTF-8 e l'import si era fermato per "colonne cambiate".
 
 ## Anagrafica confezioni · `confezioni_fornitura.csv`
 
@@ -70,8 +76,9 @@ nell'app sono in `lib/atc.ts`; questa tabella serve solo come riferimento.
 ## Farmaci carenti · `elenco_medicinali_carenti.csv`
 
 `https://www.aifa.gov.it/documents/20142/847339/elenco_medicinali_carenti.csv`, circa 0,9 MB,
-circa 2.500 righe, aggiornato ogni settimana circa. Codifica **Windows-1252** (`Sì`,
-`rimborsabilità`, virgolette tipografiche). Righe `\r\n`, con `\r` o `\n` dentro i campi.
+circa 2.500 righe, aggiornato ogni settimana circa. Codifica attesa **Windows-1252** (`Sì`,
+`rimborsabilità`, virgolette tipografiche); dal 21 al 23 novembre 2026 è arrivato in UTF-8, letto
+lo stesso (vedi Regole comuni). Righe `\r\n`, con `\r` o `\n` dentro i campi.
 
 Due righe di preambolo, poi l'intestazione:
 
@@ -89,7 +96,8 @@ Nome medicinale;Codice AIC;Principio attivo;Forma farmaceutica e dosaggio;Titola
 ## Lista di trasparenza · `Lista_farmaci_equivalenti.csv`
 
 `https://www.aifa.gov.it/documents/20142/825643/Lista_farmaci_equivalenti.csv`, circa 1,8 MB,
-circa 8.600 righe, aggiornata ogni mese circa. Codifica **Windows-1252**, righe `\r\n`.
+circa 8.600 righe, aggiornata ogni mese circa. Codifica attesa **Windows-1252** (anche UTF-8 si legge, vedi Regole
+comuni), righe `\r\n`.
 
 ```
 Principio attivo;Confezione di riferimento;ATC;AIC;Farmaco;Confezione;Ditta;Prezzo riferimento SSN;Prezzo Pubblico 15 ottobre 2026;Differenza;Nota;Codice gruppo equivalenza
@@ -120,9 +128,10 @@ Principio attivo;Confezione di riferimento;ATC;AIC;Farmaco;Confezione;Ditta;Prez
   `findStaleAifa` (`lib/ops.ts`, regole in `lib/aifa-freshness.ts`): ogni sorgente senza un import
   `ok` o `skipped` da più di 7 giorni finisce nell'email tecnica a `OPS_ALERT_EMAIL`, con l'ultimo
   errore. Parte ogni mattina finché il problema resta.
-- Test: `tests/aifa-parse.test.ts` (parser), `tests/aifa-freshness.test.ts` (avviso),
-  `tests/db/aifa-import.db.test.ts` (pipeline completa sul Supabase locale: primo import, secondo
-  giro saltato, file mancante, colonne cambiate, file troppo corto, confezione tolta).
+- Test: `tests/aifa-parse.test.ts` (parser), `tests/aifa-encoding.test.ts` (codifica),
+  `tests/aifa-freshness.test.ts` (avviso), `tests/db/aifa-import.db.test.ts` (pipeline completa sul
+  Supabase locale: primo import, secondo giro saltato, file mancante, colonne cambiate, file troppo
+  corto, confezione tolta, carenze e trasparenza in UTF-8).
 
 ## Interface
 
@@ -137,9 +146,10 @@ Modulo ES `parse.mjs`, importato da `scripts/import-aifa.mjs` e da `tests/aifa-p
 - `doseUnitsFromDescription(desc)`: ultimo "numero + COMPRESSE/CAPSULE/SUPPOSTE/…" (`UNITS_RE`), tra 1 e 1000.
 - `requiresPrescription(regime)`: `true`/`false` dal prefisso di `FORNITURA`, altrimenti `null`.
 - `SOURCES`: le cinque sorgenti (`confezioni`, `principi_attivi`, `atc`, `carenze`, `trasparenza`)
-  con `url`, `encoding`, `preamble`, `headers`, `table`, `key`, `map(r, ctx)` e, per `carenze` e
+  con `url`, `encoding` (codifica attesa), `preamble`, `headers`, `table`, `key`, `map(r, ctx)` e, per `carenze` e
   `trasparenza`, `sourceDate`.
-- `decode(bytes, encoding)`: `TextDecoder` con la codifica della sorgente.
+- `decode(bytes)`: → `{ text, encoding }`; UTF-8 stretto se i byte sono UTF-8 valido, altrimenti
+  Windows-1252 (`encoding` è `"utf-8"` o `"windows-1252"`). Il BOM resta nel testo e lo toglie `parseCsv`.
 - `parseSource(name, content)`: → `{ rows, sourceDate, total, skipped }`.
 - `HeaderMismatchError`: errore per intestazioni cambiate, file vuoto o troppe righe scartate.
 - `checkShrink(name, rows, previousRows)` e `MIN_ROWS_SHARE` (0,5): rifiuto dei file troppo corti.

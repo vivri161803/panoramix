@@ -93,6 +93,12 @@ async function lastOk(source) {
   return data?.[0] ?? null;
 }
 
+const ENCODING_LABELS = { "utf-8": "UTF-8", "windows-1252": "Windows-1252" };
+
+function encodingNote(used, expected) {
+  return used === expected ? "" : ` (letto come ${ENCODING_LABELS[used]}, atteso ${ENCODING_LABELS[expected]})`;
+}
+
 async function importSource(name) {
   const spec = SOURCES[name];
   const t0 = Date.now();
@@ -107,7 +113,8 @@ async function importSource(name) {
   }
 
   // controllo completo del file prima di scrivere qualsiasi cosa
-  const parsed = parseSource(name, decode(bytes).text);
+  const decoded = decode(bytes);
+  const parsed = parseSource(name, decoded.text);
   // un file molto più corto del solito è quasi sempre un file rotto: restano le tabelle di prima
   if (!force) checkShrink(name, parsed.rows.length, prev?.rows ?? null);
 
@@ -121,7 +128,7 @@ async function importSource(name) {
       );
     }
     await withRetry("chiusura import", () => db.rpc("aifa_finish_import", { p_import_id: imp.id, p_rows: rows.length, p_source_date: parsed.sourceDate }));
-    return `${name}: ${rows.length} righe${parsed.skipped ? ` (${parsed.skipped} scartate)` : ""}${parsed.sourceDate ? `, dati al ${parsed.sourceDate}` : ""}, ${Math.round((Date.now() - t0) / 1000)} s`;
+    return `${name}: ${rows.length} righe${parsed.skipped ? ` (${parsed.skipped} scartate)` : ""}${parsed.sourceDate ? `, dati al ${parsed.sourceDate}` : ""}, ${Math.round((Date.now() - t0) / 1000)} s${encodingNote(decoded.encoding, spec.encoding)}`;
   } catch (e) {
     await db.from("aifa_imports").update({ status: "failed", error: String(e.message ?? e).slice(0, 2000), finished_at: new Date().toISOString() }).eq("id", imp.id);
     throw Object.assign(e instanceof Error ? e : new Error(String(e)), { recorded: true });
