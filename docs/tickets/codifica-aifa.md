@@ -9,7 +9,7 @@ Stati: `todo` · `in-corso` · `attesa-umano` · `fatto` · `bloccato`
 
 ---
 
-## T1 · L'elenco dei carenti in UTF-8 si importa   [in-corso]
+## T1 · L'elenco dei carenti in UTF-8 si importa   [fatto]
 Tipo: tracer bullet
 Fonte: §1, §2.1, §2.2, §2.4
 Dipende da: —
@@ -26,6 +26,11 @@ Registro:
 - caratterizzazione: cc1cd63 — snapshot di parseSource sulle cinque fixture (tests/aifa-parse.test.ts, tests/__snapshots__/)
 - primo congelamento: d1cd698 — T1-A1 e T1-A2 (db) confrontavano anche la colonna `id` generata dal database: vedi D1
 - test congelati: a25ef07 — tests/aifa-encoding.test.ts, tests/db/aifa-import.db.test.ts (T1-A1…A3)
+- implementazione: 8947f51 — `decode(bytes)` prova UTF-8 stretto (BOM lasciato a `parseCsv`), altrimenti Windows-1252, e restituisce `{ text, encoding }`
+- review: correttezza OK, conformità OK, nessun giro di fix. Sha finale: 8947f51
+- MINORE: scripts/aifa/README.md descrive ancora `decode(bytes, encoding)` (da aggiornare in T2, che tocca il README)
+- MINORE: `SOURCES[*].encoding` non è più letto dal codice di produzione; diventa la codifica attesa in T2 (§2.3), il confronto lo fa `importSource`
+- MINORE: i test congelati passano un secondo argomento a `decode` che viene ignorato; warning del linter `no-unused-vars` su `_i`/`_id` in tests/db/aifa-import.db.test.ts:129
 
 ## T2 · Il log dice quando AIFA ha cambiato codifica   [todo]
 Tipo: fetta verticale
