@@ -32,7 +32,7 @@ Registro:
 - MINORE: `SOURCES[*].encoding` non è più letto dal codice di produzione; diventa la codifica attesa in T2 (§2.3), il confronto lo fa `importSource`
 - MINORE: i test congelati passano un secondo argomento a `decode` che viene ignorato; warning del linter `no-unused-vars` su `_i`/`_id` in tests/db/aifa-import.db.test.ts:129
 
-## T2 · Il log dice quando AIFA ha cambiato codifica   [in-corso]
+## T2 · Il log dice quando AIFA ha cambiato codifica   [fatto]
 Tipo: fetta verticale
 Fonte: §2.1, §2.3
 Dipende da: T1
@@ -45,6 +45,13 @@ Accettazione:
 Fuori scope: email o avvisi per il cambio di codifica (il cambio non è un errore); campo nel database.
 Registro:
 - base: 1dd2f9b5891e7e3a5280be4878e9e3c4bac166a8
+- caratterizzazione: 74189ea — formato delle cinque righe di riepilogo con `--force` (tests/db/aifa-import.db.test.ts)
+- test congelati: 3298ba8 — tests/db/aifa-import.db.test.ts (T2-A1…A3)
+- implementazione: dc8e9c2 — `encodingNote` in scripts/import-aifa.mjs aggiunge ` (letto come …, atteso …)` quando `decode` usa una codifica diversa da `SOURCES[*].encoding`; README di scripts/aifa aggiornato (regole comuni, carenze, trasparenza, Interface, test)
+- review: correttezza OK, conformità OK, nessun giro di fix. Sha finale: dc8e9c2
+- MINORE: nel test sul database l'esclusione di `import_id`/`id` è duplicata (righe 129 e 189) e dà warning `no-unused-vars`
+- MINORE: due righe di scripts/aifa/README.md (99 e 149) vanno a capo più tardi delle altre
+- MINORE (mio): un file `carenze` o `trasparenza` tutto ASCII (senza accenti) verrebbe segnalato come "letto come UTF-8": è innocuo, ma improbabile con i file AIFA veri, che hanno sempre `à` nell'intestazione di carenze
 
 ---
 
