@@ -418,6 +418,27 @@ describe("cambi di dose", () => {
   });
 });
 
+describe("al bisogno senza fasce", () => {
+  beforeEach(() => setBundle("owner", [daily]));
+  const inserted = () => db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;
+
+  it("si salva senza dosi a mattina, pranzo e sera", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, frequency_type: "as_needed", dose_morning: 0 })).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ frequency_type: "as_needed", dose_morning: 0, dose_noon: 0, dose_evening: 0 });
+  });
+
+  it("le dosi rimaste nel modulo non si salvano", async () => {
+    db.results.medications = [{ data: { id: "new" } }];
+    await expect(createMedication(PLAN.id, { ...validMed, frequency_type: "as_needed", dose_morning: 2, dose_evening: 1 })).rejects.toThrow("REDIRECT");
+    expect(inserted()).toMatchObject({ dose_morning: 0, dose_noon: 0, dose_evening: 0 });
+  });
+
+  it("le altre frequenze chiedono ancora almeno una dose", async () => {
+    expect(await createMedication(PLAN.id, { ...validMed, dose_morning: 0 })).toMatchObject({ ok: false, fieldErrors: { doses: expect.any(String) } });
+  });
+});
+
 describe("colore dal gruppo ATC", () => {
   beforeEach(() => setBundle("owner", [daily]));
   const inserted = () => db.calls.find((c) => c.table === "medications")!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;

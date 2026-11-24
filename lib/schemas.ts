@@ -93,7 +93,8 @@ export const medicationSchema = z
     if (doseStep({ category: m.category }) === 1 && [m.dose_morning, m.dose_noon, m.dose_evening].some((d) => !Number.isInteger(d))) {
       ctx.addIssue({ code: "custom", path: ["doses"], message: "Per questo tipo le dosi sono intere." });
     }
-    if (m.dose_morning + m.dose_noon + m.dose_evening <= 0) {
+    // al bisogno non ci sono fasce: si prende quando serve e si registra la presa
+    if (m.frequency_type !== "as_needed" && m.dose_morning + m.dose_noon + m.dose_evening <= 0) {
       ctx.addIssue({ code: "custom", path: ["doses"], message: "Imposta almeno una fascia con una dose maggiore di zero." });
     }
     if (m.frequency_type === "weekdays" && m.weekdays.length === 0) {

@@ -23,6 +23,7 @@ via Row Level Security (RLS).
 | `20261115000100_reorder_days.sql` | `medications.reorder_days`, required exactly when `shape = 'flacone'` (backfilled to 30; renamed `days_per_pack` by `20261118000100`) |
 | `20261117000100_daily_stock.sql` | Daily stock in every plan: drops `apply_prep`, `undo_prep`, `change_stock_mode`, `prep_runs`, `plans.stock_mode` / `mode_since`; moves `stock_as_of` of weekly plans' non-bottle meds to the day their prepared pillbox runs out; keeps `prep_reminder` only on weekly plans that had it, default `false` |
 | `20261118000100_categories.sql` | Ten categories: `medications.category`, `days_per_pack` (was `reorder_days`), `shape` only for pills, `form` dropped, doses up to 999, `stock_qty` / `stock_events` quantities as `numeric` without scale |
+| `20261124000100_as_needed_doses.sql` | `medications_dose_positive` no longer applies to `as_needed` medications (doses all zero) |
 
 ## Interface
 

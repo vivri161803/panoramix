@@ -560,38 +560,43 @@ export function MedicationForm({ planId, planName, medicationId, initial, levelS
           </section>
 
           <section className={section}>
-            <h2 className={h2}>{doseQuestion(wm)} e quando</h2>
-            <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))]">
-              {SLOTS.map((s) => (
-                <div key={s.key} className="flex flex-col gap-2 rounded-[14px] bg-px-surface-2 p-3">
-                  <span id={`px-slot-${s.key}`} className="px-label">{s.label}</span>
-                  <div className="flex items-center justify-between gap-1">
-                    <button type="button" onClick={() => set({ [s.key]: Math.max(0, f[s.key] - step) })} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in meno ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      max={999}
-                      step={step}
-                      value={f[s.key]}
-                      onChange={(e) => {
-                        const v = Number(e.target.value.replace(",", "."));
-                        set({ [s.key]: Number.isFinite(v) ? Math.min(999, Math.max(0, Math.round(v / step) * step)) : 0 });
-                      }}
-                      aria-labelledby={`px-slot-${s.key}`}
-                      className="h-11 w-0 min-w-[56px] flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[20px] font-[650] leading-none text-px-ink"
-                    />
-                    <button type="button" onClick={() => set({ [s.key]: Math.min(999, f[s.key] + step) })} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in più ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
-                      +
-                    </button>
+            <h2 className={h2}>{asNeeded ? "Quando" : `${doseQuestion(wm)} e quando`}</h2>
+            {/* al bisogno non ci sono fasce: la quantità si indica quando si registra la presa */}
+            {!asNeeded && (
+              <>
+              <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))]">
+                {SLOTS.map((s) => (
+                  <div key={s.key} className="flex flex-col gap-2 rounded-[14px] bg-px-surface-2 p-3">
+                    <span id={`px-slot-${s.key}`} className="px-label">{s.label}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <button type="button" onClick={() => set({ [s.key]: Math.max(0, f[s.key] - step) })} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in meno ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={999}
+                        step={step}
+                        value={f[s.key]}
+                        onChange={(e) => {
+                          const v = Number(e.target.value.replace(",", "."));
+                          set({ [s.key]: Number.isFinite(v) ? Math.min(999, Math.max(0, Math.round(v / step) * step)) : 0 });
+                        }}
+                        aria-labelledby={`px-slot-${s.key}`}
+                        className="h-11 w-0 min-w-[56px] flex-1 rounded-[10px] border border-px-line-strong bg-px-surface text-center text-[20px] font-[650] leading-none text-px-ink"
+                      />
+                      <button type="button" onClick={() => set({ [s.key]: Math.min(999, f[s.key] + step) })} aria-label={`${step === 1 ? `1 ${doseWord(wm, 1)}` : `Mezza ${doseWord(wm, 1)}`} in più ${s.w}`} className="h-11 w-11 flex-none rounded-[10px] border border-px-line-strong bg-px-surface text-[20px] font-semibold leading-none">
+                        +
+                      </button>
+                    </div>
+                    <span className="text-[14px] leading-none text-px-ink-2">{f[s.key] > 0 ? doseWord(wm, f[s.key]) : "nessuna"}</span>
                   </div>
-                  <span className="text-[14px] leading-none text-px-ink-2">{f[s.key] > 0 ? doseWord(wm, f[s.key]) : "nessuna"}</span>
-                </div>
-              ))}
-            </div>
-            <FieldError message={fe.doses} />
+                ))}
+              </div>
+              <FieldError message={fe.doses} />
+              </>
+            )}
 
             <span className="px-label">Frequenza</span>
             <div role="radiogroup" aria-label="Frequenza" className="flex flex-col gap-1.5">

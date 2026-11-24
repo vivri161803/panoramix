@@ -42,9 +42,10 @@ function medFields(m: ParsedMedication, atcCode: string | null) {
     shape: m.category === "pillola" ? m.shape : null,
     // a livello: giorni di uso per contenitore; al bisogno si conta sempre a pezzi
     days_per_pack: f === "as_needed" ? null : (m.days_per_pack ?? null),
-    dose_morning: m.dose_morning,
-    dose_noon: m.dose_noon,
-    dose_evening: m.dose_evening,
+    // al bisogno non ci sono dosi programmate
+    dose_morning: f === "as_needed" ? 0 : m.dose_morning,
+    dose_noon: f === "as_needed" ? 0 : m.dose_noon,
+    dose_evening: f === "as_needed" ? 0 : m.dose_evening,
     frequency_type: f,
     weekdays: f === "weekdays" ? [...new Set(m.weekdays)].sort() : [],
     interval_days: f === "every_n_days" ? m.interval_days : null,
