@@ -107,7 +107,7 @@ async function importSource(name) {
   }
 
   // controllo completo del file prima di scrivere qualsiasi cosa
-  const parsed = parseSource(name, decode(bytes, spec.encoding));
+  const parsed = parseSource(name, decode(bytes).text);
   // un file molto più corto del solito è quasi sempre un file rotto: restano le tabelle di prima
   if (!force) checkShrink(name, parsed.rows.length, prev?.rows ?? null);
 

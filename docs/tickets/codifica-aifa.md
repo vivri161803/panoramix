@@ -25,6 +25,7 @@ Registro:
 - base: 256a43aa0278af36bae16b876a01f697371ca561
 - caratterizzazione: cc1cd63 — snapshot di parseSource sulle cinque fixture (tests/aifa-parse.test.ts, tests/__snapshots__/)
 - primo congelamento: d1cd698 — T1-A1 e T1-A2 (db) confrontavano anche la colonna `id` generata dal database: vedi D1
+- test congelati: a25ef07 — tests/aifa-encoding.test.ts, tests/db/aifa-import.db.test.ts (T1-A1…A3)
 
 ## T2 · Il log dice quando AIFA ha cambiato codifica   [todo]
 Tipo: fetta verticale

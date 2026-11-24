@@ -12,7 +12,6 @@ import {
   parseCsv,
   parseSource,
   requiresPrescription,
-  SOURCES,
 } from "../scripts/aifa/parse.mjs";
 
 const FILES = {
@@ -26,7 +25,7 @@ type Source = keyof typeof FILES;
 
 function fixture(name: Source): string {
   const bytes = readFileSync(new URL(`./fixtures/aifa/${FILES[name]}`, import.meta.url));
-  return decode(bytes, SOURCES[name].encoding);
+  return decode(bytes).text;
 }
 
 describe("parseCsv", () => {

@@ -255,9 +255,13 @@ function headerMatches(expected, got) {
   });
 }
 
-/** Decodifica i byte con la codifica della sorgente. */
-export function decode(bytes, encoding) {
-  return new TextDecoder(encoding).decode(bytes);
+/** Decodifica i byte come UTF-8 se sono UTF-8 valido, altrimenti come Windows-1252; restituisce testo e codifica usata. */
+export function decode(bytes) {
+  try {
+    return { text: new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes), encoding: "utf-8" };
+  } catch {
+    return { text: new TextDecoder("windows-1252").decode(bytes), encoding: "windows-1252" };
+  }
 }
 
 /** Massima quota di righe scartate (AIC non valido, riga vuota) prima di considerare il file rotto. */
