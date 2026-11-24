@@ -32,7 +32,7 @@ Registro:
 - MINORE: `SOURCES[*].encoding` non è più letto dal codice di produzione; diventa la codifica attesa in T2 (§2.3), il confronto lo fa `importSource`
 - MINORE: i test congelati passano un secondo argomento a `decode` che viene ignorato; warning del linter `no-unused-vars` su `_i`/`_id` in tests/db/aifa-import.db.test.ts:129
 
-## T2 · Il log dice quando AIFA ha cambiato codifica   [todo]
+## T2 · Il log dice quando AIFA ha cambiato codifica   [in-corso]
 Tipo: fetta verticale
 Fonte: §2.1, §2.3
 Dipende da: T1
@@ -43,7 +43,8 @@ Accettazione:
 - T2-A2 — Dati tutti i file nella codifica attesa, quando l'import finisce, allora le righe di riepilogo sono uguali a quelle di oggi, senza note sulla codifica.
 - T2-A3 — Data la lista di trasparenza salvata in UTF-8, quando parte l'import, allora l'import riesce con gli stessi prezzi e la stessa data dei prezzi del file in Windows-1252, e la riga di riepilogo lo segnala.
 Fuori scope: email o avvisi per il cambio di codifica (il cambio non è un errore); campo nel database.
-Registro: —
+Registro:
+- base: 1dd2f9b5891e7e3a5280be4878e9e3c4bac166a8
 
 ---
 

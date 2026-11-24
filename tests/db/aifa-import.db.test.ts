@@ -171,6 +171,20 @@ describe.skipIf(!enabled)("pipeline di import AIFA", () => {
     expect(ok.code, ok.out).toBe(0);
   });
 
+  it("caratterizzazione: righe di riepilogo con --force e file nella codifica attesa", async () => {
+    const dir = freshDir();
+    dirs.push(dir);
+    const r = runImport(dir, "--force");
+    expect(r.code, r.out).toBe(0);
+    const lines = r.out.trim().split("\n");
+    expect(lines).toHaveLength(5);
+    expect(lines[0]).toMatch(/^confezioni: 13 righe, \d+ s$/);
+    expect(lines[1]).toMatch(/^principi_attivi: 15 righe \(\d+ scartate\), \d+ s$/);
+    expect(lines[2]).toMatch(/^atc: 10 righe, \d+ s$/);
+    expect(lines[3]).toMatch(/^carenze: 9 righe, dati al 2026-11-05, \d+ s$/);
+    expect(lines[4]).toMatch(/^trasparenza: 20 righe, dati al 2026-10-15, \d+ s$/);
+  });
+
   it("controllo del mattino: avviso dopo 7 giorni senza import riuscito", async () => {
     expect(await findStaleAifa(admin)).toEqual([]);
     const in8days = new Date(Date.now() + 8 * 86_400_000);
