@@ -125,6 +125,52 @@ describe.skipIf(!enabled)("pipeline di import AIFA", () => {
     expect(data).toEqual([]);
   });
 
+  const shortageRows = async () =>
+    ((await admin.from("aifa_shortages").select("*").order("aic")).data ?? []).map(({ import_id: _i, ...r }) => r);
+  const carenzeAsUtf8 = (dir: string, edit: (t: string) => string = (t) => t) => {
+    const f = join(dir, "elenco_medicinali_carenti.csv");
+    writeFileSync(f, Buffer.from(edit(new TextDecoder("windows-1252").decode(readFileSync(f))), "utf8"));
+  };
+
+  it("T1-A1 — carenze in UTF-8: import riuscito, stesse righe del Windows-1252", async () => {
+    const before = await shortageRows();
+    const dir = freshDir();
+    dirs.push(dir);
+    carenzeAsUtf8(dir);
+    const r = runImport(dir, "carenze");
+    expect(r.code, r.out).toBe(0);
+    expect(r.out).not.toMatch(/invariato, saltato/);
+    expect(await lastStatus("carenze")).toMatchObject({ status: "ok", rows: 9 });
+    const after = await shortageRows();
+    expect(after).toHaveLength(9);
+    expect(after).toEqual(before);
+    expect(JSON.stringify(after)).toContain("Sì");
+    expect(JSON.stringify(after)).not.toMatch(/Ã|\uFFFD/);
+  });
+
+  it("T1-A2 — carenze in Windows-1252: risultato identico a prima", async () => {
+    const before = await shortageRows();
+    const dir = freshDir();
+    dirs.push(dir);
+    const r = runImport(dir, "carenze");
+    expect(r.code, r.out).toBe(0);
+    expect(await lastStatus("carenze")).toMatchObject({ status: "ok", rows: 9 });
+    expect(await shortageRows()).toEqual(before);
+  });
+
+  it("T1-A3 — carenze in UTF-8 con colonna rinominata: import fermo, tabelle intatte", async () => {
+    const before = await shortageRows();
+    const dir = freshDir();
+    dirs.push(dir);
+    carenzeAsUtf8(dir, (t) => t.replace("Classe di rimborsabilità", "Classe rimborso"));
+    const r = runImport(dir, "carenze");
+    expect(r.code).toBe(1);
+    expect((await lastStatus("carenze"))?.error).toMatch(/AIFA ha cambiato le colonne di carenze/);
+    expect(await shortageRows()).toEqual(before);
+    const ok = runImport(freshDir(), "carenze");
+    expect(ok.code, ok.out).toBe(0);
+  });
+
   it("controllo del mattino: avviso dopo 7 giorni senza import riuscito", async () => {
     expect(await findStaleAifa(admin)).toEqual([]);
     const in8days = new Date(Date.now() + 8 * 86_400_000);
