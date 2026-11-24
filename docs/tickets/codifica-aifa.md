@@ -9,7 +9,7 @@ Stati: `todo` · `in-corso` · `attesa-umano` · `fatto` · `bloccato`
 
 ---
 
-## T1 · L'elenco dei carenti in UTF-8 si importa   [todo]
+## T1 · L'elenco dei carenti in UTF-8 si importa   [in-corso]
 Tipo: tracer bullet
 Fonte: §1, §2.1, §2.2, §2.4
 Dipende da: —
@@ -21,7 +21,8 @@ Accettazione:
 - T1-A3 — Dato un elenco dei carenti in UTF-8 con una colonna rinominata, quando parte l'import, allora l'import si ferma con "AIFA ha cambiato le colonne di carenze" e le tabelle restano quelle dell'ultimo import riuscito.
 - T1-A4 — Dato un file che non è UTF-8 valido (byte accentati in Windows-1252), quando viene letto, allora non compaiono caratteri di sostituzione (`�`) e il testo è quello Windows-1252.
 Fuori scope: segnalare nel log la codifica usata (T2); altre codifiche oltre a UTF-8 e Windows-1252; salvare la codifica in `aifa_imports`.
-Registro: —
+Registro:
+- base: 256a43aa0278af36bae16b876a01f697371ca561
 
 ## T2 · Il log dice quando AIFA ha cambiato codifica   [todo]
 Tipo: fetta verticale

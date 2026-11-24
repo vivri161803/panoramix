@@ -159,6 +159,14 @@ describe("sorgenti AIFA sulle fixture vere", () => {
   });
 });
 
+describe("caratterizzazione: lettura delle cinque sorgenti dalle fixture", () => {
+  for (const name of Object.keys(FILES) as Source[]) {
+    it(`${name}: righe, data e conteggi invariati`, () => {
+      expect(parseSource(name, fixture(name))).toMatchSnapshot();
+    });
+  }
+});
+
 describe("checkShrink", () => {
   it("rifiuta un file con meno della metà delle righe di prima", () => {
     expect(() => checkShrink("confezioni", 70000, 160000)).toThrow(/sembra incompleto/);
