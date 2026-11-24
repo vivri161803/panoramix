@@ -1,6 +1,6 @@
 # Ticket — Codifica dei file AIFA: UTF-8 oppure Windows-1252
 
-Design doc: docs/designs/codifica-aifa.md (non ancora versionato)
+Design doc: docs/designs/codifica-aifa.md
 Criteri approvati: sì (2026-11-24)
 Comando test: `npm test && npm run test:db` (il secondo richiede Supabase locale in Docker; se la shell non ha ancora il gruppo docker: `sg docker -c "npm run test:db"`)
 Branch: feat/codifica-aifa

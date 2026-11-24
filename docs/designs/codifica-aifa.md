@@ -1,6 +1,6 @@
 # Codifica dei file AIFA: UTF-8 oppure Windows-1252
 
-Stato: bozza, 24 novembre 2026.
+Stato: approvato, 24 novembre 2026.
 
 ## 1. Problema
 
