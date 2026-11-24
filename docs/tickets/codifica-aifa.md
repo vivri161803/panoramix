@@ -77,3 +77,9 @@ La realtà: i test congelati T1-A1 e T1-A2 in tests/db/aifa-import.db.test.ts co
 Proposta: escludere `id` dal confronto, come già `import_id`.
 Impatto: solo i test di T1.
 Decisione (utente, 2026-11-24): correggere i test e ricongelarli.
+
+### D2 · T1 · Il secondo argomento a `decode` rompeva la build di produzione   [risolta]
+Il design dice: §2.1, `decode` sceglie da sola la codifica (UTF-8 stretto, altrimenti Windows-1252).
+La realtà: tests/aifa-encoding.test.ts chiamava ancora `decode(bytes, SOURCES.carenze.encoding)`. Vitest lo ignora, ma `next build` fa il type check di tutti i `.ts` (tsconfig include `**/*.ts`) e falliva con TS2554 "Expected 0-1 arguments, but got 2": deploy di produzione Vercel dpl_8aReMi32kRP2BWq91WGSPGDWDm9K in errore su ce23e8c.
+Correzione: tolto il secondo argomento (e l'import di `SOURCES`) dai test; le asserzioni sono invariate.
+Impatto: solo tests/aifa-encoding.test.ts; chiude la nota MINORE di T1 sul secondo argomento ignorato.
